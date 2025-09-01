@@ -16,6 +16,8 @@
                     <flux:navlist.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>{{ __('Dashboard') }}</flux:navlist.item>
                     <flux:navlist.item icon="clock" :href="route('counter')" :current="request()->routeIs('counter')" wire:navigate>{{
                         __('Counter') }}</flux:navlist.item>
+                    <flux:navlist.item icon="rectangle-stack" :href="route('todos.index')" :current="request()->routeIs('todos.index')" wire:navigate>{{
+                        __('TodoList') }}</flux:navlist.item>
                 </flux:navlist.group>
             </flux:navlist>
 

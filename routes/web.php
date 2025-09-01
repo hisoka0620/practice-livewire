@@ -2,13 +2,17 @@
 
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
+use App\Livewire\Counter;
+use App\Livewire\TodoList;
 
 Route::get('/', function () {
     return view('welcome');
 })->name('home');
 
-Route::get('/counter', App\Livewire\Counter::class)
+Route::get('/counter', Counter::class)
     ->name('counter');
+
+Route::get('/todo-list', TodoList::class)->name('todos.index');
 
 Route::view('dashboard', 'dashboard')
     ->middleware(['auth', 'verified'])
@@ -22,4 +26,4 @@ Route::middleware(['auth'])->group(function () {
     Volt::route('settings/appearance', 'settings.appearance')->name('settings.appearance');
 });
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';
