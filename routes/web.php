@@ -14,6 +14,9 @@ Route::get('/counter', Counter::class)
 
 Route::get('/todo-list', TodoList::class)->name('todos.index');
 
+Route::get('/todo-list/create', TodoList::class)
+    ->name('todos.create');
+
 Route::view('dashboard', 'dashboard')
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
