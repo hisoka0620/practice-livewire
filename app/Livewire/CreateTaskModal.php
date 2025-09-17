@@ -16,15 +16,13 @@ class CreateTaskModal extends Component
         logger('Auth User: ' . Auth::user());
     }
 
-    public function save(){
+    public function create(){
         $validated = $this->validate([
             'title' => 'required|string|max:255|regex:/[^\s　]/u',
             'description' => 'nullable|string|regex:/[^\s　]/u',
         ]);
 
-        $validated['user_id'] = Auth::id();
-
-        Task::create($validated);
+        Auth::user()->tasks()->create($validated);
 
         return redirect()->route('todos.index');
     }

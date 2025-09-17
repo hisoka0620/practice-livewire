@@ -1,5 +1,5 @@
 <div>
-    <form wire:submit.prevent="save">
+    <form wire:submit.prevent="create">
         <div class="space-y-6">
             <div>
                 <flux:heading size="lg">Create task</flux:heading>
