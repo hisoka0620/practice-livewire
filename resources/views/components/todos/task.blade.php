@@ -1,6 +1,6 @@
 <div>
     @foreach($tasks as $task)
-    <div class="flex flex-col md:flex-row gap-x-2 bg-white p-4 mb-3 rounded">
+    <div wire:key="{{ $task->id }}" class="flex flex-col md:flex-row gap-x-2 bg-white p-4 mb-3 rounded">
         <div>
             <flux:heading size="md" level="2" class="bg-zinc-600 text-white rounded text-center px-2 py-1">Title
             </flux:heading>
@@ -16,7 +16,8 @@
         <div>
             <flux:heading size="md" level="2" class="bg-zinc-600 text-white rounded text-center px-2 py-1">is_completed
             </flux:heading>
-            <flux:text class="mt-2 text-zinc-600 text-center">{{ $task->is_completed === 0 ? 'uncomplete' : 'complete' }}</flux:text>
+            <flux:text class="mt-2 text-zinc-600 text-center">{{ $task->is_completed === 0 ? 'uncomplete' : 'complete'
+                }}</flux:text>
         </div>
         <flux:separator vertical class="!bg-zinc-400 mx-3" />
         <div>
@@ -33,7 +34,8 @@
         <flux:separator vertical class="!bg-zinc-400 mx-3" />
         <div class="flex flex-row items-center gap-x-2 mr-3">
             <flux:button variant="primary" color="green">Edit</flux:button>
-            <flux:button variant="primary" color="red">Delete</flux:button>
+            <flux:button wire:click="delete({{ $task->id }})" wire:confirm="Are you sure?" icon="trash"
+                variant="primary" color="red">Delete</flux:button>
         </div>
     </div>
     @endforeach
