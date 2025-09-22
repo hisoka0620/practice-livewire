@@ -7,5 +7,13 @@
         @close="$set('showCreateTaskModal', false)">
         <livewire:create-task-modal />
     </flux:modal>
-    <x-todos.task :tasks="$tasks" />
+    <flux:modal wire:model="showEditTaskModal" name="edit-task" class="md:w-96"
+        @close="$set('showEditTaskModal', false)">
+        @if($showEditTaskModal && $taskId)
+        <livewire:edit-task-modal :$taskId />
+        @endif
+    </flux:modal>
+    @foreach($tasks as $task)
+    <x-todos.task :$task :key="$task->id" />
+    @endforeach
 </div>

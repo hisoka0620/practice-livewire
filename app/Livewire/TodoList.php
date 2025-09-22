@@ -9,14 +9,22 @@ use Illuminate\Support\Facades\Auth;
 class TodoList extends Component
 {
     public $showCreateTaskModal = false;
+    public $showEditTaskModal = false;
+    public $taskId;
 
-    public function mount()
+    public function mount($id = null)
     {
         $this->showCreateTaskModal = request()->routeIs('todos.create');
+
+        $this->showEditTaskModal = request()->routeIs('todos.edit');
+
+        if ($id) {
+            $this->taskId = $id;
+        }
     }
 
-    public function delete($id){
-
+    public function delete($id)
+    {
         $task = Task::findOrFail($id);
 
         $this->authorize('delete', $task);
@@ -31,8 +39,15 @@ class TodoList extends Component
         }
     }
 
+    public function updatedShowEditTaskModal($value)
+    {
+        if (!$value) {
+            $this->redirectRoute('todos.index', navigate: true);
+        }
+    }
+
     public function render()
     {
-        return view('livewire.todo-list', ['tasks' => Auth::user()->tasks, ]);
+        return view('livewire.todo-list')->with(['tasks' => Auth::user()->tasks]);
     }
 }

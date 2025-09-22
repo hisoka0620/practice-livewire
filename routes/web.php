@@ -12,10 +12,14 @@ Route::get('/', function () {
 Route::get('/counter', Counter::class)
     ->name('counter');
 
-Route::get('/todo-list', TodoList::class)->name('todos.index');
+Route::get('/todo-list', TodoList::class)
+    ->name('todos.index');
 
 Route::get('/todo-list/create', TodoList::class)
     ->name('todos.create');
+
+Route::get('/todo-list/{id}/edit', TodoList::class)
+    ->name('todos.edit');
 
 Route::view('dashboard', 'dashboard')
     ->middleware(['auth', 'verified'])
