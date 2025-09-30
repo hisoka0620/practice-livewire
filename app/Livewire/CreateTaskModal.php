@@ -12,9 +12,7 @@ class CreateTaskModal extends Component
 
     public function create()
     {
-        $this->validate();
-
-        Auth::user()->tasks()->create($this->form->all());
+        $this->form->create();
 
         return $this->redirectRoute('todos.index', navigate: true);
     }
