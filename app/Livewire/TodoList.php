@@ -10,16 +10,15 @@ class TodoList extends Component
 {
     public $showCreateTaskModal = false;
     public $showEditTaskModal = false;
-    public $taskId;
+    public ?Task $editingTask = null;
 
     public function mount($id = null)
     {
         $this->showCreateTaskModal = request()->routeIs('todos.create');
 
-        $this->showEditTaskModal = request()->routeIs('todos.edit');
-
-        if ($id) {
-            $this->taskId = $id;
+        if (request()->routeIs('todos.edit') && $id) {
+            $this->editingTask = Auth::user()->tasks()->findOrFail($id);
+            $this->showEditTaskModal = true;
         }
     }
 

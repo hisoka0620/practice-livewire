@@ -2,26 +2,26 @@
 
 namespace App\Livewire;
 
-use Livewire\Component;
-use Illuminate\Support\Facades\Auth;
 use App\Livewire\Forms\TaskForm;
+use App\Models\Task;
+use Livewire\Component;
 
 class EditTaskModal extends Component
 {
     public TaskForm $form;
-    public $task;
+    public ?Task $task = null;
 
-    public function mount($taskId)
+    public function mount(Task $task)
     {
-        $this->task = Auth::user()->tasks()->findOrFail($taskId);
-        $this->form->title = $this->task->title;
-        $this->form->description = $this->task->description;
+        $this->task = $task;
+        $this->form->setTask($task);
     }
 
-    public function save(){
-        $this->validate();
+    public function save()
+    {
+        $this->authorize('update', $this->task);
 
-        $this->task->update($this->form->all());
+        $this->form->update();
 
         $this->redirectRoute('todos.index', navigate: true);
     }

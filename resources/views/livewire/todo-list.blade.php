@@ -9,8 +9,8 @@
     </flux:modal>
     <flux:modal wire:model="showEditTaskModal" name="edit-task" class="md:w-96"
         @close="$set('showEditTaskModal', false)">
-        @if($showEditTaskModal && $taskId)
-        <livewire:edit-task-modal :$taskId />
+        @if($showEditTaskModal && $editingTask)
+        <livewire:edit-task-modal :task="$editingTask" />
         @endif
     </flux:modal>
     @foreach($tasks as $task)
