@@ -32,7 +32,7 @@
         </div>
         <flux:separator vertical class="!bg-zinc-400 mx-3" />
         <div class="flex flex-row items-center gap-x-2 mr-3">
-            <flux:button wire:navigate href="{{ route('todos.edit', $task->id) }}" variant="primary" color="green">Edit
+            <flux:button wire:click="edit({{ $task->id }})" variant="primary" color="green">Edit
             </flux:button>
             <flux:button wire:click="delete({{ $task->id }})" wire:confirm="Are you sure?" icon="trash"
                 variant="primary" color="red">Delete</flux:button>

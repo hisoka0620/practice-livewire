@@ -2,26 +2,44 @@
 
 namespace App\Livewire;
 
-use Livewire\Component;
 use App\Models\Task;
 use Illuminate\Support\Facades\Auth;
+use Livewire\Attributes\On;
+use Livewire\Attributes\Url;
+use Livewire\Component;
 
 class TodoList extends Component
 {
-    public $showCreateTaskModal = false;
-    public $showEditTaskModal = false;
-    public ?Task $editingTask = null;
+    #[Url(history: true, except: null)]
+    public ?bool $create = null;
 
-    public function mount($id = null)
+    #[Url(as: 'edit', except: null)]
+    public ?int $editTaskId = null;
+
+    /**
+     * 新規作成モーダルを開くためにURLを更新します。
+     * メソッド名はプロパティと競合するため変更しています。
+     */
+    public function openCreateModal(): void
     {
-        $this->showCreateTaskModal = request()->routeIs('todos.create');
-
-        if (request()->routeIs('todos.edit') && $id) {
-            $this->editingTask = Auth::user()->tasks()->findOrFail($id);
-            $this->showEditTaskModal = true;
-        }
+        $this->create = true;
+        $this->editTaskId = null;
+        $this->dispatch('open-task-modal');
     }
 
+    /**
+     * 編集モーダルを開くためにURLを更新します。
+     */
+    public function edit($id)
+    {
+        $this->editTaskId = $id;
+        $this->create = null;
+        $this->dispatch('open-task-modal', taskId: $id);
+    }
+
+    /**
+     * タスクを削除します。
+     */
     public function delete($id)
     {
         $task = Task::findOrFail($id);
@@ -31,22 +49,28 @@ class TodoList extends Component
         $task->delete();
     }
 
-    public function updatedShowCreateTaskModal($value)
+    /**
+     * 'task-saved' イベントをリッスンし、コンポーネントを再描画します。
+     */
+    #[On('task-saved')]
+    public function refresh()
     {
-        if (!$value) {
-            $this->redirectRoute('todos.index', navigate: true);
-        }
+        // This method intentionally left blank.
     }
 
-    public function updatedShowEditTaskModal($value)
+    /**
+     * モーダルが閉じたイベントをリッスンし、URLを更新します。
+     */
+    #[On('task-modal-closed')]
+    public function closeModal()
     {
-        if (!$value) {
-            $this->redirectRoute('todos.index', navigate: true);
-        }
+        $this->create = null;
+        $this->editTaskId = null;
+        $this->redirect(route('todos.index'), navigate: true);
     }
 
     public function render()
     {
-        return view('livewire.todo-list')->with(['tasks' => Auth::user()->tasks]);
+        return view('livewire.todo-list')->with(['tasks' => Auth::user()->tasks()->latest()->get()]);
     }
 }
