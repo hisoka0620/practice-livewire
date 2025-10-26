@@ -27,6 +27,18 @@ class TodoList extends Component
         $this->dispatch('open-task-modal');
     }
 
+    public function toggleComplete($id)
+    {
+        $task = Task::findOrFail($id);
+        $this->authorize('update', $task);
+        if ($task->is_completed === 0) {
+            $task->is_completed = 1;
+        } else {
+            $task->is_completed = 0;
+        }
+        $task->save();
+    }
+
     /**
      * 編集モーダルを開くためにURLを更新します。
      */
