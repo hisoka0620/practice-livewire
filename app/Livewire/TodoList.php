@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use App\Models\Task;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Url;
@@ -10,11 +11,40 @@ use Livewire\Component;
 
 class TodoList extends Component
 {
+    public Collection $tasks;
+
     #[Url(history: true, except: null)]
     public ?bool $create = null;
 
     #[Url(as: 'edit', except: null)]
     public ?int $editTaskId = null;
+
+    #[Url()]
+    public string $priority = "";
+
+    public function mount(): void
+    {
+        $this->loadTasks();
+    }
+
+    public function updatedPriority(): void
+    {
+        $this->loadTasks();
+    }
+
+    /**
+     * タスクを取得するメソッド
+     */
+    private function loadTasks(): void
+    {
+        $query = Auth::user()->tasks();
+
+        if ($this->priority) {
+            $query->where('priority', $this->priority);
+        }
+
+        $this->tasks = $query->latest()->get();
+    }
 
     /**
      * 新規作成モーダルを開くためにURLを更新します。
@@ -27,22 +57,21 @@ class TodoList extends Component
         $this->dispatch('open-task-modal');
     }
 
-    public function toggleComplete($id)
+    /**
+     * タスクの完了状態を切り替えます。
+     */
+    public function toggleComplete(int $id): void
     {
         $task = Task::findOrFail($id);
         $this->authorize('update', $task);
-        if ($task->is_completed === 0) {
-            $task->is_completed = 1;
-        } else {
-            $task->is_completed = 0;
-        }
+        $task->is_completed = !$task->is_completed;
         $task->save();
     }
 
     /**
      * 編集モーダルを開くためにURLを更新します。
      */
-    public function edit($id)
+    public function edit($id): void
     {
         $this->editTaskId = $id;
         $this->create = null;
@@ -52,22 +81,21 @@ class TodoList extends Component
     /**
      * タスクを削除します。
      */
-    public function delete($id)
+    public function delete($id): void
     {
         $task = Task::findOrFail($id);
-
         $this->authorize('delete', $task);
-
         $task->delete();
+        $this->loadTasks();
     }
 
     /**
-     * 'task-saved' イベントをリッスンし、コンポーネントを再描画します。
+     * タスク保存後の更新処理
      */
     #[On('task-saved')]
-    public function refresh()
+    public function refresh(): void
     {
-        // This method intentionally left blank.
+        $this->loadTasks();
     }
 
     /**
@@ -83,6 +111,8 @@ class TodoList extends Component
 
     public function render()
     {
-        return view('livewire.todo-list')->with(['tasks' => Auth::user()->tasks()->latest()->get()]);
+        return view('livewire.todo-list', [
+            'tasks' => $this->tasks
+        ]);
     }
 }

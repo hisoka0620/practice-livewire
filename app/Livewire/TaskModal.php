@@ -33,7 +33,6 @@ class TaskModal extends Component
     public function save()
     {
         $this->task ? $this->updateTask() : $this->createTask();
-
         $this->dispatch('task-saved');
         $this->close();
     }
