@@ -19,16 +19,20 @@ class TodoList extends Component
     #[Url(as: 'edit', except: null)]
     public ?int $editTaskId = null;
 
-    #[Url()]
-    public string $priority = "";
+    #[Url(as: 'filtered', except: false)]
+    public bool $isFiltered  = false;
+
+    #[Url(except: '')]
+    public string $priority = '';
 
     public function mount(): void
     {
         $this->loadTasks();
     }
 
-    public function updatedPriority(): void
+    public function updatedPriority(string $value): void
     {
+        $this->isFiltered = $value !== '';
         $this->loadTasks();
     }
 
@@ -37,13 +41,14 @@ class TodoList extends Component
      */
     private function loadTasks(): void
     {
-        $query = Auth::user()->tasks();
+        $query = Auth::user()
+            ->tasks()
+            ->when($this->isFiltered && $this->priority, function ($query) {
+                $query->where('priority', $this->priority);
+            })
+            ->latest();
 
-        if ($this->priority) {
-            $query->where('priority', $this->priority);
-        }
-
-        $this->tasks = $query->latest()->get();
+        $this->tasks = $query->get();
     }
 
     /**
@@ -104,9 +109,20 @@ class TodoList extends Component
     #[On('task-modal-closed')]
     public function closeModal()
     {
-        $this->create = null;
-        $this->editTaskId = null;
-        $this->redirect(route('todos.index'), navigate: true);
+        $queryParams = [];
+
+        // フィルタリング状態がある場合のみパラメータを追加
+        if ($this->priority !== '' && $this->filtered) {
+            $queryParams['priority'] = $this->priority;
+            $queryParams['filtered'] = true;
+        }
+
+        $this->reset(['create', 'editTaskId']);
+
+        $this->redirect(
+            route('todos.index', $queryParams),
+            navigate: true
+        );
     }
 
     public function render()
