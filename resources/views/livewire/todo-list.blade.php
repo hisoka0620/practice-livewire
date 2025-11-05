@@ -2,7 +2,7 @@
     <flux:heading size="xl" level="1" class="mb-3">TodoList</flux:heading>
     <flux:separator variant="subtle" class="mb-6" />
     <div id="header" class="flex items-center justify-between mb-6">
-        <flux:button wire:click="openCreateModal" icon="plus-circle">Create Task
+        <flux:button wire:click="create" icon="plus-circle">Create Task
         </flux:button>
         <div class="flex justify-end gap-2">
             <form wire:submit class="w-fit">
@@ -26,14 +26,14 @@
     @endif
 </div>
 
-@script
+{{-- @script
 <script>
     document.addEventListener('livewire:initialized', () => {
     // Runs immediately after Livewire has finished initializing
     // on the page...
-    if($wire.create || $wire.editTaskId){
+    if($wire.createTask || $wire.editTaskId){
         $wire.dispatch('open-task-modal', { taskId: $wire.editTaskId } );
     }
     })
 </script>
-@endscript
+@endscript --}}
