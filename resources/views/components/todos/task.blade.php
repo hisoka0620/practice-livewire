@@ -4,19 +4,13 @@
             <div>
                 <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
                     <x-todos.task-item heading="Title">
-                        {{ $task->title }}
+                        {{ ucfirst($task->title) }}
                     </x-todos.task-item>
                     <x-todos.task-item heading="Description" class="text-ellipsis">
-                        {{ $task->description }}
+                        {{ ucfirst($task->description) }}
                     </x-todos.task-item>
-                    <x-todos.task-item heading="is_completed">
-                        {{ $task->is_completed === 0 ? 'uncomplete' : 'complete' }}
-                    </x-todos.task-item>
-                    <x-todos.task-item heading="created_at">
-                        {{ $task->created_at }}
-                    </x-todos.task-item>
-                    <x-todos.task-item heading="updated_at">
-                        {{ $task->updated_at }}
+                    <x-todos.task-item heading="Priority">
+                        {{ ucfirst($task->priority) }}
                     </x-todos.task-item>
                 </div>
             </div>

@@ -15,25 +15,27 @@ class TaskForm extends Form
 
     #[Validate('required|string|max:255|regex:/[^\s　]/u')]
     public $description;
+    
+    #[Validate('required|in:low,medium,high')]
+    public string $priority = 'medium';
 
     public function setTask(Task $task)
     {
         $this->task = $task;
         $this->title = $task->title;
+        $this->priority = $task->priority;
         $this->description = $task->description;
     }
 
     public function create()
     {
         $this->validate();
-
-        auth()->user()->tasks()->create($this->all());
+        auth()->user()->tasks()->create($this->pull());
     }
 
     public function update()
     {
         $this->validate();
-
-        $this->task->update($this->all());
+        $this->task->update($this->pull());
     }
 }
