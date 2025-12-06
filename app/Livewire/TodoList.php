@@ -11,19 +11,7 @@ use Livewire\Component;
 
 class TodoList extends Component
 {
-    private const ON = 1;
-    private const OFF = 0;
-
     public Collection $tasks;
-
-    #[Url(as: 'create', history: true, except: 0)]
-    public ?int $createTask = self::OFF;
-
-    #[Url(as: 'edit', except: null)]
-    public ?int $editTaskId = null;
-
-    #[Url(as: 'filtered', except: 0)]
-    public int $isFiltered  = self::OFF;
 
     #[Url(except: '')]
     public string $priority = '';
@@ -37,26 +25,6 @@ class TodoList extends Component
     }
 
     /**
-     * 優先度の更新時にフィルター状態を更新します
-     */
-    public function updatedPriority(string $value): void
-    {
-        $this->isFiltered = $this->shouldBeFiltered($value)
-            ? self::ON
-            : self::OFF;
-            
-        $this->loadTasks();
-    }
-
-    /**
-     * フィルタリングが必要かどうかを判定します
-     */
-    private function shouldBeFiltered(string $value): bool
-    {
-        return $value !== '';
-    }
-
-    /**
      * タスクを取得するメソッド
      */
     private function loadTasks(): void
@@ -64,7 +32,7 @@ class TodoList extends Component
         $query = Auth::user()
             ->tasks()
             ->when(
-                $this->isFiltered === self::ON && $this->priority,
+                $this->priority,
                 fn($query) => $query->where('priority', $this->priority)
             )
             ->latest();
@@ -73,14 +41,11 @@ class TodoList extends Component
     }
 
     /**
-     * 新規作成モーダルを開くためにURLを更新します。
-     * メソッド名はプロパティと競合するため変更しています。
+     * 優先度の更新時にフィルター状態を更新します
      */
-    public function create(): void
+    public function updatedPriority(string $value): void
     {
-        $this->createTask = self::ON;
-        $this->editTaskId = null;
-        $this->dispatch('open-task-modal');
+        $this->loadTasks();
     }
 
     /**
@@ -91,16 +56,7 @@ class TodoList extends Component
         $task = $this->findAndAuthorizeTask($taskId, 'update');
         $task->is_completed = !$task->is_completed;
         $task->save();
-    }
-
-    /**
-     * 編集モーダルを開くためにURLを更新します。
-     */
-    public function edit(int $taskId): void
-    {
-        $this->editTaskId = $taskId;
-        $this->createTask = self::OFF;
-        $this->dispatch('open-task-modal', taskId: $taskId);
+        $this->loadTasks();
     }
 
     /**
@@ -129,36 +85,9 @@ class TodoList extends Component
         $this->loadTasks();
     }
 
-    /**
-     * モーダルが閉じたイベントをリッスンし、URLを更新します。
-     */
-    #[On('task-modal-closed')]
-    public function closeModal(): void
-    {
-        $queryParams = $this->buildQueryParams();
-        $this->reset(['createTask', 'editTaskId']);
-        $this->redirect(
-            route('todos.index', $queryParams),
-            navigate: true
-        );
-    }
-
-    /**
-     * URLクエリパラメータを構築します
-     */
-    private function buildQueryParams(): array
-    {
-        if ($this->priority === '' || $this->isFiltered === self::OFF) {
-            return [];
-        }
-        return [
-            'filtered' => self::ON,
-            'priority' => $this->priority,
-        ];
-    }
     public function render()
     {
-        return view('livewire.todo-list', [
+        return view('livewire.todo-list')->with([
             'tasks' => $this->tasks
         ]);
     }

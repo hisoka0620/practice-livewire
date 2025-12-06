@@ -5,7 +5,6 @@ namespace App\Livewire;
 use App\Livewire\Forms\TaskForm;
 use App\Models\Task;
 use Livewire\Attributes\On;
-use Livewire\Attributes\Url;
 use Livewire\Component;
 
 class TaskModal extends Component
@@ -51,8 +50,7 @@ class TaskModal extends Component
 
     public function close(): void
     {
-        $this->reset();
-        $this->dispatch('task-modal-closed');
+        $this->reset(['show', 'task', 'form']);
     }
 
     public function render()
