@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use App\Models\Task;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Url;
@@ -10,79 +11,84 @@ use Livewire\Component;
 
 class TodoList extends Component
 {
-    #[Url(history: true, except: null)]
-    public ?bool $create = null;
+    public Collection $tasks;
 
-    #[Url(as: 'edit', except: null)]
-    public ?int $editTaskId = null;
+    #[Url(except: '')]
+    public string $priority = '';
 
     /**
-     * 新規作成モーダルを開くためにURLを更新します。
-     * メソッド名はプロパティと競合するため変更しています。
+     * コンポーネントの初期化時にタスクを読み込みます
      */
-    public function openCreateModal(): void
+    public function mount(): void
     {
-        $this->create = true;
-        $this->editTaskId = null;
-        $this->dispatch('open-task-modal');
+        $this->loadTasks();
     }
 
-    public function toggleComplete($id)
+    /**
+     * タスクを取得するメソッド
+     */
+    private function loadTasks(): void
     {
-        $task = Task::findOrFail($id);
-        $this->authorize('update', $task);
-        if ($task->is_completed === 0) {
-            $task->is_completed = 1;
-        } else {
-            $task->is_completed = 0;
-        }
+        $query = Auth::user()
+            ->tasks()
+            ->when(
+                $this->priority,
+                fn($query) => $query->where('priority', $this->priority)
+            )
+            ->latest();
+
+        $this->tasks = $query->get();
+    }
+
+    /**
+     * 優先度の更新時にフィルター状態を更新します
+     */
+    public function updatedPriority(string $value): void
+    {
+        $this->loadTasks();
+    }
+
+    /**
+     * タスクの完了状態を切り替えます。
+     */
+    public function toggleComplete(int $taskId): void
+    {
+        $task = $this->findAndAuthorizeTask($taskId, 'update');
+        $task->is_completed = !$task->is_completed;
         $task->save();
-    }
-
-    /**
-     * 編集モーダルを開くためにURLを更新します。
-     */
-    public function edit($id)
-    {
-        $this->editTaskId = $id;
-        $this->create = null;
-        $this->dispatch('open-task-modal', taskId: $id);
+        $this->loadTasks();
     }
 
     /**
      * タスクを削除します。
      */
-    public function delete($id)
+    public function delete(int $taskId): void
     {
-        $task = Task::findOrFail($id);
-
-        $this->authorize('delete', $task);
-
+        $task = $this->findAndAuthorizeTask($taskId, 'delete');
         $task->delete();
+        $this->loadTasks();
+    }
+
+    private function findAndAuthorizeTask(int $taskId, string $ability): Task
+    {
+        $task = Task::findOrFail($taskId);
+        $this->authorize($ability, $task);
+        return $task;
     }
 
     /**
-     * 'task-saved' イベントをリッスンし、コンポーネントを再描画します。
+     * タスク保存後の更新処理
      */
     #[On('task-saved')]
-    public function refresh()
+    public function refresh(): void
     {
-        // This method intentionally left blank.
-    }
-
-    /**
-     * モーダルが閉じたイベントをリッスンし、URLを更新します。
-     */
-    #[On('task-modal-closed')]
-    public function closeModal()
-    {
-        $this->create = null;
-        $this->editTaskId = null;
-        $this->redirect(route('todos.index'), navigate: true);
+        $this->loadTasks();
     }
 
     public function render()
     {
-        return view('livewire.todo-list')->with(['tasks' => Auth::user()->tasks()->latest()->get()]);
+        return view('livewire.todo-list')->with([
+            'tasks' => $this->tasks
+        ]);
     }
 }

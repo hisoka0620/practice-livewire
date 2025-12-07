@@ -1,41 +1,36 @@
 <div>
-    <div class="bg-white p-4 mb-3 rounded">
+    <div class="mb-3 rounded bg-white p-4">
         <div class="flex flex-col">
             <div>
-                <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <div class="grid grid-cols-1 gap-4 md:grid-cols-5">
                     <x-todos.task-item heading="Title">
                         {{ $task->title }}
                     </x-todos.task-item>
                     <x-todos.task-item heading="Description" class="text-ellipsis">
                         {{ $task->description }}
                     </x-todos.task-item>
-                    <x-todos.task-item heading="is_completed">
-                        {{ $task->is_completed === 0 ? 'uncomplete' : 'complete' }}
-                    </x-todos.task-item>
-                    <x-todos.task-item heading="created_at">
-                        {{ $task->created_at }}
-                    </x-todos.task-item>
-                    <x-todos.task-item heading="updated_at">
-                        {{ $task->updated_at }}
+                    <x-todos.task-item heading="Priority">
+                        {{ ucfirst($task->priority) }}
                     </x-todos.task-item>
                 </div>
             </div>
-            <div class="flex flex-col md:flex-row md:justify-end mt-4 gap-2">
+            <div class="mt-4 flex flex-col gap-2 md:flex-row md:justify-end">
                 <div>
-                    @if($task->is_completed === 0)
-                    <flux:button wire:click="toggleComplete({{ $task->id }})" icon="check-circle" variant="primary"
-                        color="blue" class="w-full md:w-auto">Complete
-                    </flux:button>
+                    @if ($task->is_completed === 0)
+                        <flux:button wire:click="toggleComplete({{ $task->id }})" icon="check-circle"
+                            variant="primary" color="blue" class="w-full md:w-auto">Complete
+                        </flux:button>
                     @else
-                    <flux:button wire:click="toggleComplete({{ $task->id }})" icon="arrow-path"
-                        class="bg-zinc-600! hover:bg-zinc-500! w-full md:w-auto">Undo
-                        Complete
-                    </flux:button>
+                        <flux:button wire:click="toggleComplete({{ $task->id }})" icon="arrow-path"
+                            class="bg-zinc-600! hover:bg-zinc-500! w-full md:w-auto">Undo
+                            Complete
+                        </flux:button>
                     @endif
                 </div>
                 <div class="flex flex-row gap-2">
-                    <flux:button wire:click="edit({{ $task->id }})" icon="pencil" variant="primary" color="green"
-                        class="w-full md:w-auto">Edit
+                    <flux:button
+                        wire:click="$dispatchTo('task-modal', 'open-task-modal', { taskId: {{ $task->id }} })"
+                        icon="pencil" variant="primary" color="green" class="w-full md:w-auto">Edit
                     </flux:button>
                     <flux:button wire:click="delete({{ $task->id }})" wire:confirm="Are you sure?" icon="trash"
                         variant="primary" color="red" class="w-full md:w-auto">Delete</flux:button>
