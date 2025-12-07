@@ -6,12 +6,25 @@ use App\Livewire\Forms\TaskForm;
 use App\Models\Task;
 use Livewire\Attributes\On;
 use Livewire\Component;
+use Livewire\Attributes\Url;
 
 class TaskModal extends Component
 {
     public TaskForm $form;
     public ?Task $task = null;
     public bool $show = false;
+
+    #[Url(as: 'create', except: 0)]
+    public int $createTask = 0;
+
+    #[Url(as: 'edit', except: 0)]
+    public int $editTaskId = 0;
+
+    public function mount(): void
+    {
+        if($this->createTask === 1) $this->open();
+        if($this->editTaskId) $this->open($this->editTaskId);
+    }
 
     #[On('open-task-modal')]
     public function open(?int $taskId = null): void
@@ -22,8 +35,10 @@ class TaskModal extends Component
         if ($taskId) {
             $this->task = Task::findOrFail($taskId);
             $this->form->setTask($this->task);
+            $this->editTaskId = $taskId;
         } else {
             $this->task = null;
+            $this->createTask = 1;
         }
 
         $this->show = true;
@@ -50,7 +65,7 @@ class TaskModal extends Component
 
     public function close(): void
     {
-        $this->reset(['show', 'task', 'form']);
+        $this->reset();
     }
 
     public function render()

@@ -22,10 +22,10 @@
     </div>
     <livewire:task-modal />
     @if ($tasks->isEmpty())
-        <p class="text-white">No tasks found.</p>
+    <p class="text-white">No tasks found.</p>
     @else
-        @foreach ($tasks as $task)
-            <x-todos.task :$task :key="$task->id" />
-        @endforeach
+    @foreach ($tasks as $task)
+    <x-todos.task :$task :key="$task->id" />
+    @endforeach
     @endif
 </div>
