@@ -16,6 +16,9 @@ class TodoList extends Component
     #[Url(except: '')]
     public string $priority = '';
 
+    #[Url(except: '')]
+    public string $search = '';
+
     /**
      * コンポーネントの初期化時にタスクを読み込みます
      */
@@ -25,25 +28,44 @@ class TodoList extends Component
     }
 
     /**
-     * タスクを取得するメソッド
+     * タスクのベースクエリを構築
      */
-    private function loadTasks(): void
+    private function buildTaskQuery()
     {
-        $query = Auth::user()
+        return Auth::user()
             ->tasks()
             ->when(
                 $this->priority,
                 fn($query) => $query->where('priority', $this->priority)
             )
+            ->when(
+                filled($this->search),
+                fn($query) => $query->whereAny(
+                    ['title', 'description', 'priority'],
+                    'like',
+                    '%' . $this->search . '%'
+                )
+            )
             ->latest();
+    }
 
-        $this->tasks = $query->get();
+    /**
+     * タスク取得メソッド
+     */
+    private function loadTasks(): void
+    {
+        $this->tasks = $this->buildTaskQuery()->get();
+    }
+
+    public function updatedSearch(): void
+    {
+        $this->loadTasks();
     }
 
     /**
      * 優先度の更新時にフィルター状態を更新します
      */
-    public function updatedPriority(string $value): void
+    public function updatedPriority(): void
     {
         $this->loadTasks();
     }
