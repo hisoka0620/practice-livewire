@@ -2,7 +2,7 @@
     <flux:heading size="xl" level="1" class="mb-3">
         TodoList</flux:heading>
     <flux:separator variant="subtle" class="mb-6" />
-    <div id="header" class="mb-6 flex items-center justify-between">
+    <div id="header" class="mb-3 flex items-center justify-between">
         <flux:button wire:click="$dispatchTo('task-modal', 'open-task-modal')" icon="plus-circle">Create Task
         </flux:button>
         <div class="flex justify-end gap-2">
@@ -20,6 +20,7 @@
             </form>
         </div>
     </div>
+    <flux:input wire:model.live="search" class="mb-3" icon="magnifying-glass" placeholder="Search tasks" clearable/>
     <livewire:task-modal />
     @if ($tasks->isEmpty())
     <p class="text-white">No tasks found.</p>
