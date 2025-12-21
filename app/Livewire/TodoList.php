@@ -27,6 +27,27 @@ class TodoList extends Component
         $this->loadTasks();
     }
 
+    public function highlight(string $text): string
+    {
+        if (blank(mb_convert_kana($this->search, 's'))) {
+            return e($text);
+        }
+
+        $words = preg_split('/[\s　]+/u', trim($this->search), -1, PREG_SPLIT_NO_EMPTY);
+
+        $escapedText = e($text);
+
+        $keyword = implode('|', array_map(fn($word) => preg_quote($word, '/'), $words));
+
+        $highlighted = preg_replace(
+            '/' . e($keyword) . '/iu',
+            '<mark class="bg-yellow-200 text-yellow-900 rounded-sm px-0.5">$0</mark>',
+            $escapedText
+        );
+
+        return $highlighted;
+    }
+
     /**
      * タスクのベースクエリを構築
      */
@@ -39,11 +60,11 @@ class TodoList extends Component
                 fn($query) => $query->where('priority', $this->priority)
             )
             ->when(
-                filled($this->search),
+                filled(mb_convert_kana($this->search, 's')),
                 fn($query) => $query->whereAny(
                     ['title', 'description', 'priority'],
                     'like',
-                    '%' . $this->search . '%'
+                    '%' . trim(mb_convert_kana($this->search, 's')) . '%'
                 )
             )
             ->latest();
