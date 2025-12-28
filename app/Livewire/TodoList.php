@@ -19,6 +19,9 @@ class TodoList extends Component
     #[Url(except: '')]
     public string $search = '';
 
+    #[Url(except: '', as: 'c')]
+    public string $completed = '';
+
     /**
      * コンポーネントの初期化時にタスクを読み込みます
      */
@@ -27,6 +30,9 @@ class TodoList extends Component
         $this->loadTasks();
     }
 
+    /**
+     * テキスト内の検索キーワードをハイライト表示します
+     */
     public function highlight(string $text): string
     {
         if (blank(mb_convert_kana($this->search, 's'))) {
@@ -53,20 +59,14 @@ class TodoList extends Component
      */
     private function buildTaskQuery()
     {
-        return Auth::user()
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+
+        return $user
             ->tasks()
-            ->when(
-                $this->priority,
-                fn($query) => $query->where('priority', $this->priority)
-            )
-            ->when(
-                filled(mb_convert_kana($this->search, 's')),
-                fn($query) => $query->whereAny(
-                    ['title', 'description', 'priority'],
-                    'like',
-                    '%' . trim(mb_convert_kana($this->search, 's')) . '%'
-                )
-            )
+            ->filterBySearch($this->search)
+            ->filterByPriority($this->priority)
+            ->filterByCompleted($this->completed)
             ->latest();
     }
 
@@ -78,6 +78,9 @@ class TodoList extends Component
         $this->tasks = $this->buildTaskQuery()->get();
     }
 
+    /**
+     * 検索キーワードの更新時にフィルター状態を更新します
+     */
     public function updatedSearch(): void
     {
         $this->loadTasks();
@@ -87,6 +90,14 @@ class TodoList extends Component
      * 優先度の更新時にフィルター状態を更新します
      */
     public function updatedPriority(): void
+    {
+        $this->loadTasks();
+    }
+
+    /**
+     * 完了状態の更新時にフィルター状態を更新します
+     */
+    public function updatedCompleted(): void
     {
         $this->loadTasks();
     }
@@ -112,6 +123,9 @@ class TodoList extends Component
         $this->loadTasks();
     }
 
+    /**
+     * タスクを取得し、指定された権限を確認します。
+     */
     private function findAndAuthorizeTask(int $taskId, string $ability): Task
     {
         $task = Task::findOrFail($taskId);

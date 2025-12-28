@@ -15,7 +15,7 @@ class TaskForm extends Form
 
     #[Validate('required|string|max:255|regex:/[^\s　]/u')]
     public $description;
-    
+
     #[Validate('required|in:low,medium,high')]
     public string $priority = 'medium';
 
@@ -30,7 +30,10 @@ class TaskForm extends Form
     public function create()
     {
         $this->validate();
-        auth()->user()->tasks()->create($this->pull());
+        
+        /** @var \App\Models\User $user */
+        $user = auth('web')->user();
+        $user->tasks()->create($this->pull());
     }
 
     public function update()
