@@ -6,15 +6,47 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Support\Carbon;
 
 class Task extends Model
 {
     protected $fillable = [
         'title',
         'description',
+        'priority',
         'is_completed',
-        'priority'
+        'deadline',
     ];
+
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'deadline' => 'datetime:Y-m-d H:i:s',
+        ];
+    }
+
+    public function deadline(): Attribute
+    {
+        return Attribute::make(
+            set: function (string $value) {
+                if (empty($value)) {
+                    return null;
+                }
+
+                try {
+                    return Carbon::parse($value);
+                } catch (\Throwable $e) {
+                    return null;
+                }
+            }
+        );
+    }
 
     public function user(): BelongsTo
     {

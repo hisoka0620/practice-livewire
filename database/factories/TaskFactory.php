@@ -19,8 +19,9 @@ class TaskFactory extends Factory
         return [
             'title' => fake()->sentence(),
             'description' => fake()->paragraph(),
-            'is_completed' => fake()->boolean(),
             'priority' => fake()->randomElement(['low', 'medium', 'high']),
+            'deadline' => fake()->dateTimeBetween('-6 month', '+6 month'),
+            'is_completed' => fake()->boolean(),
         ];
     }
 }
