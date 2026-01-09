@@ -13,7 +13,7 @@ Route::get('/counter', Counter::class)
     ->name('counter');
 
 Route::get('/todo-list', TodoList::class)
-    ->name('todos.index');
+    ->name('todos.index')->middleware('auth');
 
 Route::view('dashboard', 'dashboard')
     ->middleware(['auth', 'verified'])

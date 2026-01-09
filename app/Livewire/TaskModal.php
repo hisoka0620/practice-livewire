@@ -44,7 +44,7 @@ class TaskModal extends Component
         $this->show = true;
     }
 
-    public function save()
+    public function save(): void
     {
         $this->task ? $this->updateTask() : $this->createTask();
         $this->dispatch('task-saved');

@@ -33,7 +33,7 @@ class TodoList extends Component
     /**
      * テキスト内の検索キーワードをハイライト表示します
      */
-    public function highlight(string $text): string
+    public function highlight(?string $text): string
     {
         if (blank(mb_convert_kana($this->search, 's'))) {
             return e($text);

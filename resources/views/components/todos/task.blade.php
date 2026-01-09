@@ -12,6 +12,9 @@
                     <x-todos.task-item heading="Priority">
                         {!! ucfirst($this->highlight($task->priority)) !!}
                     </x-todos.task-item>
+                    <x-todos.task-item heading="Deadline">
+                        {{ $task->deadline ?? 'None' }}
+                    </x-todos.task-item>
                 </div>
             </div>
             <div class="mt-4 flex flex-col gap-2 md:flex-row md:justify-end">
