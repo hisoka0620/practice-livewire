@@ -19,7 +19,7 @@ class TaskForm extends Form
     #[Validate('required|in:low,medium,high')]
     public string $priority = 'medium';
 
-    #[Validate('nullable|date_format:Y-m-d\TH:i')]
+    #[Validate('nullable|date')]
     public ?string $deadline;
 
     public function setTask(Task $task): void

@@ -27,24 +27,14 @@ class Task extends Model
     protected function casts(): array
     {
         return [
-            'deadline' => 'datetime:Y-m-d H:i:s',
+            'deadline' => 'datetime',
         ];
     }
 
-    public function deadline(): Attribute
+    protected function deadline(): Attribute
     {
         return Attribute::make(
-            set: function (string $value) {
-                if (empty($value)) {
-                    return null;
-                }
-
-                try {
-                    return Carbon::parse($value);
-                } catch (\Throwable $e) {
-                    return null;
-                }
-            }
+            set: fn($value) => blank($value) ? null : $value,
         );
     }
 

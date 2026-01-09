@@ -12,9 +12,10 @@
                     </flux:text>
                 </div>
                 <flux:input wire:model.blur="form.title" label="Title" placeholder="Enter Title" />
-                <flux:textarea wire:model="form.description" label="Description" placeholder="Enter description." />
+                <flux:textarea wire:model.blur="form.description" label="Description"
+                    placeholder="Enter description." />
                 <div class="w-fit">
-                    <flux:select wire:model="form.priority" label="Priority" placeholder="Select priority">
+                    <flux:select wire:model.blur="form.priority" label="Priority" placeholder="Select priority">
                         <flux:select.option value="low">
                             Low</flux:select.option>
                         <flux:select.option value="medium">
@@ -24,7 +25,7 @@
                     </flux:select>
                 </div>
                 <div>
-                    <flux:input type="datetime-local" wire:model="form.deadline" label="Deadline" />
+                    <flux:input type="datetime-local" wire:model.blur="form.deadline" label="Deadline" />
                 </div>
                 <div class="flex space-x-2">
                     <flux:spacer />
