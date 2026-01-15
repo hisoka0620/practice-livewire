@@ -21,23 +21,23 @@
         </div>
     </div>
     <flux:button.group class="mb-3">
-        @foreach([
+        @foreach ([
         '' => 'All',
         't' => 'Completed',
         'f' => 'Incomplete',
-        ] as $value => $label)
-        <flux:button wire:click="$set('completed', '{{ $value }}')" size="sm"
-            :variant="$completed === $value ? 'filled' : 'ghost'" :class="$completed === $value ? 'underline' : '' ">
-            {{ $label }}</flux:button>
+    ] as $value => $label)
+            <flux:button wire:click="$set('completed', '{{ $value }}')" size="sm"
+                :variant="$completed === $value ? 'filled' : 'ghost'" :class="$completed === $value ? 'underline' : ''">
+                {{ $label }}</flux:button>
         @endforeach
     </flux:button.group>
     <flux:input wire:model.live="search" class="mb-3" icon="magnifying-glass" placeholder="Search tasks" clearable />
     <livewire:task-modal />
     @if ($tasks->isEmpty())
-    <p class="text-white">No tasks found.</p>
+        <p class="text-white">No tasks found.</p>
     @else
-    @foreach ($tasks as $task)
-    <x-todos.task :$task :key="$task->id" />
-    @endforeach
+        @foreach ($tasks as $task)
+            <x-todos.task :$task :key="$task->id" />
+        @endforeach
     @endif
 </div>
