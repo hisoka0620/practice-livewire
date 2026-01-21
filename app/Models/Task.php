@@ -102,12 +102,19 @@ class Task extends Model
     }
 
     #[Scope]
-    protected function filterByCompleted(Builder $query, string $completed = ''): void
+    protected function filterByStatus(Builder $query, string $taskStatus = ''): void
     {
-        match ($completed) {
-            't' => $query->where('is_completed', true),
-            'f' => $query->where('is_completed', false),
+        match ($taskStatus) {
+            'completed' => $query->where('is_completed', true),
+            'incomplete' => $query->where('is_completed', false),
+            'expired' => $query->where('deadline', '<', Carbon::now()),
             default => $query,
         };
+    }
+
+    #[Scope]
+    protected function sortByDeadline(Builder $query, string $value = ''): void
+    {
+        $value ? $query->orderBy('deadline', $value) : $query;
     }
 }
