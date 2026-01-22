@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Url;
 use Livewire\Component;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class TodoList extends Component
 {
@@ -19,8 +20,11 @@ class TodoList extends Component
     #[Url(except: '')]
     public string $search = '';
 
-    #[Url(except: '', as: 'c')]
-    public string $completed = '';
+    #[Url(except: '', as: 'status')]
+    public string $taskStatus = '';
+
+    #[Url(except: '')]
+    public string $sort = '';
 
     /**
      * コンポーネントの初期化時にタスクを読み込みます
@@ -55,9 +59,22 @@ class TodoList extends Component
     }
 
     /**
+     * タスクの状態オプションを取得します
+     */
+    public function taskStatusOptions(): array
+    {
+        return [
+            '' => 'All',
+            'completed' => 'Completed',
+            'incomplete' => 'Incomplete',
+            'expired' => 'Expired',
+        ];
+    }
+
+    /**
      * タスクのベースクエリを構築
      */
-    private function buildTaskQuery()
+    private function buildTaskQuery(): hasMany
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
@@ -66,7 +83,8 @@ class TodoList extends Component
             ->tasks()
             ->filterBySearch($this->search)
             ->filterByPriority($this->priority)
-            ->filterByCompleted($this->completed)
+            ->filterByStatus($this->taskStatus)
+            ->sortByDeadline($this->sort)
             ->latest();
     }
 
@@ -97,7 +115,12 @@ class TodoList extends Component
     /**
      * 完了状態の更新時にフィルター状態を更新します
      */
-    public function updatedCompleted(): void
+    public function updatedTaskStatus(): void
+    {
+        $this->loadTasks();
+    }
+
+    public function updatedSort(): void
     {
         $this->loadTasks();
     }
