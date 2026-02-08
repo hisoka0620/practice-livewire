@@ -11,4 +11,7 @@
 <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />
 
 @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+<meta name="csrf-token" content="{{ csrf_token() }}">
+<meta name="vapid-public-key" content="{{ config('webpush.vapid.public_key') }}">
 @fluxAppearance
