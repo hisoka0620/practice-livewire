@@ -13,8 +13,7 @@ class SendTaskRemindersTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** @test */
-    public function it_sends_push_notifications_to_users_with_due_tasks()
+    public function test_it_sends_push_notifications_to_users_with_due_tasks()
     {
         Notification::fake();
 
@@ -27,6 +26,7 @@ class SendTaskRemindersTest extends TestCase
         Task::factory()->for($user)->create([
             'deadline' => now(),
             'is_completed' => false,
+            'deadline_notified_at' => null,
         ]);
 
         $this->artisan('tasks:send-reminders')->assertExitCode(0);

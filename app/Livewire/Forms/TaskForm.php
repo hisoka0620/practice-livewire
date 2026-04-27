@@ -22,6 +22,8 @@ class TaskForm extends Form
     #[Validate('nullable|date')]
     public ?string $deadline;
 
+    private const array TASK_FIELDS = ['title', 'description', 'priority', 'deadline'];
+
     public function setTask(Task $task): void
     {
         $this->task = $task;
@@ -37,12 +39,21 @@ class TaskForm extends Form
 
         /** @var \App\Models\User $user */
         $user = auth('web')->user();
-        $user->tasks()->create($this->pull());
+        $user->tasks()->create($this->pull(self::TASK_FIELDS));
     }
 
     public function update(): void
     {
         $this->validate();
-        $this->task->update($this->pull());
+
+        $data = $this->pull(self::TASK_FIELDS);
+
+        $this->task->fill($data);
+
+        if ($this->task->isDirty('deadline')) {
+            $this->task->deadline_notified_at = null;
+        }
+
+        $this->task->save();
     }
 }

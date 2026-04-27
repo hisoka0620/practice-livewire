@@ -52,9 +52,11 @@ class TaskReminderNotification extends Notification
 
         return (new WebPushMessage)
             ->title('Task Reminder')
+            ->icon('/favicon.ico')
             ->body($body)
             ->action('View Tasks', 'view_tasks')
-            ->data(['url' => url('/todo-list'), 'due_count' => $this->dueCount]);
+            ->data(['url' => url('/todo-list'), 'due_count' => $this->dueCount])
+            ->options(['TTL' => 86400]); // 24 hours in seconds
     }
 
     /**

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -11,6 +12,8 @@ use Illuminate\Support\Carbon;
 
 class Task extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'title',
         'description',
@@ -51,7 +54,7 @@ class Task extends Model
                 $deadline = $this->deadline;
                 $now = Carbon::now();
                 $tomorrow = $now->copy()->addDay();
-                return match(true){
+                return match (true) {
                     $deadline?->isPast() => 'overdue',
                     $deadline?->between($now, $tomorrow) => 'due_soon',
                     default => null,
