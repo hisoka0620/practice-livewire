@@ -9,9 +9,16 @@ use Illuminate\Notifications\Notification;
 use NotificationChannels\WebPush\WebPushChannel;
 use NotificationChannels\WebPush\WebPushMessage;
 
-class TaskReminderNotification extends Notification
+class TaskReminderNotification extends Notification implements ShouldQueue
 {
     use Queueable;
+
+    /**
+     * The number of times the notification may be attempted.
+     *
+     * @var int
+     */
+    public $tries = 3;
 
     protected int $dueCount;
 
@@ -34,14 +41,23 @@ class TaskReminderNotification extends Notification
     }
 
     /**
-     * Get the mail representation of the notification.
+     * Calculate the number of seconds to wait before retrying the notification.
      */
-    public function toMail(object $notifiable): MailMessage
+    public function backoff(): array
     {
-        return (new MailMessage)
-            ->line('The introduction to the notification.')
-            ->action('Notification Action', url('/'))
-            ->line('Thank you for using our application!');
+        return [60, 300, 900]; // 1 minute, 5 minutes, 15 minutes
+    }
+
+    /**
+     * Determine which queues should be used for each notification channel.
+     *
+     * @return array<string, string>
+     */
+    public function viaQueues(): array
+    {
+        return [
+            WebPushChannel::class => 'push-notifications',
+        ];
     }
 
     public function toWebPush(object $notifiable, object $notification): WebPushMessage
@@ -57,17 +73,5 @@ class TaskReminderNotification extends Notification
             ->action('View Tasks', 'view_tasks')
             ->data(['url' => url('/todo-list'), 'due_count' => $this->dueCount])
             ->options(['TTL' => 86400]); // 24 hours in seconds
-    }
-
-    /**
-     * Get the array representation of the notification.
-     *
-     * @return array<string, mixed>
-     */
-    public function toArray(object $notifiable): array
-    {
-        return [
-            //
-        ];
     }
 }
