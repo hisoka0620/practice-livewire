@@ -29,6 +29,9 @@ self.addEventListener("push", function (event) {
 self.addEventListener("notificationclick", function (event) {
     event.notification.close();
 
+        // dismiss アクションは何もしない
+    if (event.action === "dismiss") return;
+
     const notificationUrl = event.notification.data?.url || "/todo-list";
     const urlToOpen = new URL(notificationUrl, self.location.origin).href;
 
@@ -37,12 +40,21 @@ self.addEventListener("notificationclick", function (event) {
             .matchAll({ type: "window", includeUncontrolled: true })
             .then((windowClients) => {
                 for (const client of windowClients) {
-                    if (new URL(client.url).href === urlToOpen) {
-                        return client.focus();
+                    try {
+                        if (
+                            new URL(client.url).href === urlToOpen &&
+                            "focus" in client
+                        ) {
+                            return client.focus();
+                        }
+                    } catch {
+                        // chrome-extension:// 等は無視
                     }
                 }
 
-                return clients.openWindow(urlToOpen);
+                if (clients.openWindow) {
+                    return clients.openWindow(urlToOpen);
+                }
             }),
     );
 });
