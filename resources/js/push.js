@@ -21,7 +21,7 @@ function getVapidPublicKey() {
 }
 
 async function sendSubscriptionToBackend(subscription) {
-    const res = await fetch("/push/subscribe", {
+    const res = await fetch("/push/subscriptions", {
         method: "POST",
         credentials: "same-origin",
         headers: {
@@ -34,7 +34,7 @@ async function sendSubscriptionToBackend(subscription) {
 }
 
 async function deleteSubscriptionFromBackend(endpoint) {
-    const res = await fetch("/push/unsubscribe", {
+    const res = await fetch("/push/subscriptions", {
         method: "DELETE",
         credentials: "same-origin",
         headers: {
@@ -50,7 +50,12 @@ async function deleteSubscriptionFromBackend(endpoint) {
 // Subscribe
 // =============================
 
-async function registerServiceWorkerAndSubscribe() {
+/**
+ * Service Worker を登録し、プッシュ通知を購読する。
+ * 設定画面のボタンから明示的に呼ぶ想定。
+ * ブラウザの許可ダイアログもここで出る。
+ */
+export async function subscribePush() {
     if (!("serviceWorker" in navigator)) return;
 
     const vapidPublicKey = getVapidPublicKey();
@@ -69,10 +74,10 @@ async function registerServiceWorkerAndSubscribe() {
         }
 
         // 既存サブスクリプションがあればそのまま使う（重複登録防止）
-        const existingSubscription = await registration.pushManager.getSubscription();
+        const existingSubscription =
+            await registration.pushManager.getSubscription();
         if (existingSubscription) {
             await sendSubscriptionToBackend(existingSubscription);
-
             return;
         }
 
@@ -84,11 +89,12 @@ async function registerServiceWorkerAndSubscribe() {
         await sendSubscriptionToBackend(subscription);
     } catch (err) {
         console.error("Push subscription failed:", err);
+        throw err;
     }
 }
 
 // =============================
-// Unsubscribe（通知オフ・ログアウト時に呼ぶ）
+// Unsubscribe（設定画面・ログアウト時に呼ぶ）
 // =============================
 
 export async function unsubscribePush() {
@@ -102,18 +108,33 @@ export async function unsubscribePush() {
         await subscription.unsubscribe();
     } catch (err) {
         console.error("Push unsubscribe failed:", err);
+        throw err;
     }
 }
 
 // =============================
-// Auto-run
+// Auto-run（ログイン済みページで既存購読をバックエンドと同期するだけ）
 // =============================
 
+async function syncExistingSubscription() {
+    if (!("serviceWorker" in navigator)) return;
+    if (Notification.permission !== "granted") return;
+
+    try {
+        const registration = await navigator.serviceWorker.ready;
+
+        const subscription = await registration.pushManager.getSubscription();
+        if (subscription) {
+            // サーバー側でレコードが消えていた場合の再登録
+            await sendSubscriptionToBackend(subscription);
+        }
+    } catch (err) {
+        console.error("Push sync failed:", err);
+    }
+}
+
 if (document.readyState === "loading") {
-    document.addEventListener(
-        "DOMContentLoaded",
-        registerServiceWorkerAndSubscribe,
-    );
+    document.addEventListener("DOMContentLoaded", syncExistingSubscription);
 } else {
-    registerServiceWorkerAndSubscribe();
+    syncExistingSubscription();
 }
