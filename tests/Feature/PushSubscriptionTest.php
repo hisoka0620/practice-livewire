@@ -23,7 +23,7 @@ class PushSubscriptionTest extends TestCase
     ];
 
     $this->actingAs($user)
-      ->postJson(route('push.subscribe'), $payload)
+      ->postJson(route('push.subscriptions.store'), $payload)
       ->assertStatus(201);
 
     $this->assertDatabaseHas('push_subscriptions', [
