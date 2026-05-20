@@ -1,5 +1,5 @@
 <div class="mx-auto max-w-6xl px-4">
-
+    <livewire:push-notification-banner />
     {{-- Modal --}}
     <livewire:task-modal />
 
