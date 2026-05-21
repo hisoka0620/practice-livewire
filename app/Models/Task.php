@@ -79,6 +79,16 @@ class Task extends Model
         );
     }
 
+    /**
+     * Get the human readable deadline diff
+     */
+    protected function deadlineHumanDiff(): Attribute
+    {
+        return Attribute::make(
+            get: fn(mixed $value, array $attributes) => $this->deadline?->diffForHumans(),
+        );
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
@@ -110,7 +120,7 @@ class Task extends Model
         match ($taskStatus) {
             'completed' => $query->where('is_completed', true),
             'incomplete' => $query->where('is_completed', false),
-            'expired' => $query->where('deadline', '<', Carbon::now()),
+            'expired' => $query->where('is_completed', false)->where('deadline', '<', Carbon::now()),
             default => $query,
         };
     }

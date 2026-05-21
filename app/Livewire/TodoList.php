@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class TodoList extends Component
 {
     public Collection $tasks;
+    public int $overdueTasksCount = 0;
 
     #[Url(except: '')]
     public string $priority = '';
@@ -93,7 +94,12 @@ class TodoList extends Component
      */
     private function loadTasks(): void
     {
+        $user = Auth::user();
+
         $this->tasks = $this->buildTaskQuery()->get();
+        $this->overdueTasksCount = $user
+            ? $user->tasks()->where('is_completed', false)->where('deadline', '<', now())->count()
+            : 0;
     }
 
     /**

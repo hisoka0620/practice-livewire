@@ -38,6 +38,19 @@
                     @endforeach
                 </flux:button.group>
             </div>
+
+            @if ($overdueTasksCount > 0 && $taskStatus !== 'expired')
+                <div class="rounded-md border border-red-500/30 bg-red-950/70 px-4 py-3 text-sm text-red-100">
+                    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <p>
+                            You have {{ $overdueTasksCount }} overdue task{{ $overdueTasksCount === 1 ? '' : 's' }}. Please review them with priority.
+                        </p>
+                        <flux:button size="sm" color="red" wire:click="$set('taskStatus','expired')">
+                            Show Expired Tasks
+                        </flux:button>
+                    </div>
+                </div>
+            @endif
         </div>
 
         {{-- ================= List Header ================= --}}
