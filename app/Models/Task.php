@@ -31,7 +31,13 @@ class Task extends Model
     {
         return [
             'deadline' => 'datetime',
+            'is_completed' => 'boolean',
         ];
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 
     /**
@@ -55,6 +61,7 @@ class Task extends Model
                 $now = Carbon::now();
                 $tomorrow = $now->copy()->addDay();
                 return match (true) {
+                    $this->is_completed => null,
                     $deadline?->isPast() => 'overdue',
                     $deadline?->between($now, $tomorrow) => 'due_soon',
                     default => null,
@@ -89,9 +96,16 @@ class Task extends Model
         );
     }
 
-    public function user(): BelongsTo
+    /**
+     * Get the visual status attribute
+     */
+    protected function visualStatus(): Attribute
     {
-        return $this->belongsTo(User::class);
+        return Attribute::make(
+            get: fn() => $this->is_completed
+                ? 'completed'
+                : $this->deadline_status
+        );
     }
 
     #[Scope]

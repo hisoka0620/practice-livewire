@@ -1,8 +1,12 @@
+@php
+    $visualStatus = $task->visual_status;
+@endphp
+
 <div @class([
     'rounded-md border bg-zinc-800 px-4 py-3 transition hover:bg-zinc-700',
-    'border-red-400/40 bg-red-950/10' => $task->deadline_status === 'overdue',
-    'border-yellow-400/40' => $task->deadline_status === 'due_soon',
-    'opacity-75' => $task->is_completed,
+    'border-red-400/40 bg-red-950/10' => $visualStatus === 'overdue',
+    'border-yellow-400/40' => $visualStatus === 'due_soon',
+    'opacity-75' => $visualStatus === 'completed',
 ])>
     <div class="grid grid-cols-5 items-center gap-2 text-sm">
 
@@ -27,37 +31,45 @@
         <div class="flex flex-col items-center gap-1">
             <span @class([
                 'text-zinc-300',
-                'text-red-300! font-semibold tracking-wide' =>
-                    $task->deadline_status === 'overdue',
+                'text-red-300! font-semibold tracking-wide' => $visualStatus === 'overdue',
                 'text-yellow-300! font-semibold tracking-wide' =>
-                    $task->deadline_status === 'due_soon',
+                    $visualStatus === 'due_soon',
             ])>
                 {{ $task->deadline?->format('Y-m-d H:i') ?? 'No deadline' }}
-                @if ($task->deadline_status === 'overdue' || $task->deadline_status === 'due_soon')
+                @if (in_array($visualStatus, ['overdue', 'due_soon']))
                     <span class="ml-1 text-xs font-medium">
                         ({{ $task->deadline_human_diff }})
                     </span>
                 @endif
             </span>
 
-            @if ($task->deadline_status === 'overdue')
-                <flux:badge size="sm" variant="subtle" color="red">
-                    Overdue
-                </flux:badge>
-            @elseif ($task->deadline_status === 'due_soon')
-                <flux:badge size="sm" variant="subtle" color="yellow">
-                    Due soon
-                </flux:badge>
-            @elseif ($task->is_completed)
-                <flux:badge size="sm" variant="subtle" color="green">
-                    Completed
-                </flux:badge>
-            @endif
+            @switch($visualStatus)
+                @case('overdue')
+                    <flux:badge size="sm" variant="subtle" color="red">
+                        Overdue
+                    </flux:badge>
+                @break
+
+                @case('due_soon')
+                    <flux:badge size="sm" variant="subtle" color="yellow">
+                        Due soon
+                    </flux:badge>
+                @break
+
+                @case('completed')
+                    <flux:badge size="sm" variant="subtle" color="green">
+                        Completed
+                    </flux:badge>
+                @break
+
+                @default
+                    {{-- Default None --}}
+            @endswitch
         </div>
 
         {{-- Actions --}}
         <div class="flex justify-end gap-1 opacity-70 transition hover:opacity-100">
-            @if ($task->is_completed === 0)
+            @if ($visualStatus !== 'completed')
                 <flux:button size="xs" icon="check-circle" variant="ghost"
                     wire:click="toggleComplete({{ $task->id }})" />
             @else
