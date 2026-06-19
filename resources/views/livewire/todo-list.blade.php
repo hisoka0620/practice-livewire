@@ -20,7 +20,7 @@
 
             {{-- Controls --}}
             <div class="flex flex-wrap items-center gap-3">
-                <flux:input wire:model.live="search" icon="magnifying-glass" placeholder="Search tasks..." clearable />
+                <flux:input wire:model.live.debounce.500ms="search" icon="magnifying-glass" placeholder="Search tasks..." clearable />
 
                 <flux:select wire:model.change="priority" class="w-48!">
                     <flux:select.option value="">All priorities</flux:select.option>
@@ -31,11 +31,22 @@
 
                 <flux:button.group>
                     @foreach ($this->taskStatusOptions() as $value => $label)
-                        <flux:button size="sm" wire:click="$set('taskStatus', '{{ $value }}')"
+                        <flux:button size="sm" wire:click="changeTaskStatus('{{ $value }}')"
                             :variant="$taskStatus === $value ? 'filled' : 'ghost'">
                             {{ $label }}
                         </flux:button>
                     @endforeach
+                </flux:button.group>
+
+                <flux:button.group>
+                    <flux:button size="sm" wire:click="$set('view', 'list')"
+                        :variant="$view === 'list' ? 'filled' : 'ghost'">
+                        List
+                    </flux:button>
+                    <flux:button size="sm" wire:click="$set('view', 'calendar')"
+                        :variant="$view === 'calendar' ? 'filled' : 'ghost'">
+                        Calendar
+                    </flux:button>
                 </flux:button.group>
             </div>
 
@@ -43,7 +54,8 @@
                 <div class="rounded-md border border-red-500/30 bg-red-950/70 px-4 py-3 text-sm text-red-100">
                     <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <p>
-                            You have {{ $overdueTasksCount }} overdue task{{ $overdueTasksCount === 1 ? '' : 's' }}. Please review them with priority.
+                            You have {{ $overdueTasksCount }} overdue task{{ $overdueTasksCount === 1 ? '' : 's' }}.
+                            Please review them with priority.
                         </p>
                         <flux:button size="sm" color="red" wire:click="$set('taskStatus','expired')">
                             Show Expired Tasks
@@ -52,9 +64,13 @@
                 </div>
             @endif
         </div>
+    </div>
 
-        {{-- ================= List Header ================= --}}
-        <div
+    {{-- ================= Task List / Calendar ================= --}}
+    @if ($view === 'calendar')
+        <livewire:calendar-view :$search :$priority :$taskStatus :$sort wire:key="calendar-view" />
+    @else
+        <div wire:key="list-view"
             class="mb-2 grid grid-cols-5 gap-2 rounded-md bg-zinc-700 px-4 py-2 text-center text-sm font-semibold text-zinc-300">
             <div>Title</div>
             <div>Description</div>
@@ -74,16 +90,15 @@
             </div>
             <div>Actions</div>
         </div>
-    </div>
 
-    {{-- ================= Task List ================= --}}
-    <div class="mt-2 space-y-2">
-        @if ($tasks->isEmpty())
-            <x-todos.task-not-found />
-        @else
-            @foreach ($tasks as $task)
-                <x-todos.task :$task :key="$task->id" />
-            @endforeach
-        @endif
-    </div>
+        <div class="mt-2 space-y-2">
+            @if ($tasks->isEmpty())
+                <x-todos.task-not-found />
+            @else
+                @foreach ($tasks as $task)
+                    <x-todos.task :$task :key="$task->id" />
+                @endforeach
+            @endif
+        </div>
+    @endif
 </div>

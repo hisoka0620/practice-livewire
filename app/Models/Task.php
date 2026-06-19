@@ -133,7 +133,7 @@ class Task extends Model
     {
         match ($taskStatus) {
             'completed' => $query->where('is_completed', true),
-            'incomplete' => $query->where('is_completed', false),
+            'incomplete' => $query->where('is_completed', false)->where('deadline', '>=', Carbon::now()),
             'expired' => $query->where('is_completed', false)->where('deadline', '<', Carbon::now()),
             default => $query,
         };

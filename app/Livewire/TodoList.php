@@ -16,6 +16,9 @@ class TodoList extends Component
     public int $overdueTasksCount = 0;
 
     #[Url(except: '')]
+    public string $view = 'list';
+
+    #[Url(except: '')]
     public string $priority = '';
 
     #[Url(except: '')]
@@ -73,9 +76,12 @@ class TodoList extends Component
     }
 
     /**
-     * タスクのベースクエリを構築
+     * タスク取得時のベースクエリを構築
+     * 検索キーワード、優先度、ステータス、ソートを適用
+     *
+     * @return HasMany フィルター済みタスククエリ
      */
-    private function buildTaskQuery(): hasMany
+    private function buildTaskQuery(): HasMany
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
@@ -90,7 +96,8 @@ class TodoList extends Component
     }
 
     /**
-     * タスク取得メソッド
+     * タスクを読み込み、カレンダーイベントを生成
+     * タスク更新時に呼ばれ、フロントエンドカレンダーを更新
      */
     private function loadTasks(): void
     {
@@ -107,7 +114,7 @@ class TodoList extends Component
      */
     public function updatedSearch(): void
     {
-        $this->loadTasks();
+        $this->view === 'list' ? $this->loadTasks() : $this->notifyCalendar();
     }
 
     /**
@@ -115,20 +122,42 @@ class TodoList extends Component
      */
     public function updatedPriority(): void
     {
+        $this->view === 'list' ? $this->loadTasks() : $this->notifyCalendar();
+    }
+
+    /**
+     * ソート順の更新時にタスクを再読み込みします
+     */
+    public function updatedSort(): void
+    {
         $this->loadTasks();
     }
 
     /**
-     * 完了状態の更新時にフィルター状態を更新します
+     * 表示モードの更新時にタスクを再読み込みします
      */
-    public function updatedTaskStatus(): void
+    public function updatedView(): void
     {
         $this->loadTasks();
     }
-
-    public function updatedSort(): void
+    
+    /**
+     * タスクの状態を変更します
+     */
+    public function changeTaskStatus(string $status): void
     {
-        $this->loadTasks();
+        $this->taskStatus = $status;
+        $this->view === 'list' ? $this->loadTasks() : $this->notifyCalendar();
+    }
+
+    private function notifyCalendar(): void
+    {
+        $this->dispatch(
+            'calendar-filters-updated',
+            search: $this->search,
+            priority: $this->priority,
+            taskStatus: $this->taskStatus,
+        )->to(CalendarView::class);
     }
 
     /**
