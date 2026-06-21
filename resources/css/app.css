@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "../../vendor/livewire/flux/dist/flux.css";
+@import "./calendar.css";
 
 @source '../views';
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
@@ -69,86 +70,4 @@ select:focus[data-flux-control] {
 
 [x-cloak] {
     display: none !important;
-}
-
-#task-calendar {
-    background: white;
-}
-
-#task-calendar .fc {
-    background: white;
-    color: #0f172a;
-}
-
-#task-calendar .fc .fc-col-header-cell-cushion,
-#task-calendar .fc .fc-daygrid-day-number,
-#task-calendar .fc .fc-daygrid-event-title,
-#task-calendar .fc .fc-timegrid-event-title {
-    color: #0f172a;
-}
-
-#task-calendar .fc .fc-daygrid-day.fc-day-today,
-#task-calendar .fc .fc-timegrid-col .fc-col-header-cell.fc-day-today {
-    background: rgba(56, 189, 248, 0.12);
-}
-
-/* イベント要素全体のマウスカーソルをデフォルトに変更 */
-.fc-event {
-    cursor: default;
-}
-
-/* カレンダーイベントの見やすさ向上 */
-.fc .fc-daygrid-event {
-    padding: 6px 8px;
-    border-radius: 8px;
-    overflow: hidden;
-}
-
-.fc .fc-timegrid-event {
-    padding: 0.35rem 0.5rem;
-    border-radius: 0.75rem;
-}
-
-/* 優先度バッジとイベント内レイアウト */
-.fc-custom-event {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    min-height: 32px;
-    padding: 0 0.125rem;
-}
-
-.fc-priority-dot {
-    width: 0.55rem;
-    height: 0.55rem;
-    border-radius: 9999px;
-    flex-shrink: 0;
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
-}
-
-/* テキスト部 */
-.fc-event-text {
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-}
-
-.fc-event-title {
-    font-size: 0.85rem;
-    font-weight: 600;
-    line-height: 1.1;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    color: var(--fc-event-text, #ffffff);
-}
-
-.fc-event-time {
-    font-size: 0.75rem;
-    color: rgba(255, 255, 255, 0.9);
-    margin-top: 0.08rem;
-}
-
-.fc .fc-daygrid-more-link {
-    padding: 0.35rem 0.5rem;
 }

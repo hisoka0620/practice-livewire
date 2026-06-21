@@ -1,4 +1,5 @@
 <div class="mx-auto max-w-6xl px-4">
+    {{-- Notification Banner --}}
     <livewire:push-notification-banner />
     {{-- Modal --}}
     <livewire:task-modal />
@@ -20,7 +21,8 @@
 
             {{-- Controls --}}
             <div class="flex flex-wrap items-center gap-3">
-                <flux:input wire:model.live.debounce.500ms="search" icon="magnifying-glass" placeholder="Search tasks..." clearable />
+                <flux:input wire:model.live.debounce.500ms="search" icon="magnifying-glass" placeholder="Search tasks..."
+                    clearable />
 
                 <flux:select wire:model.change="priority" class="w-48!">
                     <flux:select.option value="">All priorities</flux:select.option>
@@ -50,6 +52,7 @@
                 </flux:button.group>
             </div>
 
+            <!-- Overdue Tasks Notification -->
             @if ($overdueTasksCount > 0 && $taskStatus !== 'expired')
                 <div class="rounded-md border border-red-500/30 bg-red-950/70 px-4 py-3 text-sm text-red-100">
                     <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -64,41 +67,47 @@
                 </div>
             @endif
         </div>
+
+        {{-- ================= Task List Header ================= --}}
+        @if ($view === 'list')
+            <div wire:key="list-view"
+                class="mb-2 grid grid-cols-5 gap-2 rounded-md bg-zinc-700 px-4 py-2 text-center text-sm font-semibold text-zinc-300">
+                <div>Title</div>
+                <div>Description</div>
+                <div>Priority</div>
+                <div class="grid place-items-center">
+                    <span wire:click="$set('sort', '{{ $sort === '' ? 'asc' : ($sort === 'asc' ? 'desc' : '') }}')"
+                        class="inline-flex cursor-pointer select-none items-center gap-1 transition hover:text-white">
+                        <span>Deadline</span>
+                        @if ($sort === '')
+                            <flux:icon name="arrows-up-down" variant="micro" />
+                        @elseif($sort === 'asc')
+                            <flux:icon name="arrow-up" variant="micro" />
+                        @elseif($sort === 'desc')
+                            <flux:icon name="arrow-down" variant="micro" />
+                        @endif
+                    </span>
+                </div>
+                <div>Actions</div>
+            </div>
+        @endif
     </div>
 
-    {{-- ================= Task List / Calendar ================= --}}
+    {{-- ================= Calendar ================= --}}
     @if ($view === 'calendar')
         <livewire:calendar-view :$search :$priority :$taskStatus :$sort wire:key="calendar-view" />
-    @else
-        <div wire:key="list-view"
-            class="mb-2 grid grid-cols-5 gap-2 rounded-md bg-zinc-700 px-4 py-2 text-center text-sm font-semibold text-zinc-300">
-            <div>Title</div>
-            <div>Description</div>
-            <div>Priority</div>
-            <div class="grid place-items-center">
-                <span wire:click="$set('sort', '{{ $sort === '' ? 'asc' : ($sort === 'asc' ? 'desc' : '') }}')"
-                    class="inline-flex cursor-pointer select-none items-center gap-1 transition hover:text-white">
-                    <span>Deadline</span>
-                    @if ($sort === '')
-                        <flux:icon name="arrows-up-down" variant="micro" />
-                    @elseif($sort === 'asc')
-                        <flux:icon name="arrow-up" variant="micro" />
-                    @elseif($sort === 'desc')
-                        <flux:icon name="arrow-down" variant="micro" />
-                    @endif
-                </span>
-            </div>
-            <div>Actions</div>
-        </div>
+    @endif
 
+    {{-- ================= Task List ================= --}}
+    @if ($view === 'list')
         <div class="mt-2 space-y-2">
             @if ($tasks->isEmpty())
                 <x-todos.task-not-found />
-            @else
-                @foreach ($tasks as $task)
-                    <x-todos.task :$task :key="$task->id" />
-                @endforeach
-            @endif
-        </div>
+        @else
+            @foreach ($tasks as $task)
+                <x-todos.task :$task :key="$task->id" />
+            @endforeach
+        @endif
+    </div>
     @endif
 </div>

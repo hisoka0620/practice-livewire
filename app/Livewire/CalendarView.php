@@ -61,11 +61,11 @@ class CalendarView extends Component
                 'title' => $task->title,
                 'start' => $task->deadline?->toJSON(),
                 'color' => $task->is_completed
-                    ? '#6B7280'
+                    ? '#9CA3AF'
                     : match ($task->deadline_status) {
-                        'overdue' => '#dc2626',
-                        'due_soon' => '#f59e0b',
-                        default => '#0284c7',
+                        'overdue' => '#991B1B',
+                        'due_soon' => '#D97706',
+                        default => '#0369A1',
                     },
                 'extendedProps' => [
                     'priority' => $task->priority,

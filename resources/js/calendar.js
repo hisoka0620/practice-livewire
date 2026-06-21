@@ -2,7 +2,6 @@ import { Calendar } from "@fullcalendar/core";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
-import "@fullcalendar/common/main.css";
 
 /**
  * Alpine data for the calendar view.
