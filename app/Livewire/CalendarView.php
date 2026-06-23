@@ -68,7 +68,10 @@ class CalendarView extends Component
                         default => '#0369A1',
                     },
                 'extendedProps' => [
+                    'status' => str_replace('_', ' ', $task->visualStatus),
                     'priority' => $task->priority,
+                    'deadline' => $task->deadline?->toDayDateTimeString(),
+                    'isOverdue' => str_replace('_', ' ', $task->visualStatus) === 'overdue',
                     'completed' => $task->is_completed,
                 ],
             ])

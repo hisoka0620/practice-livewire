@@ -61,10 +61,9 @@ class Task extends Model
                 $now = Carbon::now();
                 $tomorrow = $now->copy()->addDay();
                 return match (true) {
-                    $this->is_completed => null,
                     $deadline?->isPast() => 'overdue',
                     $deadline?->between($now, $tomorrow) => 'due_soon',
-                    default => null,
+                    default => 'in_progress',
                 };
             }
         );

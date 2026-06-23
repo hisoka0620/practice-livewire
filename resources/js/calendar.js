@@ -65,12 +65,12 @@ export default (calendarEvents) => ({
             eventTimeFormat: {
                 hour: "2-digit",
                 minute: "2-digit",
-                hour12: false,
+                hour12: true,
             },
             slotLabelFormat: {
                 hour: "2-digit",
                 minute: "2-digit",
-                hour12: false,
+                hour12: true,
             },
             eventContent: (arg) => {
                 const props = arg.event.extendedProps || {};
@@ -98,6 +98,34 @@ export default (calendarEvents) => ({
                         </div>
                     `,
                 };
+            },
+
+            // イベントのDOMがマウントされた時に呼ばれるフック
+            eventDidMount: function (info) {
+                const props = info.event.extendedProps;
+
+                // ツールチップに表示したいHTMLコンテンツを作成
+                const tooltipContent = /* HTML */ `
+                    <div style="text-align: left; padding: 4px;">
+                        <strong>${info.event.title}</strong><br />
+                        <hr style="border-color: #555; margin: 4px 0;" />
+                        ⏰ Deadline: ${props.deadline || "none"}<br />
+                        🔥 Priority: ${props.priority || "none"}<br />
+                        📌 Status:
+                        <span style="color: #fff;"
+                            >${props.status || "none"}</span
+                        >
+                    </div>
+                `;
+
+                // Tippy.js をバインド
+                tippy(info.el, {
+                    content: tooltipContent,
+                    allowHTML: true, // HTMLタグを有効にする
+                    placement: "right-start", // 表示位置 (top, bottom, left, right)
+                    theme: "dark", // テーマ (必要に応じてCSSでカスタム可能)
+                    animation: "scale", // アニメーション効果
+                });
             },
         });
 
