@@ -6,11 +6,20 @@ import interactionPlugin from "@fullcalendar/interaction";
 /**
  * Alpine data for the calendar view.
  */
-export default (calendarEvents) => ({
+export default (wire) => ({
     calendar: null,
-    events: calendarEvents,
     init() {
         this.renderCalendar();
+
+        // calendarEventsプロパティが更新されるたびに発火
+        wire.on("calendarEventsUpdated", (payload) => {
+            if (!this.calendar) return;
+
+            const events = payload?.events ?? payload ?? [];
+            this.calendar.removeAllEventSources();
+            this.calendar.addEventSource(events);
+            this.toggleNoEventsMessage(events.length === 0);
+        });
     },
 
     renderCalendar() {
@@ -35,27 +44,21 @@ export default (calendarEvents) => ({
                 center: "title",
                 right: "dayGridMonth,timeGridWeek",
             },
-            events: this.events,
+            events: [],
+            datesSet: (info) => {
+                wire.loadEvents(
+                    info.startStr, // 例: '2025-06-01'
+                    info.endStr, // 例: '2025-07-06'（表示範囲の翌日）
+                );
+            },
+
             eventClick: (info) => {
                 info.jsEvent.preventDefault();
                 const taskId = info.event.id;
-                if (!taskId) {
-                    return;
-                }
-                if (
-                    window?.Livewire &&
-                    typeof window.Livewire.dispatchTo === "function"
-                ) {
-                    window.Livewire.dispatchTo(
-                        "task-modal",
-                        "open-task-modal",
-                        { taskId: Number(taskId) },
-                    );
-                } else if (this.$wire?.$dispatchTo) {
-                    this.$wire.$dispatchTo("task-modal", "open-task-modal", {
-                        taskId: Number(taskId),
-                    });
-                }
+                if (!taskId) return;
+                wire.$dispatchTo("task-modal", "open-task-modal", {
+                    taskId: Number(taskId),
+                });
             },
             eventDisplay: "block",
             height: "auto",
@@ -88,11 +91,16 @@ export default (calendarEvents) => ({
                     : "";
 
                 return {
-                    html: `
+                    html: /* HTML */ `
                         <div class="fc-custom-event">
-                            <span class="fc-priority-dot" style="background:${dotColor};"></span>
+                            <span
+                                class="fc-priority-dot"
+                                style="background:${dotColor};"
+                            ></span>
                             <div class="fc-event-text">
-                                <div class="fc-event-title">${arg.event.title || ""}</div>
+                                <div class="fc-event-title">
+                                    ${arg.event.title || ""}
+                                </div>
                                 ${time}
                             </div>
                         </div>
@@ -132,27 +140,55 @@ export default (calendarEvents) => ({
         this.calendar.render();
     },
 
-    updateEvents() {
-        if (!this.calendar) {
-            return;
-        }
-
-        this.calendar.removeAllEventSources();
-        this.calendar.addEventSource(this.events);
-        this.calendar.render();
-    },
-
     resizeCalendar() {
         if (this.calendar && typeof this.calendar.updateSize === "function") {
             this.calendar.updateSize();
         }
     },
 
-    get calendarEvents() {
-        return this.events;
-    },
+    toggleNoEventsMessage(show) {
+        const calendarEl = this.$el.querySelector("#task-calendar");
+        if (!calendarEl) return;
 
-    set calendarEvents(value) {
-        this.events = value;
+        const existing = calendarEl.querySelector(".fc-no-events-overlay");
+
+        if (show && !existing) {
+            const overlay = document.createElement("div");
+            overlay.className = "fc-no-events-overlay";
+            overlay.innerHTML = /* HTML */ `
+                <div class="fc-no-events-overlay__icon">
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="28"
+                        height="28"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="#71717a"
+                        stroke-width="1.5"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                    >
+                        <rect x="3" y="4" width="18" height="18" rx="2" />
+                        <path d="M16 2v4M8 2v4M3 10h18" />
+                        <line
+                            x1="8"
+                            y1="15"
+                            x2="16"
+                            y2="15"
+                            stroke-dasharray="2 2"
+                        />
+                    </svg>
+                </div>
+                <p class="fc-no-events-overlay__title">
+                    No deadline tasks this month.
+                </p>
+                <p class="fc-no-events-overlay__sub">
+                    Try a different month or adjust your filters.
+                </p>
+            `;
+            calendarEl.appendChild(overlay);
+        } else if (!show && existing) {
+            existing.remove();
+        }
     },
 });

@@ -1,4 +1,5 @@
 #task-calendar {
+    position: relative; /* オーバーレイの基準点 */
     background: --alpha(var(--color-zinc-800) / 90%);
     color: #e2e8f0;
 }
@@ -123,4 +124,52 @@
     background: --alpha(var(--color-zinc-800) / 90%);
     border: 1px solid rgba(148, 163, 184, 0.22);
     color: #cbd5e1;
+}
+
+.fc-no-events-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    /* カレンダーヘッダー・曜日行の高さ分だけ下にずらして視覚的中心を合わせる */
+    padding-top: 80px;
+    padding-bottom: 0;
+    /* グリッド部分だけをうっすら暗幕で覆う */
+    background: linear-gradient(
+        to bottom,
+        transparent 80px,
+        /* ヘッダー・曜日行は透過 */ rgba(9, 9, 11, 0.6) 80px
+            /* グリッド部分だけ暗幕 */
+    );
+    pointer-events: none;
+    z-index: 1;
+    border-radius: 0 0 0.75rem 0.75rem;
+}
+
+.fc-no-events-overlay__icon {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: rgba(148, 163, 184, 0.1);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 4px;
+}
+
+.fc-no-events-overlay__title {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #e2e8f0;
+    margin: 0;
+}
+
+.fc-no-events-overlay__sub {
+    font-size: 0.75rem;
+    color: #a1a1aa;
+    margin: 0;
 }

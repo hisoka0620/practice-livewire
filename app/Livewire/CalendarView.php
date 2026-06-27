@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Livewire\Attributes\On;
 use Livewire\Component;
+use Carbon\Carbon;
 
 class CalendarView extends Component
 {
@@ -15,10 +16,12 @@ class CalendarView extends Component
     public string $taskStatus = '';
     public array $calendarEvents = [];
 
-    public function mount(): void
-    {
-        $this->loadCalendarEvents();
-    }
+    // 表示中の期間を保持する
+    public string $rangeStart = '';
+    public string $rangeEnd = '';
+
+
+    public function mount(): void {}
 
     #[On('calendar-filters-updated')]
     public function updateFilters(
@@ -29,7 +32,11 @@ class CalendarView extends Component
         $this->search = $search;
         $this->priority = $priority;
         $this->taskStatus = $taskStatus;
-        $this->loadCalendarEvents();
+
+        // 期間が確定していれば即座に再取得
+        if ($this->rangeStart && $this->rangeEnd) {
+            $this->loadEvents($this->rangeStart, $this->rangeEnd);
+        }
     }
 
     private function buildTaskQuery(): HasMany
@@ -44,17 +51,22 @@ class CalendarView extends Component
             ->latest();
     }
 
-    private function loadCalendarEvents(): void
+    /**
+     * カレンダーの表示期間に応じてイベントを動的に取得する
+     */
+    public function loadEvents(string $start, string $end)
     {
-        $user = Auth::user();
+        // 期間を保存しておく
+        $this->rangeStart = $start;
+        $this->rangeEnd = $end;
 
-        if (!$user) {
-            $this->calendarEvents = [];
-            return;
-        }
+        // FullCalendarから送られてくるISO 8601文字列をパース
+        $startDate = Carbon::parse($start);
+        $endDate = Carbon::parse($end);
 
+        // 指定された月（表示範囲内）のイベントだけをクエリで絞り込む
         $this->calendarEvents = $this->buildTaskQuery()
-            ->whereNotNull('deadline')
+            ->whereBetween('deadline', [$startDate, $endDate])
             ->get()
             ->map(fn(Task $task) => [
                 'id' => (string) $task->id,
@@ -78,7 +90,8 @@ class CalendarView extends Component
             ->values()
             ->toArray();
 
-        $this->dispatch('update-calendar', ['events' => $this->calendarEvents]);
+        // JSへ通知
+        $this->dispatch('calendarEventsUpdated', events: $this->calendarEvents);
     }
 
     public function render()

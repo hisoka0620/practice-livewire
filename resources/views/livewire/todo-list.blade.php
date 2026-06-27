@@ -103,11 +103,11 @@
         <div class="mt-2 space-y-2">
             @if ($tasks->isEmpty())
                 <x-todos.task-not-found />
-        @else
-            @foreach ($tasks as $task)
-                <x-todos.task :$task :key="$task->id" />
-            @endforeach
-        @endif
-    </div>
+            @else
+                @foreach ($tasks as $task)
+                    <x-todos.task :$task :key="$task->id" />
+                @endforeach
+            @endif
+        </div>
     @endif
 </div>
