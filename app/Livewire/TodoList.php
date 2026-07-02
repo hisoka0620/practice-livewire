@@ -114,7 +114,7 @@ class TodoList extends Component
      */
     public function updatedSearch(): void
     {
-        $this->view === 'list' ? $this->loadTasks() : $this->notifyCalendar();
+        $this->loadTasks();
     }
 
     /**
@@ -122,7 +122,7 @@ class TodoList extends Component
      */
     public function updatedPriority(): void
     {
-        $this->view === 'list' ? $this->loadTasks() : $this->notifyCalendar();
+        $this->loadTasks();
     }
 
     /**
@@ -133,31 +133,32 @@ class TodoList extends Component
         $this->loadTasks();
     }
 
-    /**
-     * 表示モードの更新時にタスクを再読み込みします
-     */
-    public function updatedView(): void
+    public function changeView(string $view): void
     {
-        $this->loadTasks();
+        if ($view === 'calendar') {
+            $this->reset(['search', 'priority', 'sort', 'taskStatus']);
+        }
+
+        if ($view === 'list') {
+            $this->js(<<<'JS'
+            const url = new URL(window.location);
+            url.searchParams.delete('calendarPriority');
+            url.searchParams.delete('calendarTaskStatus');
+            window.history.replaceState({}, '', url);
+        JS);
+            $this->loadTasks();
+        }
+
+        $this->view = $view;
     }
-    
+
     /**
      * タスクの状態を変更します
      */
     public function changeTaskStatus(string $status): void
     {
         $this->taskStatus = $status;
-        $this->view === 'list' ? $this->loadTasks() : $this->notifyCalendar();
-    }
-
-    private function notifyCalendar(): void
-    {
-        $this->dispatch(
-            'calendar-filters-updated',
-            search: $this->search,
-            priority: $this->priority,
-            taskStatus: $this->taskStatus,
-        )->to(CalendarView::class);
+        $this->loadTasks();
     }
 
     /**

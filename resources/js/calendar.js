@@ -146,6 +146,11 @@ export default (wire) => ({
         }
     },
 
+    /**
+     * イベントがない場合に、その旨のメッセージを表示します
+     * @param {boolean} show イベントがある場合はfalse、ない場合はtrue
+     * @returns {void}
+     */
     toggleNoEventsMessage(show) {
         const calendarEl = this.$el.querySelector("#task-calendar");
         if (!calendarEl) return;
@@ -191,4 +196,10 @@ export default (wire) => ({
             existing.remove();
         }
     },
+
+    jumpToMonth(value) {
+        // value は "2026-06" 形式
+        if (!this.calendar || !value) return;
+        this.calendar.gotoDate(value + '-01');
+    }
 });

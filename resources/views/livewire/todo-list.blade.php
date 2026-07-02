@@ -5,7 +5,10 @@
     <livewire:task-modal />
 
     {{-- ================= Header ================= --}}
-    <div class="sticky top-0 z-20 border-b border-zinc-700 bg-zinc-800/90 backdrop-blur">
+    <div @class([
+        'border-b border-zinc-700 bg-zinc-800/90 backdrop-blur',
+        'sticky top-0 z-20' => $view === 'list',
+    ])>
         <div class="space-y-4 py-4">
 
             {{-- Title + Primary Action --}}
@@ -41,11 +44,11 @@
                 </flux:button.group>
 
                 <flux:button.group>
-                    <flux:button size="sm" wire:click="$set('view', 'list')"
+                    <flux:button size="sm" wire:click="changeView('list')"
                         :variant="$view === 'list' ? 'filled' : 'ghost'">
                         List
                     </flux:button>
-                    <flux:button size="sm" wire:click="$set('view', 'calendar')"
+                    <flux:button size="sm" wire:click="changeView('calendar')"
                         :variant="$view === 'calendar' ? 'filled' : 'ghost'">
                         Calendar
                     </flux:button>
@@ -95,7 +98,7 @@
 
     {{-- ================= Calendar ================= --}}
     @if ($view === 'calendar')
-        <livewire:calendar-view :$search :$priority :$taskStatus :$sort wire:key="calendar-view" />
+        <livewire:calendar-view />
     @endif
 
     {{-- ================= Task List ================= --}}

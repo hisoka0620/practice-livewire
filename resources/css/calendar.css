@@ -135,14 +135,13 @@
     justify-content: center;
     gap: 8px;
     /* カレンダーヘッダー・曜日行の高さ分だけ下にずらして視覚的中心を合わせる */
-    padding-top: 80px;
+    padding-top: 96px;
     padding-bottom: 0;
     /* グリッド部分だけをうっすら暗幕で覆う */
     background: linear-gradient(
         to bottom,
-        transparent 80px,
-        /* ヘッダー・曜日行は透過 */ rgba(9, 9, 11, 0.6) 80px
-            /* グリッド部分だけ暗幕 */
+        /* ヘッダー・曜日行は透過 */ transparent 96px,
+        /* グリッド部分だけ暗幕 */ rgba(9, 9, 11, 0.6) 96px
     );
     pointer-events: none;
     z-index: 1;

@@ -5,15 +5,17 @@ namespace App\Livewire;
 use App\Models\Task;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Livewire\Attributes\On;
 use Livewire\Component;
 use Carbon\Carbon;
+use Livewire\Attributes\Url;
 
 class CalendarView extends Component
 {
-    public string $search = '';
-    public string $priority = '';
-    public string $taskStatus = '';
+    #[Url(except: '')]
+    public string $calendarPriority = '';
+
+    #[Url(except: '')]
+    public string $calendarTaskStatus = '';
     public array $calendarEvents = [];
 
     // 表示中の期間を保持する
@@ -21,33 +23,39 @@ class CalendarView extends Component
     public string $rangeEnd = '';
 
 
-    public function mount(): void {}
+    public function mount(): void
+    {
+    }
 
-    #[On('calendar-filters-updated')]
-    public function updateFilters(
-        string $search,
-        string $priority,
-        string $taskStatus
-    ): void {
-        $this->search = $search;
-        $this->priority = $priority;
-        $this->taskStatus = $taskStatus;
-
-        // 期間が確定していれば即座に再取得
+    public function updatedcalendarPriority(): void
+    {
         if ($this->rangeStart && $this->rangeEnd) {
             $this->loadEvents($this->rangeStart, $this->rangeEnd);
         }
     }
 
+    public function updatedcalendarTaskStatus(): void
+    {
+        if ($this->rangeStart && $this->rangeEnd) {
+            $this->loadEvents($this->rangeStart, $this->rangeEnd);
+        }
+    }
+
+    public function clearFilters(): void
+    {
+        $this->reset(['calendarPriority', 'calendarTaskStatus']);
+        $this->loadEvents($this->rangeStart, $this->rangeEnd);
+    }
+
     private function buildTaskQuery(): HasMany
     {
+        /** @var \App\Models\User $user */
         $user = Auth::user();
 
         return $user
             ->tasks()
-            ->when($this->search !== '', fn($query) => $query->filterBySearch($this->search))
-            ->when($this->priority !== '', fn($query) => $query->filterByPriority($this->priority))
-            ->when($this->taskStatus !== '', fn($query) => $query->filterByStatus($this->taskStatus))
+            ->filterByPriority($this->calendarPriority)
+            ->filterByStatus($this->calendarTaskStatus)
             ->latest();
     }
 
@@ -91,7 +99,7 @@ class CalendarView extends Component
             ->toArray();
 
         // JSへ通知
-        $this->dispatch('calendarEventsUpdated', events: $this->calendarEvents);
+        $this->dispatch('calendarEventsUpdated', events: $this->calendarEvents)->self();
     }
 
     public function render()
