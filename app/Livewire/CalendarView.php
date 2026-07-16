@@ -79,7 +79,8 @@ class CalendarView extends Component
             ->map(fn(Task $task) => [
                 'id' => (string) $task->id,
                 'title' => $task->title,
-                'start' => $task->deadline?->toJSON(),
+                'start' => $task->deadline?->format('Y-m-d\TH:i:s'),
+                'end' => null,
                 'color' => $task->is_completed
                     ? '#9CA3AF'
                     : match ($task->deadline_status) {
@@ -90,7 +91,8 @@ class CalendarView extends Component
                 'extendedProps' => [
                     'status' => str_replace('_', ' ', $task->visualStatus),
                     'priority' => $task->priority,
-                    'deadline' => $task->deadline?->toDayDateTimeString(),
+                    'deadline' => $task->deadline?->toDayDateTimeString(), // ツールチップ表示用
+                    'deadlineIso' => $task->deadline?->format('Y-m-d\TH:i:s'), // 時刻計算専用の生ISO
                     'isOverdue' => str_replace('_', ' ', $task->visualStatus) === 'overdue',
                     'completed' => $task->is_completed,
                 ],
