@@ -2,6 +2,8 @@
     position: relative; /* オーバーレイの基準点 */
     background: --alpha(var(--color-zinc-800) / 90%);
     color: #e2e8f0;
+    display: block;
+    width: 100%;
 }
 
 #task-calendar .fc-toolbar-title,
@@ -18,12 +20,26 @@
 #task-calendar .fc-col-header {
     background: --alpha(var(--color-zinc-800) / 90%);
     color: #cbd5e1;
-    border-bottom: 1px solid rgba(148, 163, 184, 0.18);
 }
 
 #task-calendar .fc-toolbar-chunk,
 #task-calendar .fc-toolbar-chunk > * {
     color: #cbd5e1;
+}
+
+#task-calendar .fc-toolbar {
+    gap: 0.5rem;
+}
+
+#task-calendar .fc-toolbar-title {
+    font-size: 1.6rem;
+    line-height: 1.2;
+}
+
+#task-calendar .fc-toolbar .fc-button {
+    padding: 0.35rem 0.6rem;
+    font-size: 1rem;
+    min-height: 2rem;
 }
 
 #task-calendar .fc-button {
@@ -33,7 +49,8 @@
 }
 
 #task-calendar .fc-button:hover,
-#task-calendar .fc-button:focus {
+#task-calendar .fc-button:focus,
+#task-calendar .fc-button-active {
     background: rgba(148, 163, 184, 0.32);
 }
 
@@ -51,64 +68,69 @@
     cursor: default;
 }
 
-/* カレンダーイベントの見やすさ向上 */
-.fc .fc-daygrid-event {
-    padding: 8px 10px;
-    border-radius: 0.75rem;
-    overflow: hidden;
-    background: rgba(148, 163, 184, 0.12);
-    border: 1px solid rgba(148, 163, 184, 0.22);
-}
-
-.fc .fc-timegrid-event {
-    padding: 0.35rem 0.5rem;
-    border-radius: 0.75rem;
-    background: rgba(148, 163, 184, 0.12);
-    border: 1px solid rgba(148, 163, 184, 0.22);
-}
-
 /* 優先度バッジとイベント内レイアウト */
 .fc-custom-event {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    min-height: 32px;
+    gap: 0.25rem;
+    white-space: nowrap;
+    overflow: hidden;
     padding: 0 0.125rem;
 }
 
-.fc-priority-dot {
+.fc-custom-event .fc-priority-dot {
     width: 0.55rem;
     height: 0.55rem;
-    border-radius: 9999px;
+    border-radius: 50%;
     flex-shrink: 0;
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
 }
 
-/* テキスト部 */
-.fc-event-text {
+.fc-custom-event .fc-event-content {
     display: flex;
-    flex-direction: column;
-    min-width: 0;
+    flex-direction: row;
+    align-items: center;
+    overflow: hidden;
 }
 
-.fc-event-title {
+.fc-custom-event .fc-event-time {
+    font-size: 0.75rem;
+    color: var(--fc-event-text, #ffffff);
+    white-space: nowrap;
+    flex-shrink: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.fc-custom-event .fc-event-title {
     font-size: 0.85rem;
     font-weight: 600;
-    line-height: 1.1;
+    line-height: 1;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     color: var(--fc-event-text, #ffffff);
 }
 
-.fc-event-time {
-    font-size: 0.75rem;
-    color: rgba(255, 255, 255, 0.85);
-    margin-top: 0.08rem;
+#task-calendar .fc-dayGridMonth-view .fc-daygrid-day-frame {
+    width: 100%;
+    aspect-ratio: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* aspect-ratioで決まった高さを中身が超えないようにする */
+    box-sizing: border-box;
+}
+
+#task-calendar .fc-dayGridMonth-view .fc-daygrid-day-events {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    max-height: 100%;
+    margin-bottom: 0;
 }
 
 .fc .fc-daygrid-more-link {
-    padding: 0.35rem 0.5rem;
+    padding: 0.175rem 0.25rem;
     color: #cbd5e1;
 }
 
@@ -116,16 +138,99 @@
     opacity: 0.9;
 }
 
-.fc .fc-daygrid-event-harness:hover {
+.fc .fc-daygrid-event:hover {
     opacity: 0.9;
 }
 
+/* ============================================================
+   timeGridWeek 専用: ドットを中心配置 + 時間(上)/タイトル(下)の縦積み
+   dayGridMonthの見た目には一切影響しないよう .fc-timeGridWeek-view でスコープ
+   ============================================================ */
+#task-calendar .fc-timeGridWeek-view .fc-custom-event {
+    align-items: center; /* ドットをコンテンツ全体の縦中央に */
+    white-space: normal; /* 縦積みにするためnowrap解除 */
+    width: 100%;
+}
+
+#task-calendar .fc-timeGridWeek-view .fc-event-content {
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 0.05rem;
+    min-width: 0;
+}
+
+#task-calendar .fc-timeGridWeek-view .fc-event-time {
+    font-size: 0.7rem;
+    line-height: 1.1;
+    opacity: 0.85;
+    flex-shrink: initial;
+}
+
+#task-calendar .fc-timeGridWeek-view .fc-event-title {
+    font-size: 0.8rem;
+    line-height: 1.15;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.fc .fc-timegrid-more-link.fc-more-link {
+    background: --alpha(var(--color-zinc-800) / 90%);
+    color: #cbd5e1;
+}
+
+.fc .fc-timegrid-more-link.fc-more-link:hover {
+    opacity: 0.9;
+}
+
+.fc .fc-timeGridWeek-view ~ .fc-popover .fc-event-content {
+    gap: 0.25rem;
+}
+
+/* ============================================================
+   timeGridWeek: イベント内部を縦方向中央に配置
+   ============================================================ */
+#task-calendar .fc-timeGridWeek-view .fc-event-main {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    overflow: hidden; /* はみ出た部分を非表示にする */
+    text-overflow: ellipsis; /* 入り切らないテキストを「...」にする */
+    white-space: nowrap; /* 縦幅が極端に狭い場合に文字の折り返しを防ぐ */
+}
+
+#task-calendar .fc-timeGridWeek-view .fc-timegrid-event:hover {
+    opacity: 0.9;
+}
+
+/* ============================================================
+   timeGridWeek: "+N more" の箱の高さをFullCalendarの
+   inline style(top/bottom)から解放し、コンパクトに固定する
+   ============================================================ */
+#task-calendar .fc-timeGridWeek-view .fc-timegrid-more-link.fc-more-link {
+    bottom: auto; /* JSが入れるbottom値を無効化 */
+    height: 1.6rem; /* 好みの高さに調整 */
+    margin: 0;
+    padding: 0;
+}
+
+/* sticky指定も高さ固定後は不要になるため解除しておく */
+#task-calendar .fc-timeGridWeek-view .fc-timegrid-more-link-inner.fc-sticky {
+    position: static;
+}
+
+/* ============================================================
+   ポップオーバーの見た目を調整
+   ============================================================ */
 .fc .fc-popover {
     background: --alpha(var(--color-zinc-800) / 90%);
     border: 1px solid rgba(148, 163, 184, 0.22);
     color: #cbd5e1;
 }
 
+/* ============================================================
+   イベントがない場合のオーバーレイ表示
+   ============================================================ */
 .fc-no-events-overlay {
     position: absolute;
     inset: 0;
@@ -135,13 +240,13 @@
     justify-content: center;
     gap: 8px;
     /* カレンダーヘッダー・曜日行の高さ分だけ下にずらして視覚的中心を合わせる */
-    padding-top: 96px;
+    padding-top: 91px;
     padding-bottom: 0;
     /* グリッド部分だけをうっすら暗幕で覆う */
     background: linear-gradient(
         to bottom,
-        /* ヘッダー・曜日行は透過 */ transparent 96px,
-        /* グリッド部分だけ暗幕 */ rgba(9, 9, 11, 0.6) 96px
+        /* ヘッダー・曜日行は透過 */ transparent 91px,
+        /* グリッド部分だけ暗幕 */ rgba(9, 9, 11, 0.6) 91px
     );
     pointer-events: none;
     z-index: 1;

@@ -9,19 +9,59 @@ import interactionPlugin from "@fullcalendar/interaction";
 export default (wire) => ({
     calendar: null,
     init() {
-        this.renderCalendar();
-
         // calendarEventsプロパティが更新されるたびに発火
         wire.on("calendarEventsUpdated", (payload) => {
             if (!this.calendar) return;
-
-            const events = payload?.events ?? payload ?? [];
+            const rawEvents = payload?.events ?? payload ?? [];
+            // ★変更：現在のビューに応じてイベントを加工
+            const events = this.processEventsByView(rawEvents);
             this.calendar.removeAllEventSources();
             this.calendar.addEventSource(events);
             this.toggleNoEventsMessage(events.length === 0);
         });
+        this.renderCalendar();
     },
+    /**
+     * 現在のカレンダービューに応じてイベント情報を加工します
+     * - dayGridMonth: 日付のみ表示（allDay: true）
+     * - timeGridWeek: 時間付きで1時間の期間で表示（allDay: false）
+     */
+    processEventsByView(events) {
+        if (!this.calendar || !events.length) {
+            return events;
+        }
 
+        const currentView = this.calendar.view.type;
+
+        return events.map((event) => {
+            if (currentView === "dayGridMonth") {
+                // dayGridMonthでは終日イベントとして表示（時間情報を削除）
+                return {
+                    ...event,
+                    allDay: true,
+                    start: event.start, // 日付のみ
+                    end: null, // endを削除して、startだけの単一日イベントに
+                };
+            } else if (currentView === "timeGridWeek") {
+                // timeGridWeekではtimed eventで1時間の期間を設定
+                if (event.start) {
+                    const startDate = new Date(event.start);
+                    const endDate = new Date(
+                        startDate.getTime() + 45 * 60 * 1000,
+                    ); // 45分後
+                    return {
+                        ...event,
+                        allDay: false,
+                        start: startDate,
+                        end: endDate,
+                    };
+                }
+                return event;
+            }
+
+            return event;
+        });
+    },
     renderCalendar() {
         if (!this.$el) {
             return;
@@ -44,6 +84,12 @@ export default (wire) => ({
                 center: "title",
                 right: "dayGridMonth,timeGridWeek",
             },
+            views: {
+                timeGridWeek: {
+                    allDaySlot: false,
+                    eventMinHeight: 30,
+                },
+            },
             events: [],
             datesSet: (info) => {
                 wire.loadEvents(
@@ -51,7 +97,6 @@ export default (wire) => ({
                     info.endStr, // 例: '2025-07-06'（表示範囲の翌日）
                 );
             },
-
             eventClick: (info) => {
                 info.jsEvent.preventDefault();
                 const taskId = info.event.id;
@@ -61,20 +106,12 @@ export default (wire) => ({
                 });
             },
             eventDisplay: "block",
-            height: "auto",
+            height: "auto", // コンテナを親に合わせる
             fixedWeekCount: false, // 週の固定行数を解除（月によって高さが変動）
-            dayMaxEventRows: 3, // 1日に表示するイベント行数上限
+            dayMaxEventRows: 3,
+            dayMaxEvents: 3,
+            eventMaxStack: 2, // スタックの最大数を制限
             moreLinkContent: (args) => `+${args.num} more`,
-            eventTimeFormat: {
-                hour: "2-digit",
-                minute: "2-digit",
-                hour12: true,
-            },
-            slotLabelFormat: {
-                hour: "2-digit",
-                minute: "2-digit",
-                hour12: true,
-            },
             eventContent: (arg) => {
                 const props = arg.event.extendedProps || {};
                 const rawPriority = String(props.priority ?? "").toLowerCase();
@@ -86,8 +123,16 @@ export default (wire) => ({
                 };
 
                 const dotColor = priorityMap[rawPriority]?.color || "#94a3b8";
-                const time = arg.timeText
-                    ? `<div class="fc-event-time">${arg.timeText}</div>`
+
+                // ISO 8601形式（タイムゾーンなし）は主要ブラウザで一貫してローカル時刻として解釈されるため、表示用文字列(deadline)のパースより信頼できる
+                const time = props.deadlineIso
+                    ? new Intl.DateTimeFormat("en-US", {
+                          hour: "numeric",
+                          minute: "2-digit",
+                          hour12: true,
+                      })
+                          .format(new Date(props.deadlineIso))
+                          .toLowerCase()
                     : "";
 
                 return {
@@ -97,20 +142,23 @@ export default (wire) => ({
                                 class="fc-priority-dot"
                                 style="background:${dotColor};"
                             ></span>
-                            <div class="fc-event-text">
+                            <div class="fc-event-content">
+                                <div class="fc-event-time">${time}</div>
                                 <div class="fc-event-title">
                                     ${arg.event.title || ""}
                                 </div>
-                                ${time}
                             </div>
                         </div>
                     `,
                 };
             },
-
             // イベントのDOMがマウントされた時に呼ばれるフック
-            eventDidMount: function (info) {
+            eventDidMount: (info) => {
                 const props = info.event.extendedProps;
+
+                if (info.el._tippy) {
+                    info.el._tippy.destroy();
+                }
 
                 // ツールチップに表示したいHTMLコンテンツを作成
                 const tooltipContent = /* HTML */ `
@@ -126,26 +174,37 @@ export default (wire) => ({
                     </div>
                 `;
 
-                // Tippy.js をバインド
-                tippy(info.el, {
+                const tooltipOptions = {
                     content: tooltipContent,
                     allowHTML: true, // HTMLタグを有効にする
                     placement: "right-start", // 表示位置 (top, bottom, left, right)
                     theme: "dark", // テーマ (必要に応じてCSSでカスタム可能)
                     animation: "scale", // アニメーション効果
-                });
+                    trigger: "mouseenter focus",
+                    // flipはデフォルトで有効。fallbackの候補を明示したい場合はここで指定する
+                    popperOptions: {
+                        modifiers: [
+                            {
+                                name: "flip",
+                                options: {
+                                    fallbackPlacements: [
+                                        "left-start",
+                                        "top",
+                                        "bottom",
+                                    ],
+                                },
+                            },
+                        ],
+                    },
+                };
+
+                // Tippy.js をバインド
+                info.el._tippy = tippy(info.el, tooltipOptions);
             },
         });
 
         this.calendar.render();
     },
-
-    resizeCalendar() {
-        if (this.calendar && typeof this.calendar.updateSize === "function") {
-            this.calendar.updateSize();
-        }
-    },
-
     /**
      * イベントがない場合に、その旨のメッセージを表示します
      * @param {boolean} show イベントがある場合はfalse、ない場合はtrue
@@ -196,10 +255,9 @@ export default (wire) => ({
             existing.remove();
         }
     },
-
     jumpToMonth(value) {
         // value は "2026-06" 形式
         if (!this.calendar || !value) return;
-        this.calendar.gotoDate(value + '-01');
-    }
+        this.calendar.gotoDate(value + "-01");
+    },
 });
