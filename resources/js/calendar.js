@@ -4,10 +4,40 @@ import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 
 /**
+ * deadline（タイムゾーンなしISO文字列）から表示用文字列を生成するヘルパー群
+ */
+function formatEventTime(isoString) {
+    if (!isoString) return "";
+    return new Intl.DateTimeFormat("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+    })
+        .format(new Date(isoString))
+        .toLowerCase();
+}
+
+function formatTooltipDeadline(isoString) {
+    if (!isoString) return "none";
+    // toDayDateTimeString() と同等の見た目（例: "Sun, Jun 1, 2025 3:00 PM"）を再現
+    return new Intl.DateTimeFormat("en-US", {
+        weekday: "short",
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+    }).format(new Date(isoString));
+}
+
+/**
  * Alpine data for the calendar view.
  */
 export default (wire) => ({
     calendar: null,
+    isLoading: false,
+    _loadingTimer: null, // 遅延表示用タイマー
     init() {
         // calendarEventsプロパティが更新されるたびに発火
         wire.on("calendarEventsUpdated", (payload) => {
@@ -43,17 +73,14 @@ export default (wire) => ({
                     end: null, // endを削除して、startだけの単一日イベントに
                 };
             } else if (currentView === "timeGridWeek") {
-                // timeGridWeekではtimed eventで1時間の期間を設定
                 if (event.start) {
                     const startDate = new Date(event.start);
-                    const endDate = new Date(
-                        startDate.getTime() + 45 * 60 * 1000,
-                    ); // 45分後
+
                     return {
                         ...event,
                         allDay: false,
                         start: startDate,
-                        end: endDate,
+                        end: null, // defaultTimedEventDurationに委ねる（実時間ではなく表示上の幅）
                     };
                 }
                 return event;
@@ -92,10 +119,16 @@ export default (wire) => ({
             },
             events: [],
             datesSet: (info) => {
-                wire.loadEvents(
-                    info.startStr, // 例: '2025-06-01'
-                    info.endStr, // 例: '2025-07-06'（表示範囲の翌日）
-                );
+                // 200ms後もまだ読み込み中なら表示する
+                clearTimeout(this._loadingTimer);
+                this._loadingTimer = setTimeout(() => {
+                    this.isLoading = true;
+                }, 200);
+
+                wire.loadEvents(info.startStr, info.endStr).finally(() => {
+                    clearTimeout(this._loadingTimer); // まだ表示前ならキャンセル
+                    this.isLoading = false;
+                });
             },
             eventClick: (info) => {
                 info.jsEvent.preventDefault();
@@ -124,16 +157,8 @@ export default (wire) => ({
 
                 const dotColor = priorityMap[rawPriority]?.color || "#94a3b8";
 
-                // ISO 8601形式（タイムゾーンなし）は主要ブラウザで一貫してローカル時刻として解釈されるため、表示用文字列(deadline)のパースより信頼できる
-                const time = props.deadlineIso
-                    ? new Intl.DateTimeFormat("en-US", {
-                          hour: "numeric",
-                          minute: "2-digit",
-                          hour12: true,
-                      })
-                          .format(new Date(props.deadlineIso))
-                          .toLowerCase()
-                    : "";
+                // ISO 8601形式（タイムゾーンなし）は主要ブラウザで一貫してローカル時刻として解釈されるため信頼できる
+                const time = formatEventTime(props.deadline);
 
                 return {
                     html: /* HTML */ `
@@ -165,7 +190,7 @@ export default (wire) => ({
                     <div style="text-align: left; padding: 4px;">
                         <strong>${info.event.title}</strong><br />
                         <hr style="border-color: #555; margin: 4px 0;" />
-                        ⏰ Deadline: ${props.deadline || "none"}<br />
+                        ⏰ Deadline: ${formatTooltipDeadline(props.deadline)}<br />
                         🔥 Priority: ${props.priority || "none"}<br />
                         📌 Status:
                         <span style="color: #fff;"

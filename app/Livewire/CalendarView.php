@@ -74,7 +74,8 @@ class CalendarView extends Component
 
         // 指定された月（表示範囲内）のイベントだけをクエリで絞り込む
         $this->calendarEvents = $this->buildTaskQuery()
-            ->whereBetween('deadline', [$startDate, $endDate])
+            ->where('deadline', '>=', $startDate)
+            ->where('deadline', '<', $endDate)
             ->get()
             ->map(fn(Task $task) => [
                 'id' => (string) $task->id,
@@ -91,8 +92,7 @@ class CalendarView extends Component
                 'extendedProps' => [
                     'status' => str_replace('_', ' ', $task->visualStatus),
                     'priority' => $task->priority,
-                    'deadline' => $task->deadline?->toDayDateTimeString(), // ツールチップ表示用
-                    'deadlineIso' => $task->deadline?->format('Y-m-d\TH:i:s'), // 時刻計算専用の生ISO
+                    'deadline' => $task->deadline?->format('Y-m-d\TH:i:s'), // ISO形式
                     'isOverdue' => str_replace('_', ' ', $task->visualStatus) === 'overdue',
                     'completed' => $task->is_completed,
                 ],
