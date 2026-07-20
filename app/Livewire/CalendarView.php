@@ -104,6 +104,31 @@ class CalendarView extends Component
         $this->dispatch('calendarEventsUpdated', events: $this->calendarEvents)->self();
     }
 
+    /**
+     * ドラッグ&ドロップによる締切日時の変更を保存する
+     */
+    public function updateTaskDeadline(int $taskId, string $newDeadline): bool
+    {
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+
+        $task = $user->tasks()->find($taskId);
+
+        if (!$task) {
+            // 他人のタスクを操作しようとした、またはタスクが存在しない
+            return false;
+        }
+
+        $task->deadline = Carbon::parse($newDeadline);
+        $task->save();
+
+        // ドラッグ操作を起点にした変更でも、カレンダー全体を再取得して
+        // 色分け（overdue/due_soon等のステータス）を最新化しておく
+        $this->loadEvents($this->rangeStart, $this->rangeEnd);
+
+        return true;
+    }
+
     public function render()
     {
         return view('livewire.calendar-view');

@@ -31,6 +31,44 @@ function formatTooltipDeadline(isoString) {
     }).format(new Date(isoString));
 }
 
+function formatForServer(date) {
+    const pad = (n) => String(n).padStart(2, "0");
+    return (
+        `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
+        `T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
+    );
+}
+
+/**
+ * ドラッグ&ドロップ後の新しいdeadline（Dateオブジェクト）を、
+ * 現在のビュー種別に応じて算出する。
+ * - dayGridMonth: 終日イベント（allDay:true）として描画しているため、
+ *   ドラッグ後のstartは時刻情報を持たない。元のdeadline（extendedProps）から
+ *   時刻を取り出し、ドロップ後の「日付」と合成する。
+ * - それ以外（timeGridWeek等）: ドラッグ自体が時刻変更の操作なので、
+ *   info.event.startをそのまま使う。
+ */
+function resolveNewDeadline(info) {
+    const currentView = info.view.type;
+
+    if (currentView !== "dayGridMonth") {
+        return info.event.start;
+    }
+
+    const oldDeadlineStr = info.oldEvent.extendedProps?.deadline;
+    const oldTime = oldDeadlineStr ? new Date(oldDeadlineStr) : null;
+    const newDateOnly = info.event.start;
+
+    return new Date(
+        newDateOnly.getFullYear(),
+        newDateOnly.getMonth(),
+        newDateOnly.getDate(),
+        oldTime ? oldTime.getHours() : 0,
+        oldTime ? oldTime.getMinutes() : 0,
+        oldTime ? oldTime.getSeconds() : 0,
+    );
+}
+
 /**
  * Alpine data for the calendar view.
  */
@@ -118,6 +156,27 @@ export default (wire) => ({
                 },
             },
             events: [],
+            editable: true,
+            eventStartEditable: true,
+            eventDurationEditable: false, // リサイズは無効
+            eventDrop: (info) => {
+                const taskId = info.event.id;
+                const newDeadline = resolveNewDeadline(info); // ドロップ後の新しい日時（Dateオブジェクト）
+
+                this.isLoading = true;
+                wire.updateTaskDeadline(taskId, formatForServer(newDeadline))
+                    .then((success) => {
+                        if (!success) {
+                            info.revert(); // サーバー側で失敗したら元の位置に戻す
+                        }
+                    })
+                    .catch(() => {
+                        info.revert(); // 通信エラーでも元に戻す
+                    })
+                    .finally(() => {
+                        this.isLoading = false;
+                    });
+            },
             datesSet: (info) => {
                 // 200ms後もまだ読み込み中なら表示する
                 clearTimeout(this._loadingTimer);
