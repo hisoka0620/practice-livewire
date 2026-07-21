@@ -54,7 +54,7 @@
         {{-- ★ オプションフィルターバー（親がxl:block以上でしか表示されないため、常時flex表示でよい） --}}
         <div x-data="{ hasFilter: false }"
             x-effect="hasFilter = $wire.calendarPriority !== '' || $wire.calendarTaskStatus !== ''"
-            class="mb-3 flex flex-wrap items-center justify-normal gap-2 rounded-xl border border-zinc-700/60 bg-zinc-800/60 px-3 py-2.5 text-zinc-100 shadow-sm backdrop-blur-sm">
+            class="flex flex-wrap items-center justify-normal gap-2 rounded-xl border border-zinc-700/60 bg-zinc-800/60 px-3 py-2.5 text-zinc-100 shadow-sm backdrop-blur-sm">
 
             {{-- 日付ジャンプ --}}
             <div
@@ -96,6 +96,15 @@
                 <flux:icon name="x-mark" class="size-3.5" />
                 Clear Filters
             </button>
+        </div>
+
+        {{-- create calendar's task button --}}
+        <div class="flex justify-end my-2">
+            <flux:button
+                wire:click="$dispatchTo('task-modal', 'open-task-modal')"
+                icon="plus-circle" size="sm">
+                New Task
+            </flux:button>
         </div>
 
         <!-- Calendar Container -->
