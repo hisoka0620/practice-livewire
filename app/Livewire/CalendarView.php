@@ -48,6 +48,11 @@ class CalendarView extends Component
         $this->loadEvents($this->rangeStart, $this->rangeEnd);
     }
 
+    public function openCreateTaskModal(): void
+    {
+        $this->dispatch('open-task-modal')->to(TaskModal::class);
+    }
+
     private function buildTaskQuery(): HasMany
     {
         /** @var \App\Models\User $user */

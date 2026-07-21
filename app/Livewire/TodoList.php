@@ -133,6 +133,11 @@ class TodoList extends Component
         $this->loadTasks();
     }
 
+    public function openCreateTaskModal(): void
+    {
+        $this->dispatch('open-task-modal')->to(TaskModal::class);
+    }
+
     public function changeView(string $view): void
     {
         if ($view === 'calendar') {

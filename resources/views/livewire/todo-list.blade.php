@@ -17,7 +17,7 @@
                     Todo List
                 </flux:heading>
 
-                <flux:button wire:click="$dispatchTo('task-modal', 'open-task-modal')" icon="plus-circle">
+                <flux:button wire:click="openCreateTaskModal" icon="plus-circle">
                     Create Task
                 </flux:button>
             </div>

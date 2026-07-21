@@ -99,10 +99,9 @@
         </div>
 
         {{-- create calendar's task button --}}
-        <div class="flex justify-end my-2">
-            <flux:button
-                wire:click="$dispatchTo('task-modal', 'open-task-modal')"
-                icon="plus-circle" size="sm">
+        <div class="my-2 flex justify-end">
+            <flux:button wire:click="openCreateTaskModal" icon="plus-circle"
+                size="sm">
                 New Task
             </flux:button>
         </div>
