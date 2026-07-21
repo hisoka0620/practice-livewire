@@ -33,6 +33,11 @@ class TaskForm extends Form
         $this->deadline = $task->deadline?->format('Y-m-d\TH:i');
     }
 
+    public function setDeadlineDate(string $prefillDeadline): void
+    {
+        $this->deadline = $prefillDeadline;
+    }
+
     public function create(): void
     {
         $this->validate();

@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Livewire\Component;
 use Carbon\Carbon;
 use Livewire\Attributes\Url;
+use Livewire\Attributes\On;
 
 class CalendarView extends Component
 {
@@ -127,6 +128,14 @@ class CalendarView extends Component
         $this->loadEvents($this->rangeStart, $this->rangeEnd);
 
         return true;
+    }
+
+    #[On('task-saved')]
+    public function handleTaskSaved(): void
+    {
+        if ($this->rangeStart && $this->rangeEnd) {
+            $this->loadEvents($this->rangeStart, $this->rangeEnd);
+        }
     }
 
     public function render()

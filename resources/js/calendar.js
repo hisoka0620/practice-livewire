@@ -177,6 +177,12 @@ export default (wire) => ({
                         this.isLoading = false;
                     });
             },
+            dateClick: (info) => {
+                wire.$dispatchTo("task-modal", "open-task-modal", {
+                    taskId: null, // nullの場合は新規作成モードとしてtask-modal側で判定
+                    prefillDeadline: formatForServer(info.date), // クリックした日付を初期値として渡す
+                });
+            },
             datesSet: (info) => {
                 // 200ms後もまだ読み込み中なら表示する
                 clearTimeout(this._loadingTimer);
