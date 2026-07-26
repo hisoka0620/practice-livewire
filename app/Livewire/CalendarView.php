@@ -68,7 +68,7 @@ class CalendarView extends Component
     /**
      * カレンダーの表示期間に応じてイベントを動的に取得する
      */
-    public function loadEvents(string $start, string $end)
+    public function loadEvents(string $start, string $end): bool
     {
         // 期間を保存しておく
         $this->rangeStart = $start;
@@ -108,6 +108,8 @@ class CalendarView extends Component
 
         // JSへ通知
         $this->dispatch('calendarEventsUpdated', events: $this->calendarEvents)->self();
+
+        return true;
     }
 
     /**
@@ -130,9 +132,7 @@ class CalendarView extends Component
 
         // ドラッグ操作を起点にした変更でも、カレンダー全体を再取得して
         // 色分け（overdue/due_soon等のステータス）を最新化しておく
-        $this->loadEvents($this->rangeStart, $this->rangeEnd);
-
-        return true;
+        return $this->loadEvents($this->rangeStart, $this->rangeEnd);
     }
 
     #[On('task-saved')]
@@ -141,6 +141,45 @@ class CalendarView extends Component
         if ($this->rangeStart && $this->rangeEnd) {
             $this->loadEvents($this->rangeStart, $this->rangeEnd);
         }
+    }
+
+    /**
+     * 右クリックメニューからの完了/未完了トグル
+     */
+    public function toggleTaskCompletion(int $taskId): bool
+    {
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+
+        $task = $user->tasks()->find($taskId);
+
+        if (!$task) {
+            return false;
+        }
+
+        $task->is_completed = !$task->is_completed;
+        $task->save();
+
+        return $this->loadEvents($this->rangeStart, $this->rangeEnd);
+    }
+
+    /**
+     * 右クリックメニューからのタスク削除
+     */
+    public function deleteTask(int $taskId): bool
+    {
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+
+        $task = $user->tasks()->find($taskId);
+
+        if (!$task) {
+            return false;
+        }
+
+        $task->delete();
+
+        return $this->loadEvents($this->rangeStart, $this->rangeEnd);
     }
 
     public function render()

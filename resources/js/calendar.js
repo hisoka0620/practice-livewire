@@ -79,6 +79,13 @@ export default (wire) => ({
     calendar: null,
     isLoading: false,
     _loadingTimer: null, // 遅延表示用タイマー
+    contextMenu: {
+        visible: false,
+        x: 0,
+        y: 0,
+        taskId: null,
+        isCompleted: false,
+    }, //　右クリック時に表示されるコンテキストメニューの状態管理
     init() {
         // calendarEventsプロパティが更新されるたびに発火
         wire.on("calendarEventsUpdated", (payload) => {
@@ -91,6 +98,13 @@ export default (wire) => ({
             this.toggleNoEventsMessage(events.length === 0);
         });
         this.renderCalendar();
+
+        // スクロール時にメニューを閉じる
+        document.addEventListener(
+            "scroll",
+            () => this.closeContextMenu(),
+            true,
+        );
     },
     /**
      * 現在のカレンダービューに応じてイベント情報を加工します
@@ -143,6 +157,21 @@ export default (wire) => ({
         if (this.calendar) {
             this.calendar.destroy();
         }
+
+        // コンテキストメニューが開いている間、それを閉じるためのクリックが
+        // FullCalendar自身のクリック検出（mousedown起点）に渡らないよう、
+        // mousedownの段階でキャプチャフェーズで先に握りつぶす
+        calendarEl.addEventListener(
+            "mousedown",
+            (jsEvent) => {
+                if (this.contextMenu.visible) {
+                    jsEvent.preventDefault();
+                    jsEvent.stopPropagation();
+                    this.closeContextMenu();
+                }
+            },
+            true, // true = キャプチャフェーズで登録
+        );
 
         this.calendar = new Calendar(calendarEl, {
             plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
@@ -280,6 +309,11 @@ export default (wire) => ({
 
                 // Tippy.js をバインド
                 info.el._tippy = tippy(info.el, tooltipOptions);
+
+                info.el.addEventListener("contextmenu", (jsEvent) => {
+                    jsEvent.preventDefault(); // ブラウザ標準の右クリックメニューを抑制
+                    this.openContextMenu(jsEvent, info.event);
+                });
             },
         });
 
@@ -336,6 +370,41 @@ export default (wire) => ({
     notifyError(message) {
         // TODO: 既存のトースト/通知コンポーネントがあればそちらに差し替える
         alert(message);
+    },
+    /**
+     * 右クリックメニューを開く
+     */
+    openContextMenu(jsEvent, event) {
+        const props = event.extendedProps || {};
+        this.contextMenu = {
+            visible: true,
+            x: jsEvent.clientX,
+            y: jsEvent.clientY,
+            taskId: event.id,
+            isCompleted: !!props.completed,
+        };
+    },
+
+    closeContextMenu() {
+        this.contextMenu.visible = false;
+    },
+    /**
+     * 完了/未完了をトグルする
+     */
+    toggleTaskCompletion() {
+        const taskId = this.contextMenu.taskId;
+        this.closeContextMenu();
+        if (!taskId) return;
+        this.runWireAction(wire.toggleTaskCompletion(taskId));
+    },
+    /**
+     * タスクを削除する
+     */
+    deleteTaskFromMenu() {
+        const taskId = this.contextMenu.taskId;
+        this.closeContextMenu();
+        if (!taskId) return;
+        this.runWireAction(wire.deleteTask(taskId));
     },
     /**
      * イベントがない場合に、その旨のメッセージを表示します
