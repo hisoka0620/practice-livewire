@@ -69,6 +69,9 @@ function resolveNewDeadline(info) {
     );
 }
 
+//
+const LOADING_DELAY_MS = 200;
+
 /**
  * Alpine data for the calendar view.
  */
@@ -163,19 +166,15 @@ export default (wire) => ({
                 const taskId = info.event.id;
                 const newDeadline = resolveNewDeadline(info); // ドロップ後の新しい日時（Dateオブジェクト）
 
-                this.isLoading = true;
-                wire.updateTaskDeadline(taskId, formatForServer(newDeadline))
-                    .then((success) => {
-                        if (!success) {
-                            info.revert(); // サーバー側で失敗したら元の位置に戻す
-                        }
-                    })
-                    .catch(() => {
-                        info.revert(); // 通信エラーでも元に戻す
-                    })
-                    .finally(() => {
-                        this.isLoading = false;
-                    });
+                this.runWireAction(
+                    wire.updateTaskDeadline(
+                        taskId,
+                        formatForServer(newDeadline),
+                    ),
+                    {
+                        onFailure: () => info.revert(),
+                    },
+                );
             },
             dateClick: (info) => {
                 wire.$dispatchTo("task-modal", "open-task-modal", {
@@ -184,16 +183,7 @@ export default (wire) => ({
                 });
             },
             datesSet: (info) => {
-                // 200ms後もまだ読み込み中なら表示する
-                clearTimeout(this._loadingTimer);
-                this._loadingTimer = setTimeout(() => {
-                    this.isLoading = true;
-                }, 200);
-
-                wire.loadEvents(info.startStr, info.endStr).finally(() => {
-                    clearTimeout(this._loadingTimer); // まだ表示前ならキャンセル
-                    this.isLoading = false;
-                });
+                this.runWireAction(wire.loadEvents(info.startStr, info.endStr));
             },
             eventClick: (info) => {
                 info.jsEvent.preventDefault();
@@ -294,6 +284,58 @@ export default (wire) => ({
         });
 
         this.calendar.render();
+    },
+
+    /**
+     * 一定時間(LOADING_DELAY_MS)経過してもまだ処理中の場合のみisLoadingを表示する
+     */
+    startLoading() {
+        clearTimeout(this._loadingTimer);
+        this._loadingTimer = setTimeout(() => {
+            this.isLoading = true;
+        }, LOADING_DELAY_MS);
+    },
+
+    /**
+     * ローディング状態を解除する（表示前でもタイマーを確実にキャンセルする）
+     */
+    stopLoading() {
+        clearTimeout(this._loadingTimer);
+        this.isLoading = false;
+    },
+
+    /**
+     * wireメソッド呼び出しを共通処理でラップする。
+     * @param {Promise<boolean>} promise - wire.xxx() の戻り値
+     * @param {object} [options]
+     * @param {() => void} [options.onFailure] - 失敗時（false or 例外）に呼ぶ追加処理（例: info.revert()）
+     */
+    async runWireAction(promise, { onFailure } = {}) {
+        this.startLoading();
+        try {
+            const success = await promise;
+            if (!success) {
+                onFailure?.();
+                this.notifyError(
+                    "The operation failed. You may lack the necessary permissions, or the target may no longer exist.",
+                );
+            }
+        } catch (e) {
+            onFailure?.();
+            this.notifyError(
+                "A communication error occurred. Please try again.",
+            );
+        } finally {
+            this.stopLoading();
+        }
+    },
+
+    /**
+     * エラー通知（暫定実装）
+     */
+    notifyError(message) {
+        // TODO: 既存のトースト/通知コンポーネントがあればそちらに差し替える
+        alert(message);
     },
     /**
      * イベントがない場合に、その旨のメッセージを表示します
