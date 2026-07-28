@@ -16,6 +16,7 @@
         "autoprefixer": "^10.4.20",
         "axios": "^1.7.4",
         "concurrently": "^9.0.1",
+        "flatpickr": "^4.6.13",
         "laravel-vite-plugin": "^2.0",
         "tailwindcss": "^4.1.12",
         "tippy.js": "^6.3.7",
