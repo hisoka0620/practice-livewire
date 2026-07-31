@@ -57,19 +57,20 @@
             class="flex flex-wrap items-center justify-normal gap-2 rounded-xl border border-zinc-700/60 bg-zinc-800/60 px-3 py-2.5 text-zinc-100 shadow-sm backdrop-blur-sm">
 
             {{-- 日付ジャンプ --}}
-            <div
-                class="min-w-auto flex items-center gap-2 rounded-lg border border-zinc-700/70 bg-zinc-900/70 px-2.5 py-2 sm:min-w-44">
+            <div wire:ignore
+                class="min-w-auto flex items-center gap-2 rounded-lg border border-zinc-700/70 bg-zinc-900/70 px-2.5 py-2">
                 <flux:icon name="calendar-days" class="size-4 shrink-0 text-zinc-400" />
-                <input type="month"
+                <flux:input
                     class="min-h-11 w-full rounded-md border border-transparent bg-transparent px-1 py-1 text-xs text-zinc-100 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-                    x-on:change="jumpToMonth($event.target.value)" />
+                    placeholder="Select Date.."
+                    type="text" x-ref="datePicker" />
             </div>
 
             {{-- Priority フィルター --}}
             <div
                 class="min-w-auto flex items-center gap-2 rounded-lg border border-zinc-700/70 bg-zinc-900/70 px-2.5 py-2">
                 <flux:icon name="flag" class="size-4 shrink-0 text-zinc-400" />
-                <flux:select size="sm" wire:model.change="calendarPriority" class="w-full! min-h-11 text-xs">
+                <flux:select size="sm" wire:model.change="calendarPriority" class="min-h-11 w-full text-xs">
                     <flux:select.option value="">All Priorities</flux:select.option>
                     <flux:select.option value="high">High</flux:select.option>
                     <flux:select.option value="medium">Medium</flux:select.option>
@@ -81,7 +82,7 @@
             <div
                 class="min-w-auto flex items-center gap-2 rounded-lg border border-zinc-700/70 bg-zinc-900/70 px-2.5 py-2">
                 <flux:icon name="check-circle" class="size-4 shrink-0 text-zinc-400" />
-                <flux:select size="sm" wire:model.change="calendarTaskStatus" class="w-full! min-h-11 text-xs">
+                <flux:select size="sm" wire:model.change="calendarTaskStatus" class="min-h-11 w-full text-xs">
                     <flux:select.option value="">All Statuses</flux:select.option>
                     <flux:select.option value="incomplete">Incomplete</flux:select.option>
                     <flux:select.option value="expired">Expired</flux:select.option>

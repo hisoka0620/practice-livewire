@@ -77,7 +77,11 @@ const LOADING_DELAY_MS = 200;
  */
 export default (wire) => ({
     calendar: null,
+    flatPickr: null, // flatpickr（月選択）インスタンス
     isLoading: false,
+    currentViewType: "dayGridMonth",
+    currentDatePickerValue: "", // 月入力欄と同期させる「表示中の年月」(YYYY-MM)
+    _skipDatePickerSync: false, // flatpickr自身の選択操作によるgotoDateの場合、選んだ日付表示を上書きしないためのフラグ
     _loadingTimer: null, // 遅延表示用タイマー
     contextMenu: {
         visible: false,
@@ -91,13 +95,14 @@ export default (wire) => ({
         wire.on("calendarEventsUpdated", (payload) => {
             if (!this.calendar) return;
             const rawEvents = payload?.events ?? payload ?? [];
-            // ★変更：現在のビューに応じてイベントを加工
+            // 現在のビューに応じてイベントを加工
             const events = this.processEventsByView(rawEvents);
             this.calendar.removeAllEventSources();
             this.calendar.addEventSource(events);
             this.toggleNoEventsMessage(events.length === 0);
         });
         this.renderCalendar();
+        this.initFlatPickr();
 
         // スクロール時にメニューを閉じる
         document.addEventListener(
@@ -105,6 +110,74 @@ export default (wire) => ({
             () => this.closeContextMenu(),
             true,
         );
+    },
+    destroy() {
+        this.flatPickr?.destroy();
+        this.calendar?.destroy();
+    },
+    /**
+     * 月ジャンプ用のflatpickr（monthSelectプラグイン）を初期化する。
+     * allowInput を有効化しないことで、キーボード直接入力によるブラウザネイティブ
+     * 月入力ウィジェット特有のバグ（年桁の自動補完・0000/1901化）を構造的に回避する。
+     */
+    initFlatPickr(viewType = "dayGridMonth") {
+        const inputEl =
+            this.$refs?.datePicker ||
+            this.$el.querySelector('[x-ref="datePicker"]');
+        if (!inputEl) return;
+
+        // 二重初期化防止（Livewireの再レンダリングやAlpineの再初期化に備えたガード）
+        if (this.flatPickr) {
+            this.flatPickr.destroy();
+            this.flatPickr = null;
+        }
+
+        this.currentViewType = viewType;
+
+        if (viewType === "dayGridMonth") {
+            this.flatPickr = flatpickr(inputEl, {
+                plugins: [
+                    new monthSelectPlugin({
+                        shorthand: true,
+                        dateFormat: "Y-m",
+                        altFormat: "F Y",
+                        theme: "dark",
+                    }),
+                ],
+                altInput: true,
+                disableMobile: true,
+                defaultDate: this.currentDatePickerValue || new Date(),
+                onChange: (selectedDates, dateStr) => {
+                    this.jumpToDate(dateStr);
+                },
+            });
+        } else {
+            // 週表示では日付単位でジャンプできるよう、通常の日付ピッカーに切り替える
+            this.flatPickr = flatpickr(inputEl, {
+                dateFormat: "Y-m-d",
+                altInput: true,
+                altFormat: "F j, Y",
+                disableMobile: true,
+                defaultDate: this.calendar?.getDate() ?? new Date(),
+                onChange: (selectedDates, dateStr) => {
+                    this.jumpToDate(dateStr);
+                },
+            });
+        }
+    },
+    /**
+     * flatpickrの表示値のみをFullCalendarの現在位置に同期する（モード切替は伴わない）。
+     * @param {string} viewType
+     * @param {Date} currentStart - info.view.currentStart
+     */
+    syncDatePicker(viewType, currentStart) {
+        if (!this.flatPickr) return;
+
+        if (viewType === "timeGridWeek") {
+            this.flatPickr.setDate(currentStart, false);
+        } else {
+            this.flatPickr.setDate(this.currentDatePickerValue, false);
+        }
     },
     /**
      * 現在のカレンダービューに応じてイベント情報を加工します
@@ -212,6 +285,19 @@ export default (wire) => ({
                 });
             },
             datesSet: (info) => {
+                const viewType = info.view.type;
+                this.currentDatePickerValue = info.view.currentStart;
+                if (this.currentViewType !== viewType) {
+                    // dayGridMonth ⇔ timeGridWeek の切り替え：flatpickrを作り直す
+                    this.initFlatPickr(viewType);
+                } else if (this._skipDatePickerSync) {
+                    // flatpickr自身の選択操作によるgotoDateなので、
+                    // 選んだ日付の表示を週の開始日で上書きしないようスキップする
+                    this._skipDatePickerSync = false;
+                } else {
+                    // prev/next/todayボタン等による移動：表示値を同期する
+                    this.syncDatePicker(viewType, info.view.currentStart);
+                }
                 this.runWireAction(wire.loadEvents(info.startStr, info.endStr));
             },
             eventClick: (info) => {
@@ -456,9 +542,13 @@ export default (wire) => ({
             existing.remove();
         }
     },
-    jumpToMonth(value) {
+    jumpToDate(value) {
         // value は "2026-06" 形式
         if (!this.calendar || !value) return;
-        this.calendar.gotoDate(value + "-01");
+        const target = value.length === 7 ? value + "-01" : value;
+        // このgotoDateによって発火するdatesSetでは、flatpickrが今表示している
+        // 選択日付をcurrentStart（週の開始日）で上書きしないようにする
+        this._skipDatePickerSync = true;
+        this.calendar.gotoDate(target);
     },
 });
