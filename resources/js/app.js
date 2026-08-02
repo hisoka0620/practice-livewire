@@ -1,7 +1,3 @@
-import {
-    Livewire,
-    Alpine,
-} from "../../vendor/livewire/livewire/dist/livewire.esm";
 import "./push";
 import calendar from "./calendar";
 import tippy from 'tippy.js';
@@ -14,5 +10,7 @@ window.tippy = tippy;
 window.flatpickr = flatpickr;
 window.monthSelectPlugin = monthSelectPlugin;
 
-Alpine.data("taskCalendar", calendar);
-Livewire.start();
+// Livewireが自動起動する前にAlpineのコンポーネントを登録する
+document.addEventListener('livewire:init', () => {
+    window.Alpine.data("taskCalendar", calendar);
+});

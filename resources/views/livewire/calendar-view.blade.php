@@ -1,7 +1,7 @@
 <div>
     <div wire:key="calendar-view"
         class="mt-2 hidden rounded-xl border border-zinc-700 bg-zinc-800/90 p-4 text-zinc-100 shadow-sm xl:block"
-        x-data="taskCalendar($wire)" x-init="init()">
+        x-data="taskCalendar($wire)">
         <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
                 <p class="text-sm font-semibold text-zinc-100">Calendar View</p>
