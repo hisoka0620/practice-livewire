@@ -62,8 +62,7 @@
                 <flux:icon name="calendar-days" class="size-4 shrink-0 text-zinc-400" />
                 <flux:input
                     class="min-h-11 w-full rounded-md border border-transparent bg-transparent px-1 py-1 text-xs text-zinc-100 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-                    placeholder="Select Date.."
-                    type="text" x-ref="datePicker" />
+                    placeholder="Select Date.." type="text" x-ref="datePicker" />
             </div>
 
             {{-- Priority フィルター --}}
@@ -108,14 +107,8 @@
 
         <!-- Calendar Container -->
         <div class="relative">
-            {{-- 月移動・週移動（datesSet）によるローディング --}}
+            {{-- 月移動・週移動・フィルター変更を統一的にカバーするローディング --}}
             <div x-show="isLoading" x-cloak x-transition
-                class="absolute inset-0 z-10 flex items-center justify-center bg-zinc-900/60">
-                <span class="h-8 w-8 animate-spin rounded-full border-2 border-zinc-400 border-t-transparent"></span>
-            </div>
-
-            {{-- Priority / Status フィルター変更、Clear Filtersによるローディング --}}
-            <div wire:loading.delay wire:target="calendarPriority, calendarTaskStatus, clearFilters"
                 class="absolute inset-0 z-10 flex items-center justify-center bg-zinc-900/60">
                 <span class="h-8 w-8 animate-spin rounded-full border-2 border-zinc-400 border-t-transparent"></span>
             </div>

@@ -83,6 +83,9 @@ export default (wire) => ({
     currentDatePickerValue: "", // 月入力欄と同期させる「表示中の年月」(YYYY-MM)
     _skipDatePickerSync: false, // flatpickr自身の選択操作によるgotoDateの場合、選んだ日付表示を上書きしないためのフラグ
     _loadingTimer: null, // 遅延表示用タイマー
+    _destroyed: false, // Livewire.hookには公式の解除APIがないため、破棄後の実行を防ぐガード
+    _offCommitHook: null,
+    _onScroll: null, // document.addEventListener("scroll", ...)に渡した関数参照（removeEventListenerで同一参照が必要なため保持）
     contextMenu: {
         visible: false,
         x: 0,
@@ -91,6 +94,7 @@ export default (wire) => ({
         isCompleted: false,
     }, //　右クリック時に表示されるコンテキストメニューの状態管理
     init() {
+        this._destroyed = false;
         // calendarEventsプロパティが更新されるたびに発火
         wire.on("calendarEventsUpdated", (payload) => {
             if (!this.calendar) return;
@@ -101,17 +105,42 @@ export default (wire) => ({
             this.calendar.addEventSource(events);
             this.toggleNoEventsMessage(events.length === 0);
         });
+
+        // このコンポーネントの通信（プロパティ更新・メソッド呼び出し）を検知し、
+        // フィルター関連の操作だけ isLoading に反映する（月移動・週移動は
+        // datesSet → runWireAction 側が引き続き担当）
+        this._offCommitHook = Livewire.hook(
+            "commit",
+            ({ component, commit, succeed, fail }) => {
+                if (this._destroyed) return; // 破棄済みインスタンスでは何もしない
+                if (component.id !== wire.$id) return; // 他コンポーネントの通信は無視
+
+                const isFilterCommit =
+                    "calendarPriority" in (commit.updates ?? {}) ||
+                    "calendarTaskStatus" in (commit.updates ?? {}) ||
+                    (commit.calls ?? []).some(
+                        (call) => call.method === "clearFilters",
+                    );
+
+                if (!isFilterCommit) return;
+
+                this.startLoading();
+                succeed(() => this.stopLoading());
+                fail(() => this.stopLoading());
+            },
+        );
+
         this.renderCalendar();
         this.initFlatPickr();
 
         // スクロール時にメニューを閉じる
-        document.addEventListener(
-            "scroll",
-            () => this.closeContextMenu(),
-            true,
-        );
+        this._onScroll = () => this.closeContextMenu();
+        document.addEventListener("scroll", this._onScroll, true);
     },
     destroy() {
+        this._destroyed = true;
+        this._offCommitHook();
+        document.removeEventListener("scroll", this._onScroll, true);
         this.flatPickr?.destroy();
         this.calendar?.destroy();
     },
