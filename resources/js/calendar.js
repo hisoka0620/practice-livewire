@@ -80,7 +80,7 @@ export default (wire) => ({
     flatPickr: null, // flatpickr（月選択）インスタンス
     isLoading: false,
     currentViewType: "dayGridMonth",
-    currentDatePickerValue: "", // 月入力欄と同期させる「表示中の年月」(YYYY-MM)
+    currentDatePickerValue: null, // fullcalendarの開始日付Dateオブジェクト用
     _skipDatePickerSync: false, // flatpickr自身の選択操作によるgotoDateの場合、選んだ日付表示を上書きしないためのフラグ
     _loadingTimer: null, // 遅延表示用タイマー
     _destroyed: false, // Livewire.hookには公式の解除APIがないため、破棄後の実行を防ぐガード
