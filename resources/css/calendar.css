@@ -1,9 +1,10 @@
 #task-calendar {
     position: relative; /* オーバーレイの基準点 */
-    background: --alpha(var(--color-zinc-800) / 90%);
+    background: rgba(38, 38, 38, 0.9);
     color: #e2e8f0;
     display: block;
     width: 100%;
+    --fc-header-height: 92px; /* ツールバー+曜日行の高さのフォールバック値。JSで実測して上書き可能 */
 }
 
 #task-calendar .fc-toolbar-title,
@@ -18,7 +19,7 @@
 #task-calendar .fc-col-header-cell-cushion,
 #task-calendar .fc-timegrid-col .fc-col-header-cell,
 #task-calendar .fc-col-header {
-    background: --alpha(var(--color-zinc-800) / 90%);
+    background: rgba(38, 38, 38, 0.9);
     color: #cbd5e1;
 }
 
@@ -64,12 +65,12 @@
 }
 
 /* イベント要素全体のマウスカーソルをデフォルトに変更 */
-.fc-event {
+#task-calendar .fc-event {
     cursor: default;
 }
 
 /* 優先度バッジとイベント内レイアウト */
-.fc-custom-event {
+#task-calendar .fc-custom-event {
     display: flex;
     align-items: center;
     gap: 0.25rem;
@@ -78,7 +79,7 @@
     padding: 0 0.125rem;
 }
 
-.fc-custom-event .fc-priority-dot {
+#task-calendar .fc-custom-event .fc-priority-dot {
     width: 0.55rem;
     height: 0.55rem;
     border-radius: 50%;
@@ -86,14 +87,14 @@
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
 }
 
-.fc-custom-event .fc-event-content {
+#task-calendar .fc-custom-event .fc-event-content {
     display: flex;
     flex-direction: row;
     align-items: center;
     overflow: hidden;
 }
 
-.fc-custom-event .fc-event-time {
+#task-calendar .fc-custom-event .fc-event-time {
     font-size: 0.75rem;
     color: var(--fc-event-text, #ffffff);
     white-space: nowrap;
@@ -102,7 +103,7 @@
     text-overflow: ellipsis;
 }
 
-.fc-custom-event .fc-event-title {
+#task-calendar .fc-custom-event .fc-event-title {
     font-size: 0.85rem;
     font-weight: 600;
     line-height: 1;
@@ -129,16 +130,16 @@
     margin-bottom: 0;
 }
 
-.fc .fc-daygrid-more-link {
+#task-calendar .fc-daygrid-more-link {
     padding: 0.175rem 0.25rem;
     color: #cbd5e1;
 }
 
-.fc .fc-daygrid-more-link:hover {
+#task-calendar .fc-daygrid-more-link:hover {
     opacity: 0.9;
 }
 
-.fc .fc-daygrid-event:hover {
+#task-calendar .fc-daygrid-event:hover {
     opacity: 0.9;
 }
 
@@ -174,16 +175,16 @@
     text-overflow: ellipsis;
 }
 
-.fc .fc-timegrid-more-link.fc-more-link {
-    background: --alpha(var(--color-zinc-800) / 90%);
+#task-calendar .fc-timegrid-more-link.fc-more-link {
+    background: rgba(38, 38, 38, 0.9);
     color: #cbd5e1;
 }
 
-.fc .fc-timegrid-more-link.fc-more-link:hover {
+#task-calendar .fc-timegrid-more-link.fc-more-link:hover {
     opacity: 0.9;
 }
 
-.fc .fc-timeGridWeek-view ~ .fc-popover .fc-event-content {
+#task-calendar .fc-timeGridWeek-view ~ .fc-popover .fc-event-content {
     gap: 0.25rem;
 }
 
@@ -222,8 +223,8 @@
 /* ============================================================
    ポップオーバーの見た目を調整
    ============================================================ */
-.fc .fc-popover {
-    background: --alpha(var(--color-zinc-800) / 90%);
+#task-calendar .fc-popover {
+    background: rgba(38, 38, 38, 0.9);
     border: 1px solid rgba(148, 163, 184, 0.22);
     color: #cbd5e1;
 }
@@ -231,7 +232,7 @@
 /* ============================================================
    イベントがない場合のオーバーレイ表示
    ============================================================ */
-.fc-no-events-overlay {
+#task-calendar .fc-no-events-overlay {
     position: absolute;
     inset: 0;
     display: flex;
@@ -240,20 +241,20 @@
     justify-content: center;
     gap: 8px;
     /* カレンダーヘッダー・曜日行の高さ分だけ下にずらして視覚的中心を合わせる */
-    padding-top: 91px;
+    padding-top: var(--fc-header-height, 92px);
     padding-bottom: 0;
     /* グリッド部分だけをうっすら暗幕で覆う */
     background: linear-gradient(
         to bottom,
-        /* ヘッダー・曜日行は透過 */ transparent 91px,
-        /* グリッド部分だけ暗幕 */ rgba(9, 9, 11, 0.6) 91px
+        /* ヘッダー・曜日行は透過 */ transparent var(--fc-header-height, 92px),
+        /* グリッド部分だけ暗幕 */ rgba(9, 9, 11, 0.6) var(--fc-header-height, 92px)
     );
     pointer-events: none;
     z-index: 1;
     border-radius: 0 0 0.75rem 0.75rem;
 }
 
-.fc-no-events-overlay__icon {
+#task-calendar .fc-no-events-overlay__icon {
     width: 72px;
     height: 72px;
     border-radius: 50%;
@@ -265,14 +266,14 @@
     margin-bottom: 4px;
 }
 
-.fc-no-events-overlay__title {
+#task-calendar .fc-no-events-overlay__title {
     font-size: 0.875rem;
     font-weight: 500;
     color: #e2e8f0;
     margin: 0;
 }
 
-.fc-no-events-overlay__sub {
+#task-calendar .fc-no-events-overlay__sub {
     font-size: 0.75rem;
     color: #a1a1aa;
     margin: 0;

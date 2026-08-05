@@ -13,14 +13,14 @@
  * 共通で当たるようにする。
  */
 .flatpickr-calendar {
-    background: color-mix(in srgb, var(--color-zinc-800) 90%, transparent); /* bg-zinc-800/90 */
+    background: rgba(38, 38, 38, 0.9); /* bg-zinc-800/90 */
     border: 1px solid var(--color-zinc-700);
     box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
     border-radius: 0.75rem;
 }
 
 .flatpickr-calendar .flatpickr-month {
-    background: color-mix(in srgb, var(--color-zinc-800) 90%, transparent);
+    background: rgba(38, 38, 38, 0.9);
     border: 1px solid var(--color-zinc-700);
     border-radius: 0.75rem 0.75rem 0 0;
 }
@@ -47,7 +47,7 @@
 
 /* --- monthSelectプラグイン（dayGridMonth用の月選択）--- */
 .flatpickr-calendar .flatpickr-monthSelect-month {
-    color: color-mix(in srgb, var(--color-zinc-100) 90%, transparent);
+    color: rgba(245, 245, 245, 0.9);
 }
 
 .flatpickr-calendar .flatpickr-monthSelect-month:hover,
@@ -64,16 +64,16 @@
 
 /* --- コアflatpickr（timeGridWeek用の日付選択）--- */
 .flatpickr-calendar .flatpickr-weekdays {
-    background: color-mix(in srgb, var(--color-zinc-800) 90%, transparent);
+    background: rgba(38, 38, 38, 0.9);
 }
 
 .flatpickr-calendar span.flatpickr-weekday {
     background: transparent;
-    color: color-mix(in srgb, var(--color-zinc-100) 70%, transparent);
+    color: rgba(245, 245, 245, 0.7);
 }
 
 .flatpickr-calendar .flatpickr-day {
-    color: color-mix(in srgb, var(--color-zinc-100) 90%, transparent);
+    color: rgba(245, 245, 245, 0.9);
 }
 
 .flatpickr-calendar .flatpickr-day.today {
@@ -96,5 +96,5 @@
 .flatpickr-calendar .flatpickr-day.flatpickr-disabled,
 .flatpickr-calendar .flatpickr-day.prevMonthDay,
 .flatpickr-calendar .flatpickr-day.nextMonthDay {
-    color: color-mix(in srgb, var(--color-zinc-100) 30%, transparent);
+    color: rgba(245, 245, 245, 0.3);
 }
