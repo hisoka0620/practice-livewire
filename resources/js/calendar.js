@@ -86,6 +86,7 @@ export default (wire) => ({
     _destroyed: false, // Livewire.hookには公式の解除APIがないため、破棄後の実行を防ぐガード
     _offCommitHook: null,
     _onScroll: null, // document.addEventListener("scroll", ...)に渡した関数参照（removeEventListenerで同一参照が必要なため保持）
+    _headerResizeObserver: null, // ツールバー+曜日行の高さ監視用ResizeObserver（--fc-header-height反映用）
     contextMenu: {
         visible: false,
         x: 0,
@@ -141,6 +142,7 @@ export default (wire) => ({
         this._destroyed = true;
         this._offCommitHook();
         document.removeEventListener("scroll", this._onScroll, true);
+        this._headerResizeObserver?.disconnect();
         this.flatPickr?.destroy();
         this.calendar?.destroy();
     },
@@ -327,6 +329,9 @@ export default (wire) => ({
                     // prev/next/todayボタン等による移動：表示値を同期する
                     this.syncDatePicker(viewType, info.view.currentStart);
                 }
+                // ビュー切替時はFullCalendarが該当DOMを作り直すため、
+                // 監視対象を張り直して最新のヘッダー高さを反映する
+                this.observeHeaderHeight();
                 this.runWireAction(wire.loadEvents(info.startStr, info.endStr));
             },
             eventClick: (info) => {
@@ -433,6 +438,60 @@ export default (wire) => ({
         });
 
         this.calendar.render();
+        // 初回描画直後にヘッダー高さの監視を開始する
+        this.observeHeaderHeight();
+    },
+
+    /**
+     * ツールバー+曜日行の高さを実測し、#task-calendarのCSS変数
+     * --fc-header-height に反映する（.fc-no-events-overlay のpadding-top/
+     * グラデーション境界に使用）。
+     */
+    updateHeaderHeight() {
+        const calendarEl = this.$el?.querySelector("#task-calendar");
+        if (!calendarEl) return;
+
+        const toolbarEl = calendarEl.querySelector(".fc-header-toolbar");
+        const colHeaderEl = calendarEl.querySelector(
+            ".fc-col-header, .fc-scrollgrid-section-header",
+        );
+        // offsetHeightはmargin-bottomを含まないため、要素があれば
+        // computed styleから明示的に加算する
+        const marginBottom = (el) =>
+            el ? parseFloat(getComputedStyle(el).marginBottom) || 0 : 0;
+        const height =
+            (toolbarEl?.offsetHeight ?? 0) +
+            marginBottom(toolbarEl) +
+            (colHeaderEl?.offsetHeight ?? 0);
+
+        if (height > 0) {
+            calendarEl.style.setProperty("--fc-header-height", `${height}px`);
+        }
+    },
+
+    /**
+     * ツールバー・曜日行の高さ変化を監視し、変化のたびにupdateHeaderHeight()を呼ぶ。
+     * FullCalendarはビュー切替時に該当DOMを作り直すため、呼ばれるたびに
+     * 監視対象を張り直す（disconnect→observe）。
+     */
+    observeHeaderHeight() {
+        const calendarEl = this.$el?.querySelector("#task-calendar");
+        if (!calendarEl) return;
+
+        this._headerResizeObserver?.disconnect();
+        this._headerResizeObserver = new ResizeObserver(() =>
+            this.updateHeaderHeight(),
+        );
+
+        const toolbarEl = calendarEl.querySelector(".fc-header-toolbar");
+        const colHeaderEl = calendarEl.querySelector(
+            ".fc-col-header, .fc-scrollgrid-section-header",
+        );
+        if (toolbarEl) this._headerResizeObserver.observe(toolbarEl);
+        if (colHeaderEl) this._headerResizeObserver.observe(colHeaderEl);
+
+        // 張り直した直後は次の変化を待たず即座に反映する
+        this.updateHeaderHeight();
     },
 
     /**
