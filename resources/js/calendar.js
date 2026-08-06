@@ -83,7 +83,7 @@ export default (wire) => ({
     currentDatePickerValue: null, // fullcalendarの開始日付Dateオブジェクト用
     _skipDatePickerSync: false, // flatpickr自身の選択操作によるgotoDateの場合、選んだ日付表示を上書きしないためのフラグ
     _loadingTimer: null, // 遅延表示用タイマー
-    _destroyed: false, // Livewire.hookには公式の解除APIがないため、破棄後の実行を防ぐガード
+    _destroyed: false, // Livewire.hookがこのコンポーネントの破棄後に実行されるのを防ぐガード
     _offCommitHook: null,
     _onScroll: null, // document.addEventListener("scroll", ...)に渡した関数参照（removeEventListenerで同一参照が必要なため保持）
     _headerResizeObserver: null, // ツールバー+曜日行の高さ監視用ResizeObserver（--fc-header-height反映用）
@@ -140,7 +140,10 @@ export default (wire) => ({
     },
     destroy() {
         this._destroyed = true;
-        this._offCommitHook();
+        // Livewireフックの登録解除（安全に呼び出し）
+        if (typeof this._offCommitHook === "function") {
+            this._offCommitHook();
+        }
         document.removeEventListener("scroll", this._onScroll, true);
         this._headerResizeObserver?.disconnect();
         this.flatPickr?.destroy();
