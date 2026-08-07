@@ -40,6 +40,24 @@ function formatForServer(date) {
 }
 
 /**
+ * datePartの「日付」とtimePartの「時刻」を合成した新しいDateを返す。
+ * timePartがnull/undefinedの場合は時刻を0:00:00として扱う。
+ * - resolveNewDeadline: ドロップ後の日付 + 元のdeadlineの時刻
+ * - dateClick: クリックした日付 + 現在時刻
+ * など、「日付だけ変えたいが時刻は別の値から持ってきたい」場面で共通利用する。
+ */
+function combineDateAndTime(datePart, timePart) {
+    return new Date(
+        datePart.getFullYear(),
+        datePart.getMonth(),
+        datePart.getDate(),
+        timePart ? timePart.getHours() : 0,
+        timePart ? timePart.getMinutes() : 0,
+        timePart ? timePart.getSeconds() : 0,
+    );
+}
+
+/**
  * ドラッグ&ドロップ後の新しいdeadline（Dateオブジェクト）を、
  * 現在のビュー種別に応じて算出する。
  * - dayGridMonth: 終日イベント（allDay:true）として描画しているため、
@@ -59,14 +77,7 @@ function resolveNewDeadline(info) {
     const oldTime = oldDeadlineStr ? new Date(oldDeadlineStr) : null;
     const newDateOnly = info.event.start;
 
-    return new Date(
-        newDateOnly.getFullYear(),
-        newDateOnly.getMonth(),
-        newDateOnly.getDate(),
-        oldTime ? oldTime.getHours() : 0,
-        oldTime ? oldTime.getMinutes() : 0,
-        oldTime ? oldTime.getSeconds() : 0,
-    );
+    return combineDateAndTime(newDateOnly, oldTime);
 }
 
 //
@@ -326,9 +337,30 @@ export default (wire) => ({
                 );
             },
             dateClick: (info) => {
+                const clicked = info.date;
+                let deadline;
+
+                if (info.view.type === "dayGridMonth") {
+                    const today = new Date();
+                    const todayDateOnly = new Date(
+                        today.getFullYear(),
+                        today.getMonth(),
+                        today.getDate(),
+                    );
+                    const isPast = clicked < todayDateOnly;
+                    // 過去日: 0:00固定 / 今日以降: 現在時刻を合成
+                    deadline = combineDateAndTime(
+                        clicked,
+                        isPast ? null : new Date(),
+                    );
+                } else {
+                    // 週表示: クリックした時間スロットをそのまま使う（合成不要）
+                    deadline = clicked;
+                }
+
                 wire.$dispatchTo("task-modal", "open-task-modal", {
                     taskId: null, // nullの場合は新規作成モードとしてtask-modal側で判定
-                    prefillDeadline: formatForServer(info.date), // クリックした日付を初期値として渡す
+                    prefillDeadline: formatForServer(deadline),
                 });
             },
             datesSet: (info) => {
