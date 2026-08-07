@@ -105,6 +105,9 @@ export default (wire) => ({
             this.calendar.removeAllEventSources();
             this.calendar.addEventSource(events);
             this.toggleNoEventsMessage(events.length === 0);
+            // task-saved 経由のリロードもここで確実に完了するため、
+            // 安全策としてここでも stopLoading しておく（冪等なので害はない）
+            this.stopLoading();
         });
 
         // このコンポーネントの通信（プロパティ更新・メソッド呼び出し）を検知し、
@@ -114,29 +117,39 @@ export default (wire) => ({
             "commit",
             ({ component, commit, succeed, fail }) => {
                 if (this._destroyed) return; // 破棄済みインスタンスでは何もしない
-                if (component.id !== wire.$id) return; // 他コンポーネントの通信は無視
+                const isOwnFilterCommit =
+                    component.id === wire.$id &&
+                    ("calendarPriority" in (commit.updates ?? {}) ||
+                        "calendarTaskStatus" in (commit.updates ?? {}) ||
+                        (commit.calls ?? []).some(
+                            (call) => call.method === "clearFilters",
+                        ));
 
-                const isFilterCommit =
-                    "calendarPriority" in (commit.updates ?? {}) ||
-                    "calendarTaskStatus" in (commit.updates ?? {}) ||
-                    (commit.calls ?? []).some(
-                        (call) => call.method === "clearFilters",
-                    );
+                // task-savedはTaskModalなど他コンポーネントのcommitとして
+                // 流れてくるため、component.idでの絞り込みをかけない
+                const isTaskSavedDispatch = (commit.calls ?? []).some(
+                    (call) =>
+                        call.method === "__dispatch" &&
+                        call.params?.[0] === "task-saved",
+                );
 
-                if (!isFilterCommit) return;
+                if (!isOwnFilterCommit && !isTaskSavedDispatch) return;
 
                 this.startLoading();
                 succeed(() => this.stopLoading());
-                fail(() => this.stopLoading());
+                fail(() => {
+                    this.stopLoading();
+                    this.notifyError("The operation failed. Please try again.");
+                });
             },
         );
-
-        this.renderCalendar();
-        this.initFlatPickr();
 
         // スクロール時にメニューを閉じる
         this._onScroll = () => this.closeContextMenu();
         document.addEventListener("scroll", this._onScroll, true);
+
+        this.renderCalendar();
+        this.initFlatPickr();
     },
     destroy() {
         this._destroyed = true;
