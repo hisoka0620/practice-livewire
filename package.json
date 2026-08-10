@@ -6,17 +6,13 @@
         "dev": "vite"
     },
     "dependencies": {
-        "@fullcalendar/common": "^5.11.5",
-        "@fullcalendar/core": "^6.1.20",
-        "@fullcalendar/daygrid": "^6.1.20",
-        "@fullcalendar/interaction": "^6.1.20",
-        "@fullcalendar/timegrid": "^6.1.20",
         "@tailwindcss/vite": "^4.1.11",
         "alpinejs": "^3.14.9",
         "autoprefixer": "^10.4.20",
         "axios": "^1.7.4",
         "concurrently": "^9.0.1",
         "flatpickr": "^4.6.13",
+        "fullcalendar": "^6.1.21",
         "laravel-vite-plugin": "^2.0",
         "tailwindcss": "^4.1.12",
         "tippy.js": "^6.3.7",
