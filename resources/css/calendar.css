@@ -1,10 +1,17 @@
+#calendar-container {
+    height: clamp(860px, 84vh, 960px);
+}
+
 #task-calendar {
     position: relative; /* オーバーレイの基準点 */
     background: rgba(38, 38, 38, 0.9);
     color: #e2e8f0;
-    display: block;
     width: 100%;
-    --fc-header-height: 92px; /* ツールバー+曜日行の高さのフォールバック値。JSで実測して上書き可能 */
+    --fc-header-height: 63px; /* ツールバー+曜日行の高さのフォールバック値。JSで実測して上書き可能 */
+}
+
+#task-calendar .fc-daygrid-day-frame {
+    min-height: 120px;
 }
 
 #task-calendar .fc-toolbar-title,
@@ -113,25 +120,7 @@
     color: var(--fc-event-text, #ffffff);
 }
 
-#task-calendar .fc-dayGridMonth-view .fc-daygrid-day-frame {
-    width: 100%;
-    aspect-ratio: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden; /* aspect-ratioで決まった高さを中身が超えないようにする */
-    box-sizing: border-box;
-}
-
-#task-calendar .fc-dayGridMonth-view .fc-daygrid-day-events {
-    flex: 1;
-    min-height: 0;
-    overflow: hidden;
-    max-height: 100%;
-    margin-bottom: 0;
-}
-
 #task-calendar .fc-daygrid-more-link {
-    padding: 0.175rem 0.25rem;
     color: #cbd5e1;
 }
 
@@ -191,15 +180,6 @@
 /* ============================================================
    timeGridWeek: イベント内部を縦方向中央に配置
    ============================================================ */
-#task-calendar .fc-timeGridWeek-view .fc-event-main {
-    height: 100%;
-    display: flex;
-    align-items: center;
-    overflow: hidden; /* はみ出た部分を非表示にする */
-    text-overflow: ellipsis; /* 入り切らないテキストを「...」にする */
-    white-space: nowrap; /* 縦幅が極端に狭い場合に文字の折り返しを防ぐ */
-}
-
 #task-calendar .fc-timeGridWeek-view .fc-timegrid-event:hover {
     opacity: 0.9;
 }
@@ -209,7 +189,6 @@
    inline style(top/bottom)から解放し、コンパクトに固定する
    ============================================================ */
 #task-calendar .fc-timeGridWeek-view .fc-timegrid-more-link.fc-more-link {
-    bottom: auto; /* JSが入れるbottom値を無効化 */
     height: 1.6rem; /* 好みの高さに調整 */
     margin: 0;
     padding: 0;
@@ -241,16 +220,13 @@
     justify-content: center;
     gap: 8px;
     /* カレンダーヘッダー・曜日行の高さ分だけ下にずらして視覚的中心を合わせる */
-    padding-top: var(--fc-header-height, 92px);
+    padding-top: var(--fc-header-height, 63px);
     padding-bottom: 0;
     /* グリッド部分だけをうっすら暗幕で覆う */
-    background: linear-gradient(
-        to bottom,
-        /* ヘッダー・曜日行は透過 */ transparent var(--fc-header-height, 92px),
-        /* グリッド部分だけ暗幕 */ rgba(9, 9, 11, 0.6) var(--fc-header-height, 92px)
-    );
+    background: rgba(9, 9, 11, 0.6);
+    background-clip: content-box;  /* 背景色をコンテンツ領域だけに制限 */
     pointer-events: none;
-    z-index: 1;
+    z-index: 10;
     border-radius: 0 0 0.75rem 0.75rem;
 }
 

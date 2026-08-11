@@ -106,7 +106,7 @@
         </div>
 
         <!-- Calendar Container -->
-        <div class="relative">
+        <div id="calendar-container" class="relative">
             {{-- 月移動・週移動・フィルター変更を統一的にカバーするローディング --}}
             <div x-show="isLoading" x-cloak x-transition
                 class="absolute inset-0 z-10 flex items-center justify-center bg-zinc-900/60">

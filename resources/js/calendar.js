@@ -391,10 +391,9 @@ export default (wire) => ({
                 });
             },
             eventDisplay: "block",
-            height: "auto", // コンテナを親に合わせる
-            fixedWeekCount: false, // 週の固定行数を解除（月によって高さが変動）
-            dayMaxEventRows: 3,
-            dayMaxEvents: 3,
+            height: "100%",
+            fixedWeekCount: false,
+            dayMaxEvents: true,
             eventMaxStack: 2, // スタックの最大数を制限
             moreLinkContent: (args) => `+${args.num} more`,
             eventContent: (arg) => {
@@ -491,7 +490,7 @@ export default (wire) => ({
     },
 
     /**
-     * ツールバー+曜日行の高さを実測し、#task-calendarのCSS変数
+     * ツールバーの高さを実測し、#task-calendarのCSS変数
      * --fc-header-height に反映する（.fc-no-events-overlay のpadding-top/
      * グラデーション境界に使用）。
      */
@@ -500,25 +499,24 @@ export default (wire) => ({
         if (!calendarEl) return;
 
         const toolbarEl = calendarEl.querySelector(".fc-header-toolbar");
-        const colHeaderEl = calendarEl.querySelector(
-            ".fc-col-header, .fc-scrollgrid-section-header",
-        );
+
         // offsetHeightはmargin-bottomを含まないため、要素があれば
         // computed styleから明示的に加算する
         const marginBottom = (el) =>
             el ? parseFloat(getComputedStyle(el).marginBottom) || 0 : 0;
         const height =
             (toolbarEl?.offsetHeight ?? 0) +
-            marginBottom(toolbarEl) +
-            (colHeaderEl?.offsetHeight ?? 0);
+            marginBottom(toolbarEl);
 
         if (height > 0) {
             calendarEl.style.setProperty("--fc-header-height", `${height}px`);
         }
-    },
 
+        return height;
+    },
     /**
-     * ツールバー・曜日行の高さ変化を監視し、変化のたびにupdateHeaderHeight()を呼ぶ。
+     * ツールバーの高さ変化、およびカレンダー自体の幅の変化を監視し、
+     * 変化のたびに updateHeaderHeight()を呼ぶ。
      * FullCalendarはビュー切替時に該当DOMを作り直すため、呼ばれるたびに
      * 監視対象を張り直す（disconnect→observe）。
      */
@@ -527,9 +525,9 @@ export default (wire) => ({
         if (!calendarEl) return;
 
         this._headerResizeObserver?.disconnect();
-        this._headerResizeObserver = new ResizeObserver(() =>
-            this.updateHeaderHeight(),
-        );
+        this._headerResizeObserver = new ResizeObserver(() => {
+            this.updateHeaderHeight();
+        });
 
         const toolbarEl = calendarEl.querySelector(".fc-header-toolbar");
         const colHeaderEl = calendarEl.querySelector(
@@ -537,6 +535,9 @@ export default (wire) => ({
         );
         if (toolbarEl) this._headerResizeObserver.observe(toolbarEl);
         if (colHeaderEl) this._headerResizeObserver.observe(colHeaderEl);
+        // 幅の変化（ウィンドウリサイズ等）でも正方形を保つよう、
+        // カレンダー要素自体の幅も監視対象に加える
+        this._headerResizeObserver.observe(calendarEl);
 
         // 張り直した直後は次の変化を待たず即座に反映する
         this.updateHeaderHeight();
