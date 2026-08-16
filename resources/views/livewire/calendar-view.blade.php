@@ -106,14 +106,28 @@
         </div>
 
         <!-- Calendar Container -->
-        <div id="calendar-container" class="relative">
-            {{-- 月移動・週移動・フィルター変更を統一的にカバーするローディング --}}
-            <div x-show="isLoading" x-cloak x-transition
+        <div id="calendar-container" wire:ignore class="relative">
+            {{--
+                テーブル(fc-view-harness)部分だけに重ねるオーバーレイ。
+                JSでピクセル位置を計算するのではなく、taskCalendar()側で
+                このx-ref要素を .fc-view-harness（FullCalendarが自前で
+                position:relativeを当てている、ツールバーを除いたテーブル本体）
+                の子要素として付け替え、absolute inset-0（CSSのみ）で重ねている。
+                これにより FullCalendar のツールバー(prev/next・タイトル・ビュー切替)は
+                ローディング中も操作可能なまま、グリッド部分だけが覆われる。
+
+                注意: #calendar-container に wire:ignore が必要。付けないと、
+                JSでこのdivを移動させた後にLivewireが再レンダリングした際、
+                テンプレート上の元の位置（#calendar-container直下）に
+                このdivが無いと判断して新しいdivを再生成してしまい、
+                オーバーレイが2つ重なって表示される。
+            --}}
+            <div x-ref="tableOverlay" x-show="isLoading" x-cloak x-transition
                 class="absolute inset-0 z-10 flex items-center justify-center bg-zinc-900/60">
                 <span class="h-8 w-8 animate-spin rounded-full border-2 border-zinc-400 border-t-transparent"></span>
             </div>
 
-            <div wire:ignore id="task-calendar" class="rounded-xl bg-zinc-900/90 text-zinc-100"></div>
+            <div id="task-calendar" class="rounded-xl bg-zinc-900/90 text-zinc-100"></div>
         </div>
         {{-- 右クリックコンテキストメニュー --}}
         <div x-show="contextMenu.visible" x-cloak x-on:click.outside="closeContextMenu()"
