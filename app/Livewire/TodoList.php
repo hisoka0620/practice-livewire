@@ -30,11 +30,14 @@ class TodoList extends Component
     #[Url(except: '')]
     public string $sort = '';
 
+    private const VIEWS = ['list', 'calendar'];
+
     /**
      * コンポーネントの初期化時にタスクを読み込みます
      */
     public function mount(): void
     {
+        $this->view = $this->normalizeView($this->view);
         $this->loadTasks();
     }
 
@@ -146,8 +149,15 @@ class TodoList extends Component
         $this->dispatch('open-task-modal')->to(TaskModal::class);
     }
 
+    private function normalizeView(string $view): string
+    {
+        return in_array($view, self::VIEWS, true) ? $view : 'list';
+    }
+
     public function changeView(string $view): void
     {
+        $view = $this->normalizeView($view);
+
         if ($view === 'calendar') {
             $this->reset(['search', 'priority', 'sort', 'taskStatus']);
         }
@@ -159,6 +169,7 @@ class TodoList extends Component
             url.searchParams.delete('calendarTaskStatus');
             window.history.replaceState({}, '', url);
         JS);
+
             $this->loadTasks();
         }
 
