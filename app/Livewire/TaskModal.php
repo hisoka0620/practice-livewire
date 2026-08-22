@@ -38,7 +38,9 @@ class TaskModal extends Component
         $this->reset(['task', 'editTaskId', 'createTask']);
 
         if ($taskId) {
-            $this->task = Task::findOrFail($taskId);
+            $task = Task::findOrFail($taskId);
+            $this->authorize('view', $task);
+            $this->task = $task;
             $this->form->setTask($this->task);
             $this->editTaskId = $taskId;
         } else if ($prefillDeadline) {
