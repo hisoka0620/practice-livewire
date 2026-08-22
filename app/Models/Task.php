@@ -102,8 +102,8 @@ class Task extends Model
     {
         return Attribute::make(
             get: fn() => $this->is_completed
-                ? 'completed'
-                : $this->deadline_status
+            ? 'completed'
+            : $this->deadline_status
         );
     }
 
@@ -132,7 +132,9 @@ class Task extends Model
     {
         match ($taskStatus) {
             'completed' => $query->where('is_completed', true),
-            'incomplete' => $query->where('is_completed', false)->where('deadline', '>=', Carbon::now()),
+            'incomplete' => $query->where('is_completed', false)
+                ->where(fn(Builder $q) => $q->whereNull('deadline')
+                    ->orWhere('deadline', '>=', Carbon::now())),
             'expired' => $query->where('is_completed', false)->where('deadline', '<', Carbon::now()),
             default => $query,
         };
