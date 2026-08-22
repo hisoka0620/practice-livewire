@@ -20,9 +20,9 @@ class TaskForm extends Form
     public string $priority = 'medium';
 
     #[Validate('nullable|date')]
-    public ?string $deadline;
+    public ?string $deadline = null;
 
-    private const array TASK_FIELDS = ['title', 'description', 'priority', 'deadline'];
+    private const TASK_FIELDS = ['title', 'description', 'priority', 'deadline'];
 
     public function setTask(Task $task): void
     {
