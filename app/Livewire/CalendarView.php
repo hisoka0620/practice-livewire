@@ -88,26 +88,29 @@ class CalendarView extends Component
             ->where('deadline', '>=', $startDate)
             ->where('deadline', '<', $endDate)
             ->get()
-            ->map(fn(Task $task) => [
-                'id' => (string) $task->id,
-                'title' => $task->title,
-                'start' => $task->deadline?->format('Y-m-d\TH:i:s'),
-                'end' => null,
-                'color' => $task->is_completed
-                    ? '#9CA3AF'
-                    : match ($task->deadline_status) {
-                        'overdue' => '#991B1B',
-                        'due_soon' => '#D97706',
-                        default => '#0369A1',
-                    },
-                'extendedProps' => [
-                    'status' => str_replace('_', ' ', $task->visualStatus),
-                    'priority' => $task->priority,
-                    'deadline' => $task->deadline?->format('Y-m-d\TH:i:s'), // ISO形式
-                    'isOverdue' => str_replace('_', ' ', $task->visualStatus) === 'overdue',
-                    'completed' => $task->is_completed,
-                ],
-            ])
+            ->map(function (Task $task) {
+                $status = str_replace('_', ' ', $task->visualStatus);
+                return [
+                    'id' => (string) $task->id,
+                    'title' => $task->title,
+                    'start' => $task->deadline?->format('Y-m-d\TH:i:s'),
+                    'end' => null,
+                    'color' => $task->is_completed
+                        ? '#9CA3AF'
+                        : match ($task->deadline_status) {
+                            'overdue' => '#991B1B',
+                            'due_soon' => '#D97706',
+                            default => '#0369A1',
+                        },
+                    'extendedProps' => [
+                        'status' => $status,
+                        'priority' => $task->priority,
+                        'deadline' => $task->deadline?->format('Y-m-d\TH:i:s'), // ISO形式
+                        'isOverdue' => $status === 'overdue',
+                        'completed' => $task->is_completed,
+                    ],
+                ];
+            })
             ->values()
             ->toArray();
 
