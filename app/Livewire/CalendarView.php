@@ -130,10 +130,7 @@ class CalendarView extends Component
 
         $task = $user->tasks()->find($taskId);
 
-        if (!$task) {
-            // 他人のタスクを操作しようとした、またはタスクが存在しない
-            return false;
-        }
+        $this->authorize('update', $task);
 
         $task->deadline = Carbon::parse($newDeadline);
         $task->save();
@@ -161,9 +158,7 @@ class CalendarView extends Component
 
         $task = $user->tasks()->find($taskId);
 
-        if (!$task) {
-            return false;
-        }
+        $this->authorize('update', $task);
 
         $task->is_completed = !$task->is_completed;
         $task->save();
@@ -181,9 +176,7 @@ class CalendarView extends Component
 
         $task = $user->tasks()->find($taskId);
 
-        if (!$task) {
-            return false;
-        }
+        $this->authorize('delete', $task);
 
         $task->delete();
 
