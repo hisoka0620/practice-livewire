@@ -80,6 +80,21 @@ function resolveNewDeadline(info) {
     return combineDateAndTime(newDateOnly, oldTime);
 }
 
+/** HTMLエスケープ */
+function escapeHtml(value) {
+    return String(value ?? "").replace(
+        /[&<>"']/g,
+        (character) =>
+            ({
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                '"': "&quot;",
+                "'": "&#039;",
+            })[character],
+    );
+}
+
 //
 const LOADING_DELAY_MS = 200;
 
@@ -402,7 +417,7 @@ export default (wire) => ({
             eventContent: (arg) => {
                 const props = arg.event.extendedProps || {};
                 const rawPriority = String(props.priority ?? "").toLowerCase();
-
+                const title = escapeHtml(arg.event.title || "");
                 const priorityMap = {
                     low: { color: "#3b82f6" }, // blue
                     medium: { color: "#fbbf24" }, // yellow
@@ -423,9 +438,7 @@ export default (wire) => ({
                             ></span>
                             <div class="fc-event-content">
                                 <div class="fc-event-time">${time}</div>
-                                <div class="fc-event-title">
-                                    ${arg.event.title || ""}
-                                </div>
+                                <div class="fc-event-title">${title}</div>
                             </div>
                         </div>
                     `,
@@ -434,6 +447,9 @@ export default (wire) => ({
             // イベントのDOMがマウントされた時に呼ばれるフック
             eventDidMount: (info) => {
                 const props = info.event.extendedProps;
+                const title = escapeHtml(info.event.title || "");
+                const priority = escapeHtml(props.priority || "none");
+                const status = escapeHtml(props.status || "none");
 
                 if (info.el._tippy) {
                     info.el._tippy.destroy();
@@ -442,14 +458,12 @@ export default (wire) => ({
                 // ツールチップに表示したいHTMLコンテンツを作成
                 const tooltipContent = /* HTML */ `
                     <div style="text-align: left; padding: 4px;">
-                        <strong>${info.event.title}</strong><br />
+                        <strong>${title}</strong><br />
                         <hr style="border-color: #555; margin: 4px 0;" />
                         ⏰ Deadline: ${formatTooltipDeadline(props.deadline)}<br />
-                        🔥 Priority: ${props.priority || "none"}<br />
+                        🔥 Priority: ${priority}<br />
                         📌 Status:
-                        <span style="color: #fff;"
-                            >${props.status || "none"}</span
-                        >
+                        <span style="color: #fff;">${status}</span>
                     </div>
                 `;
 
