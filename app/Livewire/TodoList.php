@@ -133,6 +133,14 @@ class TodoList extends Component
         $this->loadTasks();
     }
 
+    /**
+     * タスク状態の更新時にタスクを再読み込みします
+     */
+    public function updatedTaskStatus(): void
+    {
+        $this->loadTasks();
+    }
+
     public function openCreateTaskModal(): void
     {
         $this->dispatch('open-task-modal')->to(TaskModal::class);
@@ -155,15 +163,6 @@ class TodoList extends Component
         }
 
         $this->view = $view;
-    }
-
-    /**
-     * タスクの状態を変更します
-     */
-    public function changeTaskStatus(string $status): void
-    {
-        $this->taskStatus = $status;
-        $this->loadTasks();
     }
 
     /**

@@ -36,7 +36,7 @@
 
                 <flux:button.group>
                     @foreach ($this->taskStatusOptions() as $value => $label)
-                        <flux:button size="sm" wire:click="changeTaskStatus('{{ $value }}')"
+                        <flux:button size="sm" wire:click="$set('taskStatus', '{{ $value }}')"
                             :variant="$taskStatus === $value ? 'filled' : 'ghost'">
                             {{ $label }}
                         </flux:button>
