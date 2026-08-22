@@ -70,6 +70,11 @@ class CalendarView extends Component
      */
     public function loadEvents(string $start, string $end): bool
     {
+        if (blank($start) || blank($end)) {
+            // 表示期間が未確定（初回のdatesSet前）の場合は何もしない
+            return true;
+        }
+
         // 期間を保存しておく
         $this->rangeStart = $start;
         $this->rangeEnd = $end;
