@@ -139,8 +139,9 @@ class TodoList extends Component
     /**
      * タスク状態の更新時にタスクを再読み込みします
      */
-    public function updatedTaskStatus(): void
+    public function changeTaskStatus(string $status): void
     {
+        $this->taskStatus = $status;
         $this->loadTasks();
     }
 
