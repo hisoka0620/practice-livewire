@@ -412,8 +412,28 @@ export default (wire) => ({
             dayMaxEvents: true,
             eventMaxStack: 2, // スタックの最大数を制限
             moreLinkContent: (args) => `+${args.num} more`,
-            eventOrder: "-priority,start", // priorityが高い順に表示（high > medium > low）
-            eventOrderStrict: true, // priorityが同じ場合はstart順に表示
+            eventOrder: (firstEvent, secondEvent) => {
+                const priorityRank = {
+                    high: 3,
+                    medium: 2,
+                    low: 1,
+                };
+
+                const firstRank =
+                    priorityRank[firstEvent.extendedProps.priority] ?? 0;
+                const secondRank =
+                    priorityRank[secondEvent.extendedProps.priority] ?? 0;
+
+                if (firstRank !== secondRank) {
+                    return secondRank - firstRank;
+                }
+
+                const firstDeadline = new Date(firstEvent.extendedProps.deadline);
+                const secondDeadline = new Date(secondEvent.extendedProps.deadline);
+
+                return firstDeadline - secondDeadline;
+            },
+            eventOrderStrict: true,
             eventContent: (arg) => {
                 const props = arg.event.extendedProps || {};
                 const rawPriority = String(props.priority ?? "").toLowerCase();
