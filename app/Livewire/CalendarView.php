@@ -128,7 +128,7 @@ class CalendarView extends Component
         /** @var \App\Models\User $user */
         $user = Auth::user();
 
-        $task = $user->tasks()->find($taskId);
+        $task = $user->tasks()->findOrFail($taskId);
 
         $this->authorize('update', $task);
 
@@ -156,7 +156,7 @@ class CalendarView extends Component
         /** @var \App\Models\User $user */
         $user = Auth::user();
 
-        $task = $user->tasks()->find($taskId);
+        $task = $user->tasks()->findOrFail($taskId);
 
         $this->authorize('update', $task);
 
@@ -174,7 +174,7 @@ class CalendarView extends Component
         /** @var \App\Models\User $user */
         $user = Auth::user();
 
-        $task = $user->tasks()->find($taskId);
+        $task = $user->tasks()->findOrFail($taskId);
 
         $this->authorize('delete', $task);
 
