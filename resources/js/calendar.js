@@ -519,6 +519,9 @@ export default (wire) => ({
                     this.openContextMenu(jsEvent, info.event);
                 });
             },
+            eventWillUnmount: (info) => {
+                info.el._tippy?.destroy(); // ツールチップの破棄
+            }
         });
 
         this.calendar.render();
