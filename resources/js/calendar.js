@@ -105,6 +105,7 @@ export default (wire) => ({
     calendar: null,
     flatPickr: null, // flatpickr（月選択）インスタンス
     isLoading: false,
+    errorMessage: "",
     currentViewType: "dayGridMonth",
     currentDatePickerValue: null, // fullcalendarの開始日付Dateオブジェクト用
     _skipDatePickerSync: false, // flatpickr自身の選択操作によるgotoDateの場合、選んだ日付表示を上書きしないためのフラグ
@@ -428,8 +429,12 @@ export default (wire) => ({
                     return secondRank - firstRank;
                 }
 
-                const firstDeadline = new Date(firstEvent.extendedProps.deadline);
-                const secondDeadline = new Date(secondEvent.extendedProps.deadline);
+                const firstDeadline = new Date(
+                    firstEvent.extendedProps.deadline,
+                );
+                const secondDeadline = new Date(
+                    secondEvent.extendedProps.deadline,
+                );
 
                 return firstDeadline - secondDeadline;
             },
@@ -521,7 +526,7 @@ export default (wire) => ({
             },
             eventWillUnmount: (info) => {
                 info.el._tippy?.destroy(); // ツールチップの破棄
-            }
+            },
         });
 
         this.calendar.render();
@@ -642,11 +647,11 @@ export default (wire) => ({
     },
 
     /**
-     * エラー通知（暫定実装）
+     * エラー通知
      */
     notifyError(message) {
-        // TODO: 既存のトースト/通知コンポーネントがあればそちらに差し替える
-        alert(message);
+        this.errorMessage = message;
+        this.$flux.modal("error-notification").show();
     },
     /**
      * 右クリックメニューを開く

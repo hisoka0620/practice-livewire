@@ -72,7 +72,7 @@ class CalendarView extends Component
     {
         if (blank($start) || blank($end)) {
             // 表示期間が未確定（初回のdatesSet前）の場合は何もしない
-            return true;
+            return false;
         }
 
         // 期間を保存しておく
