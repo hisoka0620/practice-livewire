@@ -2,6 +2,9 @@ import { Calendar } from "@fullcalendar/core";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
+import tippy from "tippy.js";
+import flatpickr from "flatpickr";
+import monthSelectPlugin from "flatpickr/dist/plugins/monthSelect/index.js";
 
 /**
  * deadline（タイムゾーンなしISO文字列）から表示用文字列を生成するヘルパー群
