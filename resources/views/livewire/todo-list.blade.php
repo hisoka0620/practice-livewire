@@ -1,4 +1,5 @@
 <div class="mx-auto max-w-6xl px-4">
+    
     {{-- Notification Banner --}}
     <livewire:push-notification-banner />
     {{-- Modal --}}
@@ -17,9 +18,7 @@
                     Todo List
                 </flux:heading>
 
-                <flux:button wire:click="openCreateTaskModal" icon="plus-circle">
-                    Create Task
-                </flux:button>
+                <x-tasks.create-button />
             </div>
 
             {{-- Controls --}}
