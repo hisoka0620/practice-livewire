@@ -1,5 +1,5 @@
 <div class="mx-auto max-w-6xl px-4">
-    
+
     {{-- Notification Banner --}}
     <livewire:push-notification-banner />
     {{-- Modal --}}
@@ -10,7 +10,7 @@
         'border-b border-zinc-700 bg-zinc-800/90 backdrop-blur',
         'sticky top-0 z-20' => $view === 'list',
     ])>
-        <div class="space-y-4 py-4">
+        <div class="space-y-2 py-2">
 
             {{-- Title + Primary Action --}}
             <div class="flex items-center justify-between">
@@ -22,36 +22,49 @@
             </div>
 
             {{-- Controls --}}
-            <div class="flex flex-wrap items-center gap-3">
-                <flux:input wire:model.live.debounce.500ms="search" icon="magnifying-glass" placeholder="Search tasks..."
-                    clearable />
+            <div class="flex flex-col gap-3">
+                <div class="flex items-center gap-3">
+                    <flux:input wire:model.live.debounce.500ms="search" icon="magnifying-glass"
+                        placeholder="Search tasks..." clearable />
 
-                <flux:select wire:model.change="priority" class="w-48!">
-                    <flux:select.option value="">All priorities</flux:select.option>
-                    <flux:select.option value="low">Low</flux:select.option>
-                    <flux:select.option value="medium">Medium</flux:select.option>
-                    <flux:select.option value="high">High</flux:select.option>
-                </flux:select>
+                    @if ($view === 'list')
+                        <flux:select wire:model.change="priority" class="w-48!">
+                            <flux:select.option value="">All priorities</flux:select.option>
+                            <flux:select.option value="low">Low</flux:select.option>
+                            <flux:select.option value="medium">Medium</flux:select.option>
+                            <flux:select.option value="high">High</flux:select.option>
+                        </flux:select>
+                    @endif
+                </div>
 
-                <flux:button.group>
-                    @foreach ($this->taskStatusOptions() as $value => $label)
-                        <flux:button size="sm" wire:click="changeTaskStatus('{{ $value }}')"
-                            :variant="$taskStatus === $value ? 'filled' : 'ghost'">
-                            {{ $label }}
+                <div @class([
+                    'flex items-center',
+                    'justify-between' => $view === 'list',
+                    'justify-end' => $view === 'calendar',
+                ])>
+                    @if ($view === 'list')
+                        <flux:button.group>
+                            @foreach ($this->taskStatusOptions() as $value => $label)
+                                <flux:button size="sm" wire:click="changeTaskStatus('{{ $value }}')"
+                                    :variant="$taskStatus === $value ? 'filled' : 'ghost'">
+                                    {{ $label }}
+                                </flux:button>
+                            @endforeach
+                        </flux:button.group>
+                    @endif
+
+                    {{-- View switcher is available in both modes --}}
+                    <flux:button.group>
+                        <flux:button size="sm" wire:click="changeView('list')"
+                            :variant="$view === 'list' ? 'filled' : 'ghost'">
+                            List
                         </flux:button>
-                    @endforeach
-                </flux:button.group>
-
-                <flux:button.group>
-                    <flux:button size="sm" wire:click="changeView('list')"
-                        :variant="$view === 'list' ? 'filled' : 'ghost'">
-                        List
-                    </flux:button>
-                    <flux:button size="sm" wire:click="changeView('calendar')"
-                        :variant="$view === 'calendar' ? 'filled' : 'ghost'">
-                        Calendar
-                    </flux:button>
-                </flux:button.group>
+                        <flux:button size="sm" wire:click="changeView('calendar')"
+                            :variant="$view === 'calendar' ? 'filled' : 'ghost'">
+                            Calendar
+                        </flux:button>
+                    </flux:button.group>
+                </div>
             </div>
 
             <!-- Overdue Tasks Notification -->
