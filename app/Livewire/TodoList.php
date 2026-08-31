@@ -15,6 +15,9 @@ class TodoList extends Component
     public Collection $tasks;
     public int $overdueTasksCount = 0;
 
+    #[Url(except: 'list')]
+    public string $view = 'list';
+
     #[Url(except: '')]
     public string $priority = '';
 
@@ -27,11 +30,14 @@ class TodoList extends Component
     #[Url(except: '')]
     public string $sort = '';
 
+    private const VIEWS = ['list', 'calendar'];
+
     /**
      * コンポーネントの初期化時にタスクを読み込みます
      */
     public function mount(): void
     {
+        $this->view = $this->normalizeView($this->view);
         $this->loadTasks();
     }
 
@@ -73,9 +79,12 @@ class TodoList extends Component
     }
 
     /**
-     * タスクのベースクエリを構築
+     * タスク取得時のベースクエリを構築
+     * 検索キーワード、優先度、ステータス、ソートを適用
+     *
+     * @return HasMany フィルター済みタスククエリ
      */
-    private function buildTaskQuery(): hasMany
+    private function buildTaskQuery(): HasMany
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
@@ -90,7 +99,8 @@ class TodoList extends Component
     }
 
     /**
-     * タスク取得メソッド
+     * タスクを読み込み、カレンダーイベントを生成
+     * タスク更新時に呼ばれ、フロントエンドカレンダーを更新
      */
     private function loadTasks(): void
     {
@@ -98,7 +108,10 @@ class TodoList extends Component
 
         $this->tasks = $this->buildTaskQuery()->get();
         $this->overdueTasksCount = $user
-            ? $user->tasks()->where('is_completed', false)->where('deadline', '<', now())->count()
+            ? $user->tasks()
+                ->where('is_completed', false)
+                ->where('deadline', '<', now())
+                ->count()
             : 0;
     }
 
@@ -119,15 +132,55 @@ class TodoList extends Component
     }
 
     /**
-     * 完了状態の更新時にフィルター状態を更新します
+     * ソート順の更新時にタスクを再読み込みします
      */
-    public function updatedTaskStatus(): void
+    public function updatedSort(): void
     {
         $this->loadTasks();
     }
 
-    public function updatedSort(): void
+    #[On('calendar-filters-update')]
+    public function applyCalendarFiltersState(
+        string $priority = '',
+        string $taskStatus = ''
+    ): void {
+        $this->priority = $priority;
+        $this->taskStatus = $taskStatus;
+        $this->loadTasks();
+    }
+
+    #[On('calendar-filters-clear')]
+    public function clearCalendarFiltersState(): void
     {
+        $this->reset(['priority', 'taskStatus']);
+        $this->loadTasks();
+    }
+
+    /**
+     * タスク状態の更新時にタスクを再読み込みします
+     */
+    public function changeTaskStatus(string $status): void
+    {
+        $this->taskStatus = $status;
+        $this->loadTasks();
+    }
+
+    public function openCreateTaskModal(): void
+    {
+        $this->dispatch('open-task-modal')->to(TaskModal::class);
+    }
+
+    private function normalizeView(string $view): string
+    {
+        return in_array($view, self::VIEWS, true) ? $view : 'list';
+    }
+
+    public function changeView(string $view): void
+    {
+        $view = $this->normalizeView($view);
+
+        $this->view = $view;
+
         $this->loadTasks();
     }
 

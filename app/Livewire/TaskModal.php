@@ -7,6 +7,7 @@ use App\Models\Task;
 use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\Attributes\Url;
+use Carbon\Carbon;
 
 class TaskModal extends Component
 {
@@ -22,22 +23,30 @@ class TaskModal extends Component
 
     public function mount(): void
     {
-        if($this->createTask === 1) $this->open();
-        if($this->editTaskId) $this->open($this->editTaskId);
+        if ($this->editTaskId) {
+            $this->open($this->editTaskId);
+        } elseif ($this->createTask === 1) {
+            $this->open();
+        }
     }
 
     #[On('open-task-modal')]
-    public function open(?int $taskId = null): void
+    public function open(?int $taskId = null, ?string $prefillDeadline = null): void
     {
         $this->resetErrorBag();
         $this->form->reset();
+        $this->reset(['task', 'editTaskId', 'createTask']);
 
         if ($taskId) {
-            $this->task = Task::findOrFail($taskId);
+            $task = Task::findOrFail($taskId);
+            $this->authorize('view', $task);
+            $this->task = $task;
             $this->form->setTask($this->task);
             $this->editTaskId = $taskId;
+        } else if ($prefillDeadline) {
+            $this->form->setDeadlineDate(Carbon::parse($prefillDeadline)->format('Y-m-d\TH:i'));
+            $this->createTask = 1;
         } else {
-            $this->task = null;
             $this->createTask = 1;
         }
 
