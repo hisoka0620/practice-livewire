@@ -7,45 +7,27 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Livewire\Component;
 use Carbon\Carbon;
-use Livewire\Attributes\Url;
 use Livewire\Attributes\On;
+use Livewire\Attributes\Reactive;
 
 class CalendarView extends Component
 {
-    #[Url(except: '')]
-    public string $calendarPriority = '';
 
-    #[Url(except: '')]
-    public string $calendarTaskStatus = '';
+    #[Reactive]
+    public string $priority = '';
+    #[Reactive]
+    public string $taskStatus = '';
     public array $calendarEvents = [];
 
     // 表示中の期間を保持する
     public string $rangeStart = '';
     public string $rangeEnd = '';
 
-
-    public function mount(): void
-    {
-    }
-
-    public function updatedcalendarPriority(): void
+    public function loadEventsIfRangeSet(): void
     {
         if ($this->rangeStart && $this->rangeEnd) {
             $this->loadEvents($this->rangeStart, $this->rangeEnd);
         }
-    }
-
-    public function updatedcalendarTaskStatus(): void
-    {
-        if ($this->rangeStart && $this->rangeEnd) {
-            $this->loadEvents($this->rangeStart, $this->rangeEnd);
-        }
-    }
-
-    public function clearFilters(): void
-    {
-        $this->reset(['calendarPriority', 'calendarTaskStatus']);
-        $this->loadEvents($this->rangeStart, $this->rangeEnd);
     }
 
     public function openCreateTaskModal(): void
@@ -60,16 +42,18 @@ class CalendarView extends Component
 
         return $user
             ->tasks()
-            ->filterByPriority($this->calendarPriority)
-            ->filterByStatus($this->calendarTaskStatus)
+            ->filterByPriority($this->priority)
+            ->filterByStatus($this->taskStatus)
             ->latest();
     }
 
     /**
      * カレンダーの表示期間に応じてイベントを動的に取得する
      */
-    public function loadEvents(string $start, string $end): bool
-    {
+    public function loadEvents(
+        string $start,
+        string $end
+    ): bool {
         if (blank($start) || blank($end)) {
             // 表示期間が未確定（初回のdatesSet前）の場合は何もしない
             return false;
@@ -123,8 +107,10 @@ class CalendarView extends Component
     /**
      * ドラッグ&ドロップによる締切日時の変更を保存する
      */
-    public function updateTaskDeadline(int $taskId, string $newDeadline): bool
-    {
+    public function updateTaskDeadline(
+        int $taskId,
+        string $newDeadline
+    ): bool {
         /** @var \App\Models\User $user */
         $user = Auth::user();
 

@@ -15,7 +15,7 @@ class TodoList extends Component
     public Collection $tasks;
     public int $overdueTasksCount = 0;
 
-    #[Url(except: '')]
+    #[Url(except: 'list')]
     public string $view = 'list';
 
     #[Url(except: '')]
@@ -108,7 +108,10 @@ class TodoList extends Component
 
         $this->tasks = $this->buildTaskQuery()->get();
         $this->overdueTasksCount = $user
-            ? $user->tasks()->where('is_completed', false)->where('deadline', '<', now())->count()
+            ? $user->tasks()
+                ->where('is_completed', false)
+                ->where('deadline', '<', now())
+                ->count()
             : 0;
     }
 
@@ -136,6 +139,23 @@ class TodoList extends Component
         $this->loadTasks();
     }
 
+    #[On('calendar-filters-update')]
+    public function applyCalendarFiltersState(
+        string $priority = '',
+        string $taskStatus = ''
+    ): void {
+        $this->priority = $priority;
+        $this->taskStatus = $taskStatus;
+        $this->loadTasks();
+    }
+
+    #[On('calendar-filters-clear')]
+    public function clearCalendarFiltersState(): void
+    {
+        $this->reset(['priority', 'taskStatus']);
+        $this->loadTasks();
+    }
+
     /**
      * タスク状態の更新時にタスクを再読み込みします
      */
@@ -159,22 +179,9 @@ class TodoList extends Component
     {
         $view = $this->normalizeView($view);
 
-        if ($view === 'calendar') {
-            $this->reset(['search', 'priority', 'sort', 'taskStatus']);
-        }
-
-        if ($view === 'list') {
-            $this->js(<<<'JS'
-            const url = new URL(window.location);
-            url.searchParams.delete('calendarPriority');
-            url.searchParams.delete('calendarTaskStatus');
-            window.history.replaceState({}, '', url);
-        JS);
-
-            $this->loadTasks();
-        }
-
         $this->view = $view;
+
+        $this->loadTasks();
     }
 
     /**

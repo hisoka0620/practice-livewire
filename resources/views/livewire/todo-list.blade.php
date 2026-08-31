@@ -110,7 +110,7 @@
 
     {{-- ================= Calendar ================= --}}
     @if ($view === 'calendar')
-        <livewire:calendar-view wire:key="calendar-view" />
+        <livewire:calendar-view wire:key="calendar-view" :$priority :$taskStatus />
     @endif
 
     {{-- ================= Task List ================= --}}
