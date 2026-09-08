@@ -117,10 +117,10 @@
     @if ($view === 'list')
         <div class="mt-2 space-y-2">
             @if ($tasks->isEmpty())
-                <x-todos.task-not-found />
+                <x-tasks.task-not-found />
             @else
                 @foreach ($tasks as $task)
-                    <x-todos.task :$task :key="$task->id" />
+                    <x-tasks.task :$task :key="$task->id" />
                 @endforeach
             @endif
         </div>
