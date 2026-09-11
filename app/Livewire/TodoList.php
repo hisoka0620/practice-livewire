@@ -9,6 +9,8 @@ use Livewire\Attributes\On;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Application\Tasks\TaskActions;
+use App\Application\Tasks\TaskQuery;
 
 class TodoList extends Component
 {
@@ -78,41 +80,23 @@ class TodoList extends Component
         ];
     }
 
-    /**
-     * タスク取得時のベースクエリを構築
-     * 検索キーワード、優先度、ステータス、ソートを適用
-     *
-     * @return HasMany フィルター済みタスククエリ
-     */
-    private function buildTaskQuery(): HasMany
-    {
-        /** @var \App\Models\User $user */
-        $user = Auth::user();
-
-        return $user
-            ->tasks()
-            ->filterBySearch($this->search)
-            ->filterByPriority($this->priority)
-            ->filterByStatus($this->taskStatus)
-            ->sortByDeadline($this->sort)
-            ->latest();
-    }
-
-    /**
-     * タスクを読み込み、カレンダーイベントを生成
-     * タスク更新時に呼ばれ、フロントエンドカレンダーを更新
-     */
     private function loadTasks(): void
     {
         $user = Auth::user();
 
-        $this->tasks = $this->buildTaskQuery()->get();
-        $this->overdueTasksCount = $user
-            ? $user->tasks()
-                ->where('is_completed', false)
-                ->where('deadline', '<', now())
-                ->count()
-            : 0;
+        $taskQuery = app(TaskQuery::class);
+
+        $this->tasks = $taskQuery
+            ->forUser(
+                $user,
+                $this->search,
+                $this->priority,
+                $this->taskStatus,
+                $this->sort,
+            )
+            ->get();
+
+        $this->overdueTasksCount = $taskQuery->overdueCount($user);
     }
 
     /**
@@ -184,35 +168,24 @@ class TodoList extends Component
         $this->loadTasks();
     }
 
-    /**
-     * タスクの完了状態を切り替えます。
-     */
     public function toggleComplete(int $taskId): void
     {
-        $task = $this->findAndAuthorizeTask($taskId, 'update');
-        $task->is_completed = !$task->is_completed;
-        $task->save();
+        app(TaskActions::class)->toggleCompletion(
+            Auth::user(),
+            $taskId,
+        );
+
         $this->loadTasks();
     }
 
-    /**
-     * タスクを削除します。
-     */
     public function delete(int $taskId): void
     {
-        $task = $this->findAndAuthorizeTask($taskId, 'delete');
-        $task->delete();
-        $this->loadTasks();
-    }
+        app(TaskActions::class)->delete(
+            Auth::user(),
+            $taskId,
+        );
 
-    /**
-     * タスクを取得し、指定された権限を確認します。
-     */
-    private function findAndAuthorizeTask(int $taskId, string $ability): Task
-    {
-        $task = Task::findOrFail($taskId);
-        $this->authorize($ability, $task);
-        return $task;
+        $this->loadTasks();
     }
 
     /**

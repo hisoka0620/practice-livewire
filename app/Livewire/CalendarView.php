@@ -6,9 +6,11 @@ use App\Models\Task;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Livewire\Component;
-use Carbon\Carbon;
+use Illuminate\Support\Carbon;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Reactive;
+use App\Application\Tasks\TaskActions;
+use App\Application\Tasks\TaskQuery;
 
 class CalendarView extends Component
 {
@@ -35,18 +37,6 @@ class CalendarView extends Component
         $this->dispatch('open-task-modal')->to(TaskModal::class);
     }
 
-    private function buildTaskQuery(): HasMany
-    {
-        /** @var \App\Models\User $user */
-        $user = Auth::user();
-
-        return $user
-            ->tasks()
-            ->filterByPriority($this->priority)
-            ->filterByStatus($this->taskStatus)
-            ->latest();
-    }
-
     /**
      * カレンダーの表示期間に応じてイベントを動的に取得する
      */
@@ -67,13 +57,22 @@ class CalendarView extends Component
         $startDate = Carbon::parse($start);
         $endDate = Carbon::parse($end);
 
+        $taskQuery = app(TaskQuery::class);
+
+        $tasks = $taskQuery
+            ->forCalendar(
+                Auth::user(),
+                $this->priority,
+                $this->taskStatus,
+            );
+
         // 指定された月（表示範囲内）のイベントだけをクエリで絞り込む
-        $this->calendarEvents = $this->buildTaskQuery()
-            ->where('deadline', '>=', $startDate)
-            ->where('deadline', '<', $endDate)
+        $this->calendarEvents = $taskQuery
+            ->withinPeriod($tasks, $startDate, $endDate)
             ->get()
             ->map(function (Task $task) {
                 $status = str_replace('_', ' ', $task->visualStatus);
+
                 return [
                     'id' => (string) $task->id,
                     'title' => $task->title,
@@ -111,18 +110,12 @@ class CalendarView extends Component
         int $taskId,
         string $newDeadline
     ): bool {
-        /** @var \App\Models\User $user */
-        $user = Auth::user();
+        app(TaskActions::class)->updateDeadline(
+            Auth::user(),
+            $taskId,
+            Carbon::parse($newDeadline),
+        );
 
-        $task = $user->tasks()->findOrFail($taskId);
-
-        $this->authorize('update', $task);
-
-        $task->deadline = Carbon::parse($newDeadline);
-        $task->save();
-
-        // ドラッグ操作を起点にした変更でも、カレンダー全体を再取得して
-        // 色分け（overdue/due_soon等のステータス）を最新化しておく
         return $this->loadEvents($this->rangeStart, $this->rangeEnd);
     }
 
@@ -139,15 +132,10 @@ class CalendarView extends Component
      */
     public function toggleTaskCompletion(int $taskId): bool
     {
-        /** @var \App\Models\User $user */
-        $user = Auth::user();
-
-        $task = $user->tasks()->findOrFail($taskId);
-
-        $this->authorize('update', $task);
-
-        $task->is_completed = !$task->is_completed;
-        $task->save();
+        app(TaskActions::class)->toggleCompletion(
+            Auth::user(),
+            $taskId,
+        );
 
         return $this->loadEvents($this->rangeStart, $this->rangeEnd);
     }
@@ -157,14 +145,10 @@ class CalendarView extends Component
      */
     public function deleteTask(int $taskId): bool
     {
-        /** @var \App\Models\User $user */
-        $user = Auth::user();
-
-        $task = $user->tasks()->findOrFail($taskId);
-
-        $this->authorize('delete', $task);
-
-        $task->delete();
+        app(TaskActions::class)->delete(
+            Auth::user(),
+            $taskId,
+        );
 
         return $this->loadEvents($this->rangeStart, $this->rangeEnd);
     }
