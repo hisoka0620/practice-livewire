@@ -29,10 +29,11 @@
 
                     @if ($view === 'list')
                         <flux:select wire:model.change="priority" class="w-48!">
-                            <flux:select.option value="">All priorities</flux:select.option>
-                            <flux:select.option value="low">Low</flux:select.option>
-                            <flux:select.option value="medium">Medium</flux:select.option>
-                            <flux:select.option value="high">High</flux:select.option>
+                            @foreach ($this->priorityOptions() as $value => $label)
+                                <flux:select.option value="{{ $value }}">
+                                    {{ $label }}{{ $value === '' ? ' priorities' : '' }}
+                                </flux:select.option>
+                            @endforeach
                         </flux:select>
                     @endif
                 </div>
@@ -91,7 +92,7 @@
                 <div>Description</div>
                 <div>Priority</div>
                 <div class="grid place-items-center">
-                    <span wire:click="$set('sort', '{{ $sort === '' ? 'asc' : ($sort === 'asc' ? 'desc' : '') }}')"
+                    <span wire:click="nextSort"
                         class="inline-flex cursor-pointer select-none items-center gap-1 transition hover:text-white">
                         <span>Deadline</span>
                         @if ($sort === '')

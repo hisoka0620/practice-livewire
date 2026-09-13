@@ -11,6 +11,7 @@ use Livewire\Attributes\On;
 use Livewire\Attributes\Reactive;
 use App\Application\Tasks\TaskActions;
 use App\Application\Tasks\TaskQuery;
+use App\Application\Tasks\TaskFilters;
 
 class CalendarView extends Component
 {
@@ -57,13 +58,19 @@ class CalendarView extends Component
         $startDate = Carbon::parse($start);
         $endDate = Carbon::parse($end);
 
+        $filters = TaskFilters::fromLivewire(
+            search: '',
+            priority: $this->priority,
+            taskStatus: $this->taskStatus,
+            sort: '',
+        );
+
         $taskQuery = app(TaskQuery::class);
 
         $tasks = $taskQuery
             ->forCalendar(
                 Auth::user(),
-                $this->priority,
-                $this->taskStatus,
+                $filters,
             );
 
         // 指定された月（表示範囲内）のイベントだけをクエリで絞り込む

@@ -11,6 +11,11 @@ use Livewire\Component;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Application\Tasks\TaskActions;
 use App\Application\Tasks\TaskQuery;
+use App\Application\Tasks\TaskFilters;
+use App\Enums\TaskPriority;
+use App\Enums\TaskSort;
+use App\Enums\TaskStatusFilter;
+use App\Enums\TaskView;
 
 class TodoList extends Component
 {
@@ -31,8 +36,6 @@ class TodoList extends Component
 
     #[Url(except: '')]
     public string $sort = '';
-
-    private const VIEWS = ['list', 'calendar'];
 
     /**
      * コンポーネントの初期化時にタスクを読み込みます
@@ -67,17 +70,27 @@ class TodoList extends Component
         return $highlighted;
     }
 
+    public function priorityOptions(): array
+    {
+        return TaskPriority::options();
+    }
+
     /**
      * タスクの状態オプションを取得します
      */
     public function taskStatusOptions(): array
     {
-        return [
-            '' => 'All',
-            'completed' => 'Completed',
-            'incomplete' => 'Incomplete',
-            'expired' => 'Expired',
-        ];
+        return TaskStatusFilter::options();
+    }
+
+    private function filters(): TaskFilters
+    {
+        return TaskFilters::fromLivewire(
+            search: $this->search,
+            priority: $this->priority,
+            taskStatus: $this->taskStatus,
+            sort: $this->sort,
+        );
     }
 
     private function loadTasks(): void
@@ -87,13 +100,7 @@ class TodoList extends Component
         $taskQuery = app(TaskQuery::class);
 
         $this->tasks = $taskQuery
-            ->forUser(
-                $user,
-                $this->search,
-                $this->priority,
-                $this->taskStatus,
-                $this->sort,
-            )
+            ->forUser($user, $this->filters())
             ->get();
 
         $this->overdueTasksCount = $taskQuery->overdueCount($user);
@@ -115,11 +122,13 @@ class TodoList extends Component
         $this->loadTasks();
     }
 
-    /**
-     * ソート順の更新時にタスクを再読み込みします
-     */
-    public function updatedSort(): void
+    public function nextSort(): void
     {
+        $currentSort = TaskSort::tryFrom($this->sort)
+            ?? TaskSort::None;
+
+        $this->sort = $currentSort->next()->value;
+
         $this->loadTasks();
     }
 
@@ -156,7 +165,8 @@ class TodoList extends Component
 
     private function normalizeView(string $view): string
     {
-        return in_array($view, self::VIEWS, true) ? $view : 'list';
+        return TaskView::tryFrom($view)?->value
+            ?? TaskView::List ->value;
     }
 
     public function changeView(string $view): void

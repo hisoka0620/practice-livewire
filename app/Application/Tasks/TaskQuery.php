@@ -3,36 +3,30 @@
 namespace App\Application\Tasks;
 
 use App\Models\User;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use App\Application\Tasks\TaskFilters;
 use Illuminate\Support\Carbon;
 
 final class TaskQuery
 {
     public function forUser(
         User $user,
-        string $search = '',
-        string $priority = '',
-        string $status = '',
-        string $sort = '',
+        TaskFilters $filters,
     ): HasMany {
         return $user->tasks()
-            ->filterBySearch($search)
-            ->filterByPriority($priority)
-            ->filterByStatus($status)
-            ->sortByDeadline($sort)
+            ->filterBySearch($filters->search)
+            ->filterByPriority($filters->priority->value)
+            ->filterByStatus($filters->status->value)
+            ->sortByDeadline($filters->sort->value)
             ->latest();
     }
 
     public function forCalendar(
         User $user,
-        string $priority = '',
-        string $status = '',
+        TaskFilters $filters,
     ): HasMany {
         return $user->tasks()
-            ->filterByPriority($priority)
-            ->filterByStatus($status)
+            ->filterByPriority($filters->priority->value)
+            ->filterByStatus($filters->status->value)
             ->latest();
     }
 
