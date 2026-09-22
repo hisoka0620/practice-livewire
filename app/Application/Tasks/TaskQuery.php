@@ -25,6 +25,7 @@ final class TaskQuery
         TaskFilters $filters,
     ): HasMany {
         return $user->tasks()
+            ->filterBySearch($filters->search)
             ->filterByPriority($filters->priority->value)
             ->filterByStatus($filters->status->value)
             ->latest();

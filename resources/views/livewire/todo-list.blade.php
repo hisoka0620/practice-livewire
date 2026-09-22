@@ -14,116 +14,76 @@
 
             {{-- Title + Primary Action --}}
             <div class="flex items-center justify-between">
-                <flux:heading size="xl" level="1">
+                <flux:heading
+                    size="xl"
+                    level="1"
+                >
                     Todo List
                 </flux:heading>
 
                 <x-tasks.create-button />
             </div>
 
-            {{-- Controls --}}
-            <div class="flex flex-col gap-3">
-                <div class="flex items-center gap-3">
-                    <flux:input wire:model.live.debounce.500ms="search" icon="magnifying-glass"
-                        placeholder="Search tasks..." clearable />
+            <livewire:task-filters-bar
+                wire:model.live="filters"
+                wire:key="task-filters-bar-{{ $view }}"
+                :showFilters="$view === 'list'"
+            />
 
-                    @if ($view === 'list')
-                        <flux:select wire:model.change="priority" class="w-48!">
-                            @foreach ($this->priorityOptions() as $value => $label)
-                                <flux:select.option value="{{ $value }}">
-                                    {{ $label }}{{ $value === '' ? ' priorities' : '' }}
-                                </flux:select.option>
-                            @endforeach
-                        </flux:select>
-                    @endif
-                </div>
-
-                <div @class([
-                    'flex items-center',
-                    'justify-between' => $view === 'list',
-                    'justify-end' => $view === 'calendar',
-                ])>
-                    @if ($view === 'list')
-                        <flux:button.group>
-                            @foreach ($this->taskStatusOptions() as $value => $label)
-                                <flux:button size="sm" wire:click="changeTaskStatus('{{ $value }}')"
-                                    :variant="$taskStatus === $value ? 'filled' : 'ghost'">
-                                    {{ $label }}
-                                </flux:button>
-                            @endforeach
-                        </flux:button.group>
-                    @endif
-
-                    {{-- View switcher is available in both modes --}}
-                    <flux:button.group>
-                        <flux:button size="sm" wire:click="changeView('list')"
-                            :variant="$view === 'list' ? 'filled' : 'ghost'">
-                            List
-                        </flux:button>
-                        <flux:button size="sm" wire:click="changeView('calendar')"
-                            :variant="$view === 'calendar' ? 'filled' : 'ghost'">
-                            Calendar
-                        </flux:button>
-                    </flux:button.group>
-                </div>
+            {{-- View switcher is available in both modes --}}
+            <div class="flex justify-end">
+                <flux:button.group>
+                    <flux:button
+                        size="sm"
+                        wire:click="changeView('list')"
+                        :variant="$view === 'list' ? 'filled' : 'ghost'"
+                    >
+                        List
+                    </flux:button>
+                    <flux:button
+                        size="sm"
+                        wire:click="changeView('calendar')"
+                        :variant="$view === 'calendar' ? 'filled' : 'ghost'"
+                    >
+                        Calendar
+                    </flux:button>
+                </flux:button.group>
             </div>
 
             <!-- Overdue Tasks Notification -->
-            @if ($overdueTasksCount > 0 && $taskStatus !== 'expired')
+            @if ($overdueTasksCount > 0 && $filters['taskStatus'] !== 'expired')
                 <div class="rounded-md border border-red-500/30 bg-red-950/70 px-4 py-3 text-sm text-red-100">
                     <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <p>
                             You have {{ $overdueTasksCount }} overdue task{{ $overdueTasksCount === 1 ? '' : 's' }}.
                             Please review them with priority.
                         </p>
-                        <flux:button size="sm" color="red" wire:click="$set('taskStatus','expired')">
+                        <flux:button
+                            size="sm"
+                            color="red"
+                            wire:click="$set('filters.taskStatus', 'expired')"
+                        >
                             Show Expired Tasks
                         </flux:button>
                     </div>
                 </div>
             @endif
         </div>
-
-        {{-- ================= Task List Header ================= --}}
-        @if ($view === 'list')
-            <div wire:key="list-view"
-                class="mb-2 grid grid-cols-5 gap-2 rounded-md bg-zinc-700 px-4 py-2 text-center text-sm font-semibold text-zinc-300">
-                <div>Title</div>
-                <div>Description</div>
-                <div>Priority</div>
-                <div class="grid place-items-center">
-                    <span wire:click="nextSort"
-                        class="inline-flex cursor-pointer select-none items-center gap-1 transition hover:text-white">
-                        <span>Deadline</span>
-                        @if ($sort === '')
-                            <flux:icon name="arrows-up-down" variant="micro" />
-                        @elseif($sort === 'asc')
-                            <flux:icon name="arrow-up" variant="micro" />
-                        @elseif($sort === 'desc')
-                            <flux:icon name="arrow-down" variant="micro" />
-                        @endif
-                    </span>
-                </div>
-                <div>Actions</div>
-            </div>
-        @endif
     </div>
-
-    {{-- ================= Calendar ================= --}}
-    @if ($view === 'calendar')
-        <livewire:calendar-view wire:key="calendar-view" :$priority :$taskStatus />
-    @endif
 
     {{-- ================= Task List ================= --}}
     @if ($view === 'list')
-        <div class="mt-2 space-y-2">
-            @if ($tasks->isEmpty())
-                <x-tasks.task-not-found />
-            @else
-                @foreach ($tasks as $task)
-                    <x-tasks.task :$task :key="$task->id" />
-                @endforeach
-            @endif
-        </div>
+        <livewire:task-list
+            wire:key="task-list"
+            wire:model.live="filters"
+        />
+    @endif
+
+    {{-- ================= Calendar ================= --}}
+    @if ($view === 'calendar')
+        <livewire:calendar-view
+            wire:key="calendar-view"
+            wire:model.live="filters"
+        />
     @endif
 </div>

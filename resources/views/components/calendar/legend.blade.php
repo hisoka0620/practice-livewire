@@ -1,5 +1,5 @@
 <div
-    class="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border border-zinc-700 bg-zinc-800/90 p-3 text-[11px] text-zinc-300 sm:gap-x-6 sm:gap-y-3 sm:text-xs md:text-sm">
+    class="mb-2 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border border-zinc-700 bg-zinc-800/90 p-3 text-[11px] text-zinc-300 sm:gap-x-6 sm:gap-y-3 sm:text-xs md:text-sm">
     <div class="flex flex-wrap items-center gap-x-2 gap-y-1.5 sm:gap-x-3">
         <span class="font-medium text-zinc-100">Priority:</span>
         <div class="flex items-center gap-1.5">

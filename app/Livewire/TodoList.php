@@ -2,37 +2,34 @@
 
 namespace App\Livewire;
 
-use App\Models\Task;
-use Illuminate\Database\Eloquent\Collection;
+use App\Application\Tasks\TaskQuery;
+use App\Enums\TaskView;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Url;
 use Livewire\Component;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use App\Application\Tasks\TaskActions;
-use App\Application\Tasks\TaskQuery;
-use App\Application\Tasks\TaskFilters;
-use App\Enums\TaskPriority;
-use App\Enums\TaskSort;
-use App\Enums\TaskStatusFilter;
-use App\Enums\TaskView;
 
 class TodoList extends Component
 {
-    public Collection $tasks;
     public int $overdueTasksCount = 0;
 
     #[Url(except: 'list')]
     public string $view = 'list';
 
     #[Url(except: '')]
-    public string $priority = '';
-
-    #[Url(except: '')]
     public string $search = '';
 
-    #[Url(except: '', as: 'status')]
+    #[Url(except: '')]
+    public string $priority = '';
+
+    #[Url(as: 'status', except: '')]
     public string $taskStatus = '';
+
+    public array $filters = [
+        'search' => '',
+        'priority' => '',
+        'taskStatus' => '',
+    ];
 
     #[Url(except: '')]
     public string $sort = '';
@@ -42,120 +39,71 @@ class TodoList extends Component
      */
     public function mount(): void
     {
+        $this->syncFiltersFromURL();
         $this->view = $this->normalizeView($this->view);
-        $this->loadTasks();
+        $this->loadOverdueTasksCount();
+    }
+
+    private function syncFiltersFromURL(): void
+    {
+        $this->filters = [
+            'search' => $this->search,
+            'priority' => $this->priority,
+            'taskStatus' => $this->taskStatus,
+        ];
+    }
+
+    private function applyFiltersToURL(): void
+    {
+        $this->search = $this->filters['search'] ?? '';
+        $this->priority = $this->filters['priority'] ?? '';
+        $this->taskStatus = $this->filters['taskStatus'] ?? '';
+
+    }
+
+    private function loadOverdueTasksCount(): void
+    {
+        $this->overdueTasksCount = app(TaskQuery::class)
+            ->overdueCount(Auth::user());
+    }
+
+    #[On('task-list-updated')]
+    public function refreshOverdueTasksCount(): void
+    {
+        $this->loadOverdueTasksCount();
+    }
+
+    #[On('sort-changed')]
+    public function applySortToURL(string $sort): void
+    {
+        $this->sort = $sort;
     }
 
     /**
-     * テキスト内の検索キーワードをハイライト表示します
+     * filters.priority、filters.taskStatus、
+     * filters.search のいずれかが変更されたときに実行されます。
      */
-    public function highlight(?string $text): string
+    public function updatedFilters(mixed $value, ?string $key = null): void
     {
-        if (blank(mb_convert_kana($this->search, 's'))) {
-            return e($text);
-        }
-
-        $words = preg_split('/[\s　]+/u', trim($this->search), -1, PREG_SPLIT_NO_EMPTY);
-
-        $escapedText = e($text);
-
-        $keyword = implode('|', array_map(fn($word) => preg_quote($word, '/'), $words));
-
-        $highlighted = preg_replace(
-            '/' . e($keyword) . '/iu',
-            '<mark class="bg-yellow-200 text-yellow-900 rounded-sm px-0.5">$0</mark>',
-            $escapedText
-        );
-
-        return $highlighted;
-    }
-
-    public function priorityOptions(): array
-    {
-        return TaskPriority::options();
+        $this->applyFiltersToURL();
     }
 
     /**
-     * タスクの状態オプションを取得します
-     */
-    public function taskStatusOptions(): array
-    {
-        return TaskStatusFilter::options();
-    }
-
-    private function filters(): TaskFilters
-    {
-        return TaskFilters::fromLivewire(
-            search: $this->search,
-            priority: $this->priority,
-            taskStatus: $this->taskStatus,
-            sort: $this->sort,
-        );
-    }
-
-    private function loadTasks(): void
-    {
-        $user = Auth::user();
-
-        $taskQuery = app(TaskQuery::class);
-
-        $this->tasks = $taskQuery
-            ->forUser($user, $this->filters())
-            ->get();
-
-        $this->overdueTasksCount = $taskQuery->overdueCount($user);
-    }
-
-    /**
-     * 検索キーワードの更新時にフィルター状態を更新します
+     * URLパラメータが外部操作などで変更された場合
      */
     public function updatedSearch(): void
     {
-        $this->loadTasks();
+        $this->filters['search'] = $this->search;
     }
 
-    /**
-     * 優先度の更新時にフィルター状態を更新します
-     */
     public function updatedPriority(): void
     {
-        $this->loadTasks();
+        $this->filters['priority'] = $this->priority;
     }
 
-    public function nextSort(): void
+    public function updatedTaskStatus(): void
     {
-        $currentSort = TaskSort::tryFrom($this->sort)
-            ?? TaskSort::None;
-
-        $this->sort = $currentSort->next()->value;
-
-        $this->loadTasks();
-    }
-
-    #[On('calendar-filters-update')]
-    public function applyCalendarFiltersState(
-        string $priority = '',
-        string $taskStatus = ''
-    ): void {
-        $this->priority = $priority;
-        $this->taskStatus = $taskStatus;
-        $this->loadTasks();
-    }
-
-    #[On('calendar-filters-clear')]
-    public function clearCalendarFiltersState(): void
-    {
-        $this->reset(['priority', 'taskStatus']);
-        $this->loadTasks();
-    }
-
-    /**
-     * タスク状態の更新時にタスクを再読み込みします
-     */
-    public function changeTaskStatus(string $status): void
-    {
-        $this->taskStatus = $status;
-        $this->loadTasks();
+        $this->filters['taskStatus'] = $this->taskStatus;
     }
 
     public function openCreateTaskModal(): void
@@ -172,30 +120,7 @@ class TodoList extends Component
     public function changeView(string $view): void
     {
         $view = $this->normalizeView($view);
-
         $this->view = $view;
-
-        $this->loadTasks();
-    }
-
-    public function toggleComplete(int $taskId): void
-    {
-        app(TaskActions::class)->toggleCompletion(
-            Auth::user(),
-            $taskId,
-        );
-
-        $this->loadTasks();
-    }
-
-    public function delete(int $taskId): void
-    {
-        app(TaskActions::class)->delete(
-            Auth::user(),
-            $taskId,
-        );
-
-        $this->loadTasks();
     }
 
     /**
@@ -204,13 +129,11 @@ class TodoList extends Component
     #[On('task-saved')]
     public function refresh(): void
     {
-        $this->loadTasks();
+        $this->loadOverdueTasksCount();
     }
 
     public function render()
     {
-        return view('livewire.todo-list')->with([
-            'tasks' => $this->tasks
-        ]);
+        return view('livewire.todo-list');
     }
 }

@@ -8,25 +8,39 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Livewire\Component;
 use Illuminate\Support\Carbon;
 use Livewire\Attributes\On;
-use Livewire\Attributes\Reactive;
+use Livewire\Attributes\Modelable;
 use App\Application\Tasks\TaskActions;
 use App\Application\Tasks\TaskQuery;
 use App\Application\Tasks\TaskFilters;
 
 class CalendarView extends Component
 {
+    #[Modelable]
+    public array $filters = [
+        'search' => '',
+        'priority' => '',
+        'taskStatus' => '',
+    ];
 
-    #[Reactive]
-    public string $priority = '';
-    #[Reactive]
-    public string $taskStatus = '';
     public array $calendarEvents = [];
 
     // 表示中の期間を保持する
     public string $rangeStart = '';
     public string $rangeEnd = '';
 
-    public function loadEventsIfRangeSet(): void
+    public function updatedFilters(): void
+    {
+        $this->loadEventsIfRangeSet();
+    }
+
+    public function clearFilters(): void
+    {
+        $this->filters['priority'] = '';
+        $this->filters['taskStatus'] = '';
+        $this->loadEventsIfRangeSet();
+    }
+
+    private function loadEventsIfRangeSet(): void
     {
         if ($this->rangeStart && $this->rangeEnd) {
             $this->loadEvents($this->rangeStart, $this->rangeEnd);
@@ -59,9 +73,9 @@ class CalendarView extends Component
         $endDate = Carbon::parse($end);
 
         $filters = TaskFilters::fromLivewire(
-            search: '',
-            priority: $this->priority,
-            taskStatus: $this->taskStatus,
+            search: $this->filters['search'] ?? '',
+            priority: $this->filters['priority'] ?? '',
+            taskStatus: $this->filters['taskStatus'] ?? '',
             sort: '',
         );
 
