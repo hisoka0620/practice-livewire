@@ -1,6 +1,6 @@
 <div>
     <div
-        class="sticky z-10 mb-2 grid grid-cols-5 gap-2 rounded-md bg-zinc-700 px-4 py-2 text-center text-sm font-semibold text-zinc-300 top-(--todo-header-height)">
+        class="top-(--todo-header-height) sticky z-10 mb-2 grid grid-cols-5 gap-2 rounded-md bg-zinc-700 px-4 py-2 text-center text-sm font-semibold text-zinc-300">
         <div>Title</div>
         <div>Description</div>
         <div>Priority</div>
@@ -38,6 +38,7 @@
             @foreach ($tasks as $task)
                 <x-tasks.task
                     :$task
+                    :search="$filters['search'] ?? ''"
                     :key="$task->id"
                 />
             @endforeach

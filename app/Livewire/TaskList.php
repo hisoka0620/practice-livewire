@@ -52,32 +52,6 @@ class TaskList extends Component
             ->get();
     }
 
-    /**
-     * テキスト内の検索キーワードをハイライト表示します
-     */
-    public function highlight(?string $text): string
-    {
-        $search = $this->filters['search'] ?? '';
-
-        if (blank(mb_convert_kana($search, 's'))) {
-            return e($text);
-        }
-
-        $words = preg_split('/[\s　]+/u', trim($search), -1, PREG_SPLIT_NO_EMPTY);
-
-        $escapedText = e($text);
-
-        $keyword = implode('|', array_map(fn(string $word) => preg_quote($word, '/'), $words));
-
-        $highlighted = preg_replace(
-            '/' . $keyword . '/iu',
-            '<mark class="bg-yellow-200 text-yellow-900 rounded-sm px-0.5">$0</mark>',
-            $escapedText
-        );
-
-        return $highlighted;
-    }
-
     public function nextSort(): void
     {
         $currentSort = TaskSort::tryFrom($this->sort)

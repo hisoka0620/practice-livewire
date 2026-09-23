@@ -1,5 +1,8 @@
+@props(['task', 'search'])
+
 @php
     $visualStatus = $task->visual_status;
+    $searchHighlighter = app(\App\Support\SearchHighlighter::class);
 @endphp
 
 <div @class([
@@ -12,12 +15,12 @@
 
         {{-- Title --}}
         <div class="line-clamp-2 font-medium">
-            {!! $this->highlight($task->title) !!}
+            {!! $searchHighlighter->highlight($task->title, $search) !!}
         </div>
 
         {{-- Description --}}
         <div class="line-clamp-2 text-zinc-400">
-            {!! $this->highlight($task->description) !!}
+            {!! $searchHighlighter->highlight($task->description, $search) !!}
         </div>
 
         {{-- Priority --}}
@@ -45,19 +48,31 @@
 
             @switch($visualStatus)
                 @case('overdue')
-                    <flux:badge size="sm" variant="subtle" color="red">
+                    <flux:badge
+                        size="sm"
+                        variant="subtle"
+                        color="red"
+                    >
                         Overdue
                     </flux:badge>
                 @break
 
                 @case('due_soon')
-                    <flux:badge size="sm" variant="subtle" color="yellow">
+                    <flux:badge
+                        size="sm"
+                        variant="subtle"
+                        color="yellow"
+                    >
                         Due soon
                     </flux:badge>
                 @break
 
                 @case('completed')
-                    <flux:badge size="sm" variant="subtle" color="green">
+                    <flux:badge
+                        size="sm"
+                        variant="subtle"
+                        color="green"
+                    >
                         Completed
                     </flux:badge>
                 @break
@@ -70,18 +85,36 @@
         {{-- Actions --}}
         <div class="flex justify-end gap-1 opacity-70 transition hover:opacity-100">
             @if ($visualStatus !== 'completed')
-                <flux:button size="xs" icon="check-circle" variant="ghost"
-                    wire:click="toggleComplete({{ $task->id }})" />
+                <flux:button
+                    size="xs"
+                    icon="check-circle"
+                    variant="ghost"
+                    wire:click="toggleComplete({{ $task->id }})"
+                />
             @else
-                <flux:button size="xs" icon="arrow-path" variant="ghost"
-                    wire:click="toggleComplete({{ $task->id }})" />
+                <flux:button
+                    size="xs"
+                    icon="arrow-path"
+                    variant="ghost"
+                    wire:click="toggleComplete({{ $task->id }})"
+                />
             @endif
 
-            <flux:button size="xs" icon="pencil" variant="ghost"
-                wire:click="$dispatchTo('task-modal', 'open-task-modal', { taskId: {{ $task->id }} })" />
+            <flux:button
+                size="xs"
+                icon="pencil"
+                variant="ghost"
+                wire:click="$dispatchTo('task-modal', 'open-task-modal', { taskId: {{ $task->id }} })"
+            />
 
-            <flux:button size="xs" icon="trash" variant="ghost" color="red"
-                wire:click="delete({{ $task->id }})" wire:confirm="Are you sure?" />
+            <flux:button
+                size="xs"
+                icon="trash"
+                variant="ghost"
+                color="red"
+                wire:click="delete({{ $task->id }})"
+                wire:confirm="Are you sure?"
+            />
         </div>
     </div>
 </div>
