@@ -1,4 +1,16 @@
-<div class="mx-auto max-w-6xl px-4">
+<div
+    class="mx-auto max-w-6xl px-4"
+    x-data="{ headerHeight: 0 }"
+    x-init="const updateHeaderHeight = () => {
+        headerHeight = $refs.todoHeader.offsetHeight
+    }
+
+    const observer = new ResizeObserver(updateHeaderHeight)
+
+    observer.observe($refs.todoHeader)
+    updateHeaderHeight()"
+    x-bind:style="`--todo-header-height: ${headerHeight}px`"
+>
 
     {{-- Notification Banner --}}
     <livewire:push-notification-banner />
@@ -6,10 +18,13 @@
     <livewire:task-modal />
 
     {{-- ================= Header ================= --}}
-    <div @class([
-        'border-b border-zinc-700 bg-zinc-800/90 backdrop-blur',
-        'sticky top-0 z-20' => $view === 'list',
-    ])>
+    <div
+        x-ref="todoHeader"
+        @class([
+            'border-b border-zinc-700 bg-zinc-800/90 backdrop-blur',
+            'sticky top-0 z-10' => $view === 'list',
+        ])
+    >
         <div class="space-y-2 py-2">
 
             {{-- Title + Primary Action --}}
