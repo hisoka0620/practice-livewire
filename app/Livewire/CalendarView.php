@@ -2,16 +2,16 @@
 
 namespace App\Livewire;
 
-use App\Models\Task;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Livewire\Component;
-use Illuminate\Support\Carbon;
-use Livewire\Attributes\On;
-use Livewire\Attributes\Modelable;
 use App\Application\Tasks\TaskActions;
-use App\Application\Tasks\TaskQuery;
 use App\Application\Tasks\TaskFilters;
+use App\Application\Tasks\TaskQuery;
+use App\Models\Task;
+use App\Presenters\TaskCalendarEventMapper;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
+use Livewire\Attributes\Modelable;
+use Livewire\Attributes\On;
+use Livewire\Component;
 
 class CalendarView extends Component
 {
@@ -26,6 +26,7 @@ class CalendarView extends Component
 
     // 表示中の期間を保持する
     public string $rangeStart = '';
+
     public string $rangeEnd = '';
 
     public function updatedFilters(): void
@@ -80,6 +81,7 @@ class CalendarView extends Component
         );
 
         $taskQuery = app(TaskQuery::class);
+        $mapper = app(TaskCalendarEventMapper::class);
 
         $tasks = $taskQuery
             ->forCalendar(
@@ -91,30 +93,7 @@ class CalendarView extends Component
         $this->calendarEvents = $taskQuery
             ->withinPeriod($tasks, $startDate, $endDate)
             ->get()
-            ->map(function (Task $task) {
-                $status = str_replace('_', ' ', $task->visualStatus);
-
-                return [
-                    'id' => (string) $task->id,
-                    'title' => $task->title,
-                    'start' => $task->deadline?->format('Y-m-d\TH:i:s'),
-                    'end' => null,
-                    'color' => $task->is_completed
-                        ? '#9CA3AF'
-                        : match ($task->deadline_status) {
-                            'overdue' => '#991B1B',
-                            'due_soon' => '#D97706',
-                            default => '#0369A1',
-                        },
-                    'extendedProps' => [
-                        'status' => $status,
-                        'priority' => $task->priority,
-                        'deadline' => $task->deadline?->format('Y-m-d\TH:i:s'), // ISO形式
-                        'isOverdue' => $status === 'overdue',
-                        'completed' => $task->is_completed,
-                    ],
-                ];
-            })
+            ->map(fn(Task $task) => $mapper->map($task))
             ->values()
             ->toArray();
 
