@@ -1,90 +1,48 @@
-@props(['task', 'search'])
-
-@php
-    $visualStatus = $task->visual_status;
-    $searchHighlighter = app(\App\Support\SearchHighlighter::class);
-@endphp
-
-<div @class([
-    'rounded-md border bg-zinc-800 px-4 py-3 transition hover:bg-zinc-700',
-    'border-red-400/40 bg-red-950/10' => $visualStatus === 'overdue',
-    'border-yellow-400/40' => $visualStatus === 'due_soon',
-    'opacity-75' => $visualStatus === 'completed',
-])>
+<div @class([...$presenter->rowClasses()])>
     <div class="grid grid-cols-5 items-center gap-2 text-sm">
 
         {{-- Title --}}
         <div class="line-clamp-2 font-medium">
-            {!! $searchHighlighter->highlight($task->title, $search) !!}
+            {!! $presenter->title() !!}
         </div>
 
         {{-- Description --}}
         <div class="line-clamp-2 text-zinc-400">
-            {!! $searchHighlighter->highlight($task->description, $search) !!}
+            {!! $presenter->description() !!}
         </div>
 
         {{-- Priority --}}
         <div class="flex justify-center">
             <span class="rounded-md bg-zinc-700 px-2 py-1 text-xs font-semibold">
-                {{ ucfirst($task->priority) }}
+                {{ $presenter->priorityLabel() }}
             </span>
         </div>
 
         {{-- Deadline / Status --}}
         <div class="flex flex-col items-center gap-1">
-            <span @class([
-                'text-zinc-300',
-                'text-red-300! font-semibold tracking-wide' => $visualStatus === 'overdue',
-                'text-yellow-300! font-semibold tracking-wide' =>
-                    $visualStatus === 'due_soon',
-            ])>
-                {{ $task->deadline?->format('Y-m-d H:i') ?? 'No deadline' }}
-                @if (in_array($visualStatus, ['overdue', 'due_soon']))
+            <span @class($presenter->deadlineClasses())>
+                {{ $presenter->deadlineLabel() }}
+                @if ($presenter->deadlineHumanDiff())
                     <span class="ml-1 text-xs font-medium">
-                        ({{ $task->deadline_human_diff }})
+                        ({{ $presenter->deadlineHumanDiff() }})
                     </span>
                 @endif
             </span>
 
-            @switch($visualStatus)
-                @case('overdue')
-                    <flux:badge
-                        size="sm"
-                        variant="subtle"
-                        color="red"
-                    >
-                        Overdue
-                    </flux:badge>
-                @break
-
-                @case('due_soon')
-                    <flux:badge
-                        size="sm"
-                        variant="subtle"
-                        color="yellow"
-                    >
-                        Due soon
-                    </flux:badge>
-                @break
-
-                @case('completed')
-                    <flux:badge
-                        size="sm"
-                        variant="subtle"
-                        color="green"
-                    >
-                        Completed
-                    </flux:badge>
-                @break
-
-                @default
-                    {{-- Default None --}}
-            @endswitch
+            @if ($badge = $presenter->badge())
+                <flux:badge
+                    size="sm"
+                    variant="subtle"
+                    :color="$badge['color']"
+                >
+                    {{ $badge['label'] }}
+                </flux:badge>
+            @endif
         </div>
 
         {{-- Actions --}}
         <div class="flex justify-end gap-1 opacity-70 transition hover:opacity-100">
-            @if ($visualStatus !== 'completed')
+            @if ($presenter->visualStatus() !== 'completed')
                 <flux:button
                     size="xs"
                     icon="check-circle"
