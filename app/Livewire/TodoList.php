@@ -2,27 +2,34 @@
 
 namespace App\Livewire;
 
-use App\Models\Task;
-use Illuminate\Database\Eloquent\Collection;
+use App\Application\Tasks\TaskQuery;
+use App\Enums\TaskView;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Url;
 use Livewire\Component;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class TodoList extends Component
 {
-    public Collection $tasks;
     public int $overdueTasksCount = 0;
 
-    #[Url(except: '')]
-    public string $priority = '';
+    #[Url(except: 'list')]
+    public string $view = 'list';
 
     #[Url(except: '')]
     public string $search = '';
 
-    #[Url(except: '', as: 'status')]
+    #[Url(except: '')]
+    public string $priority = '';
+
+    #[Url(as: 'status', except: '')]
     public string $taskStatus = '';
+
+    public array $filters = [
+        'search' => '',
+        'priority' => '',
+        'taskStatus' => '',
+    ];
 
     #[Url(except: '')]
     public string $sort = '';
@@ -32,134 +39,88 @@ class TodoList extends Component
      */
     public function mount(): void
     {
-        $this->loadTasks();
+        $this->syncFiltersFromURL();
+        $this->view = $this->normalizeView($this->view);
+        $this->loadOverdueTasksCount();
     }
 
-    /**
-     * テキスト内の検索キーワードをハイライト表示します
-     */
-    public function highlight(?string $text): string
+    private function syncFiltersFromURL(): void
     {
-        if (blank(mb_convert_kana($this->search, 's'))) {
-            return e($text);
-        }
-
-        $words = preg_split('/[\s　]+/u', trim($this->search), -1, PREG_SPLIT_NO_EMPTY);
-
-        $escapedText = e($text);
-
-        $keyword = implode('|', array_map(fn($word) => preg_quote($word, '/'), $words));
-
-        $highlighted = preg_replace(
-            '/' . e($keyword) . '/iu',
-            '<mark class="bg-yellow-200 text-yellow-900 rounded-sm px-0.5">$0</mark>',
-            $escapedText
-        );
-
-        return $highlighted;
-    }
-
-    /**
-     * タスクの状態オプションを取得します
-     */
-    public function taskStatusOptions(): array
-    {
-        return [
-            '' => 'All',
-            'completed' => 'Completed',
-            'incomplete' => 'Incomplete',
-            'expired' => 'Expired',
+        $this->filters = [
+            'search' => $this->search,
+            'priority' => $this->priority,
+            'taskStatus' => $this->taskStatus,
         ];
     }
 
-    /**
-     * タスクのベースクエリを構築
-     */
-    private function buildTaskQuery(): hasMany
+    private function applyFiltersToURL(): void
     {
-        /** @var \App\Models\User $user */
-        $user = Auth::user();
+        $this->search = $this->filters['search'] ?? '';
+        $this->priority = $this->filters['priority'] ?? '';
+        $this->taskStatus = $this->filters['taskStatus'] ?? '';
 
-        return $user
-            ->tasks()
-            ->filterBySearch($this->search)
-            ->filterByPriority($this->priority)
-            ->filterByStatus($this->taskStatus)
-            ->sortByDeadline($this->sort)
-            ->latest();
+    }
+
+    private function loadOverdueTasksCount(): void
+    {
+        $this->overdueTasksCount = app(TaskQuery::class)
+            ->overdueCount(Auth::user());
+    }
+
+    #[On('task-list-updated')]
+    public function refreshOverdueTasksCount(): void
+    {
+        $this->loadOverdueTasksCount();
+    }
+
+    #[On('sort-changed')]
+    public function applySortToURL(string $sort): void
+    {
+        $this->sort = $sort;
     }
 
     /**
-     * タスク取得メソッド
+     * filters.priority、filters.taskStatus、
+     * filters.search のいずれかが変更されたときに実行されます。
      */
-    private function loadTasks(): void
+    public function updatedFilters(mixed $value, ?string $key = null): void
     {
-        $user = Auth::user();
-
-        $this->tasks = $this->buildTaskQuery()->get();
-        $this->overdueTasksCount = $user
-            ? $user->tasks()->where('is_completed', false)->where('deadline', '<', now())->count()
-            : 0;
+        $this->applyFiltersToURL();
     }
 
     /**
-     * 検索キーワードの更新時にフィルター状態を更新します
+     * URLパラメータが外部操作などで変更された場合
      */
     public function updatedSearch(): void
     {
-        $this->loadTasks();
+        $this->filters['search'] = $this->search;
     }
 
-    /**
-     * 優先度の更新時にフィルター状態を更新します
-     */
     public function updatedPriority(): void
     {
-        $this->loadTasks();
+        $this->filters['priority'] = $this->priority;
     }
 
-    /**
-     * 完了状態の更新時にフィルター状態を更新します
-     */
     public function updatedTaskStatus(): void
     {
-        $this->loadTasks();
+        $this->filters['taskStatus'] = $this->taskStatus;
     }
 
-    public function updatedSort(): void
+    public function openCreateTaskModal(): void
     {
-        $this->loadTasks();
+        $this->dispatch('open-task-modal')->to(TaskModal::class);
     }
 
-    /**
-     * タスクの完了状態を切り替えます。
-     */
-    public function toggleComplete(int $taskId): void
+    private function normalizeView(string $view): string
     {
-        $task = $this->findAndAuthorizeTask($taskId, 'update');
-        $task->is_completed = !$task->is_completed;
-        $task->save();
-        $this->loadTasks();
+        return TaskView::tryFrom($view)?->value
+            ?? TaskView::List ->value;
     }
 
-    /**
-     * タスクを削除します。
-     */
-    public function delete(int $taskId): void
+    public function changeView(string $view): void
     {
-        $task = $this->findAndAuthorizeTask($taskId, 'delete');
-        $task->delete();
-        $this->loadTasks();
-    }
-
-    /**
-     * タスクを取得し、指定された権限を確認します。
-     */
-    private function findAndAuthorizeTask(int $taskId, string $ability): Task
-    {
-        $task = Task::findOrFail($taskId);
-        $this->authorize($ability, $task);
-        return $task;
+        $view = $this->normalizeView($view);
+        $this->view = $view;
     }
 
     /**
@@ -168,13 +129,11 @@ class TodoList extends Component
     #[On('task-saved')]
     public function refresh(): void
     {
-        $this->loadTasks();
+        $this->loadOverdueTasksCount();
     }
 
     public function render()
     {
-        return view('livewire.todo-list')->with([
-            'tasks' => $this->tasks
-        ]);
+        return view('livewire.todo-list');
     }
 }

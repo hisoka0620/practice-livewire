@@ -1,0 +1,100 @@
+@import "flatpickr/dist/themes/dark.css";
+@import "flatpickr/dist/plugins/monthSelect/style.css";
+
+/*
+ * flatpickrの月選択カレンダー（dayGridMonth用・monthSelectプラグイン）と
+ * 日付選択カレンダー（timeGridWeek用・通常のflatpickr）の両方をアプリの
+ * zincテーマに統一する。
+ *
+ * 週表示側は theme: "dark" オプションを渡していない（そもそもmonthSelect
+ * プラグイン専用のオプションでコアのflatpickrには効かない）ため、
+ * `.flatpickr-monthSelect-theme-dark` は付与されない。
+ * よってセレクタを `.flatpickr-calendar` ベースに一般化し、両インスタンスに
+ * 共通で当たるようにする。
+ */
+.flatpickr-calendar {
+    background: rgba(38, 38, 38, 0.9); /* bg-zinc-800/90 */
+    border: 1px solid var(--color-zinc-700);
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    border-radius: 0.75rem;
+}
+
+.flatpickr-calendar .flatpickr-month {
+    background: rgba(38, 38, 38, 0.9);
+    border: 1px solid var(--color-zinc-700);
+    border-radius: 0.75rem 0.75rem 0 0;
+}
+
+.flatpickr-calendar .flatpickr-months .flatpickr-prev-month,
+.flatpickr-calendar .flatpickr-months .flatpickr-next-month {
+    color: var(--color-zinc-100);
+    fill: var(--color-zinc-100);
+}
+
+.flatpickr-calendar .flatpickr-months .flatpickr-prev-month:hover,
+.flatpickr-calendar .flatpickr-months .flatpickr-next-month:hover {
+    color: var(--color-zinc-300);
+}
+
+.flatpickr-calendar .flatpickr-current-month input.cur-year {
+    color: var(--color-zinc-100);
+}
+
+.flatpickr-calendar .flatpickr-current-month .flatpickr-monthDropdown-months {
+    background: transparent;
+    color: var(--color-zinc-100);
+}
+
+/* --- monthSelectプラグイン（dayGridMonth用の月選択）--- */
+.flatpickr-calendar .flatpickr-monthSelect-month {
+    color: rgba(245, 245, 245, 0.9);
+}
+
+.flatpickr-calendar .flatpickr-monthSelect-month:hover,
+.flatpickr-calendar .flatpickr-monthSelect-month:focus {
+    background: var(--color-zinc-700);
+    border-color: var(--color-zinc-700);
+}
+
+.flatpickr-calendar .flatpickr-monthSelect-month.selected {
+    background: rgb(2, 132, 199); /* sky-600系。フォーカスリングと合わせる場合はsky-500 rgb(14,165,233) */
+    border-color: rgb(2, 132, 199);
+    color: var(--color-zinc-100);
+}
+
+/* --- コアflatpickr（timeGridWeek用の日付選択）--- */
+.flatpickr-calendar .flatpickr-weekdays {
+    background: rgba(38, 38, 38, 0.9);
+}
+
+.flatpickr-calendar span.flatpickr-weekday {
+    background: transparent;
+    color: rgba(245, 245, 245, 0.7);
+}
+
+.flatpickr-calendar .flatpickr-day {
+    color: rgba(245, 245, 245, 0.9);
+}
+
+.flatpickr-calendar .flatpickr-day.today {
+    border-color: var(--color-zinc-500);
+}
+
+.flatpickr-calendar .flatpickr-day:hover,
+.flatpickr-calendar .flatpickr-day:focus {
+    background: var(--color-zinc-700);
+    border-color: var(--color-zinc-700);
+}
+
+.flatpickr-calendar .flatpickr-day.selected,
+.flatpickr-calendar .flatpickr-day.selected:hover {
+    background: rgb(2, 132, 199); /* sky-600系。monthSelectの選択色と統一 */
+    border-color: rgb(2, 132, 199);
+    color: var(--color-zinc-100);
+}
+
+.flatpickr-calendar .flatpickr-day.flatpickr-disabled,
+.flatpickr-calendar .flatpickr-day.prevMonthDay,
+.flatpickr-calendar .flatpickr-day.nextMonthDay {
+    color: rgba(245, 245, 245, 0.3);
+}
