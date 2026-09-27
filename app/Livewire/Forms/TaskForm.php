@@ -2,9 +2,10 @@
 
 namespace App\Livewire\Forms;
 
+use App\Models\Task;
+use Illuminate\Support\Carbon;
 use Livewire\Attributes\Validate;
 use Livewire\Form;
-use App\Models\Task;
 
 class TaskForm extends Form
 {
@@ -30,7 +31,9 @@ class TaskForm extends Form
         $this->title = $task->title;
         $this->priority = $task->priority;
         $this->description = $task->description;
-        $this->deadline = $task->deadline?->format('Y-m-d\TH:i');
+        $this->deadline = $task->deadline
+                ?->setTimezone(config('app.timezone'))
+            ->format('Y-m-d\TH:i');
     }
 
     public function setDeadlineDate(string $prefillDeadline): void
@@ -42,9 +45,12 @@ class TaskForm extends Form
     {
         $this->validate();
 
+        $data = $this->pull(self::TASK_FIELDS);
+        $data['deadline'] = $this->deadlineForPersistence($data['deadline']);
+
         /** @var \App\Models\User $user */
         $user = auth('web')->user();
-        $user->tasks()->create($this->pull(self::TASK_FIELDS));
+        $user->tasks()->create($data);
     }
 
     public function update(): void
@@ -52,6 +58,7 @@ class TaskForm extends Form
         $this->validate();
 
         $data = $this->pull(self::TASK_FIELDS);
+        $data['deadline'] = $this->deadlineForPersistence($data['deadline']);
 
         $this->task->fill($data);
 
@@ -60,5 +67,12 @@ class TaskForm extends Form
         }
 
         $this->task->save();
+    }
+
+    private function deadlineForPersistence(?string $deadline): ?Carbon
+    {
+        return blank($deadline)
+            ? null
+            : Carbon::parse($deadline, config('app.timezone'));
     }
 }

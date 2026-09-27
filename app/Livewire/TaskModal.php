@@ -4,15 +4,17 @@ namespace App\Livewire;
 
 use App\Livewire\Forms\TaskForm;
 use App\Models\Task;
-use Livewire\Attributes\On;
-use Livewire\Component;
-use Livewire\Attributes\Url;
 use Carbon\Carbon;
+use Livewire\Attributes\On;
+use Livewire\Attributes\Url;
+use Livewire\Component;
 
 class TaskModal extends Component
 {
     public TaskForm $form;
+
     public ?Task $task = null;
+
     public bool $show = false;
 
     #[Url(as: 'create', except: 0)]
@@ -43,8 +45,12 @@ class TaskModal extends Component
             $this->task = $task;
             $this->form->setTask($this->task);
             $this->editTaskId = $taskId;
-        } else if ($prefillDeadline) {
-            $this->form->setDeadlineDate(Carbon::parse($prefillDeadline)->format('Y-m-d\TH:i'));
+        } elseif ($prefillDeadline) {
+            $this->form->setDeadlineDate(
+                Carbon::parse($prefillDeadline)
+                    ->setTimezone(config('app.timezone'))
+                    ->format('Y-m-d\TH:i')
+            );
             $this->createTask = 1;
         } else {
             $this->createTask = 1;

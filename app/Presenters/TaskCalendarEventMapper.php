@@ -13,13 +13,13 @@ final class TaskCalendarEventMapper
         return [
             'id' => (string) $task->id,
             'title' => $task->title,
-            'start' => $task->deadline?->format('Y-m-d\TH:i:s'),
+            'start' => $task->deadline?->utc()->toISOString(),
             'end' => null,
             'color' => $this->color($task),
             'extendedProps' => [
                 'status' => $status,
                 'priority' => $task->priority,
-                'deadline' => $task->deadline?->format('Y-m-d\TH:i:s'),
+                'deadline' => $task->deadline?->utc()->toISOString(),
                 'isOverdue' => $status === 'overdue',
                 'completed' => $task->is_completed,
             ],

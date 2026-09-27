@@ -18,26 +18,50 @@ it('maps a task to a FullCalendar event', function () {
         'title' => 'Prepare report',
         'priority' => 'high',
         'is_completed' => false,
-        'deadline' => '2026-09-23 18:30:00',
+        'deadline' => Carbon::parse('2026-09-23 18:30:00', 'Asia/Tokyo'),
     ]);
     $task->id = 42;
 
     $event = (new TaskCalendarEventMapper)->map($task);
 
+    expect($event['start'])->toEndWith('Z')
+        ->and($event['extendedProps']['deadline'])->toEndWith('Z');
+
+    $event['start'] = Carbon::parse($event['start'])->utc()->format('Y-m-d\TH:i:s.v\Z');
+    $event['extendedProps']['deadline'] = Carbon::parse($event['extendedProps']['deadline'])
+        ->utc()
+        ->format('Y-m-d\TH:i:s.v\Z');
+
     expect($event)->toBe([
         'id' => '42',
         'title' => 'Prepare report',
-        'start' => '2026-09-23T18:30:00',
+        'start' => '2026-09-23T09:30:00.000Z',
         'end' => null,
         'color' => '#D97706',
         'extendedProps' => [
             'status' => 'due soon',
             'priority' => 'high',
-            'deadline' => '2026-09-23T18:30:00',
+            'deadline' => '2026-09-23T09:30:00.000Z',
             'isOverdue' => false,
             'completed' => false,
         ],
     ]);
+});
+
+it('maps Tokyo midnight deadlines to the previous UTC date consistently', function () {
+    Carbon::setTestNow(Carbon::parse('2026-09-22 12:00:00', 'Asia/Tokyo'));
+
+    $task = new Task([
+        'title' => 'Prepare report',
+        'priority' => 'high',
+        'is_completed' => false,
+        'deadline' => Carbon::parse('2026-09-23 00:30:00', 'Asia/Tokyo'),
+    ]);
+
+    $event = (new TaskCalendarEventMapper)->map($task);
+
+    expect($event['start'])->toBe('2026-09-22T15:30:00.000000Z')
+        ->and($event['extendedProps']['deadline'])->toBe($event['start']);
 });
 
 it('uses the expected color for each task state', function () {

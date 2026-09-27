@@ -7,7 +7,7 @@ import flatpickr from "flatpickr";
 import monthSelectPlugin from "flatpickr/dist/plugins/monthSelect/index.js";
 
 /**
- * deadline（タイムゾーンなしISO文字列）から表示用文字列を生成するヘルパー群
+ * deadline（UTC offset付きISO 8601文字列）から表示用文字列を生成するヘルパー群
  */
 function formatEventTime(isoString) {
     if (!isoString) return "";
@@ -35,11 +35,7 @@ function formatTooltipDeadline(isoString) {
 }
 
 function formatForServer(date) {
-    const pad = (n) => String(n).padStart(2, "0");
-    return (
-        `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
-        `T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
-    );
+    return date.toISOString();
 }
 
 /**
@@ -325,6 +321,7 @@ export default (wire) => ({
 
         this.calendar = new Calendar(calendarEl, {
             plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
+            timeZone: "local",
             initialView: "dayGridMonth",
             headerToolbar: {
                 left: "prev,next today",
@@ -400,7 +397,12 @@ export default (wire) => ({
                 // 監視対象・オーバーレイの付け替え先を張り直して最新の状態を反映する
                 this.observeCalendarLayout();
                 this.attachOverlayToHarness();
-                this.runWireAction(wire.loadEvents(info.startStr, info.endStr));
+                this.runWireAction(
+                    wire.loadEvents(
+                        info.start.toISOString(),
+                        info.end.toISOString(),
+                    ),
+                );
             },
             eventClick: (info) => {
                 info.jsEvent.preventDefault();
@@ -454,7 +456,7 @@ export default (wire) => ({
 
                 const dotColor = priorityMap[rawPriority]?.color || "#94a3b8";
 
-                // ISO 8601形式（タイムゾーンなし）は主要ブラウザで一貫してローカル時刻として解釈されるため信頼できる
+                // UTC offset付きISO 8601文字列をローカル時刻として表示する
                 const time = formatEventTime(props.deadline);
 
                 return {

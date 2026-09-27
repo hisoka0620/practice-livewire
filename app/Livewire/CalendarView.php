@@ -70,8 +70,8 @@ class CalendarView extends Component
         $this->rangeEnd = $end;
 
         // FullCalendarから送られてくるISO 8601文字列をパース
-        $startDate = Carbon::parse($start);
-        $endDate = Carbon::parse($end);
+        $startDate = Carbon::parse($start)->setTimezone(config('app.timezone'));
+        $endDate = Carbon::parse($end)->setTimezone(config('app.timezone'));
 
         $filters = TaskFilters::fromLivewire(
             search: $this->filters['search'] ?? '',
@@ -113,7 +113,7 @@ class CalendarView extends Component
         app(TaskActions::class)->updateDeadline(
             Auth::user(),
             $taskId,
-            Carbon::parse($newDeadline),
+            Carbon::parse($newDeadline)->setTimezone(config('app.timezone')),
         );
 
         return $this->loadEvents($this->rangeStart, $this->rangeEnd);
