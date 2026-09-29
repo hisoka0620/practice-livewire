@@ -5,9 +5,11 @@
         <div>Description</div>
         <div>Priority</div>
         <div class="grid place-items-center">
-            <span
+            <button
+                type="button"
                 wire:click="nextSort"
-                class="inline-flex cursor-pointer select-none items-center gap-1 transition hover:text-white"
+                aria-label="Sort by deadline, currently {{ $sort === '' ? 'unsorted' : ($sort === 'asc' ? 'ascending' : 'descending') }}"
+                class="font-inherit inline-flex cursor-pointer select-none items-center gap-1 border-0 bg-transparent p-0 text-inherit transition hover:text-white"
             >
                 <span>Deadline</span>
                 @if ($sort === '')
@@ -26,7 +28,7 @@
                         variant="micro"
                     />
                 @endif
-            </span>
+            </button>
         </div>
         <div>Actions</div>
     </div>
