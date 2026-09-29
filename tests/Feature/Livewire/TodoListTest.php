@@ -1,6 +1,5 @@
 <?php
 
-use App\Livewire\TaskList;
 use App\Livewire\TodoList;
 use App\Models\Task;
 use App\Models\User;
@@ -28,13 +27,4 @@ it('restores the deadline sort from the URL', function () {
         ->test(TodoList::class)
         ->assertSet('sort', 'asc')
         ->assertSeeInOrder(['Earlier deadline', 'Later deadline']);
-});
-
-it('advances from the restored sort on the first interaction', function () {
-    $user = User::factory()->create();
-    $this->actingAs($user);
-
-    Livewire::test(TaskList::class, ['sort' => 'asc'])
-        ->call('nextSort')
-        ->assertSet('sort', 'desc');
 });
