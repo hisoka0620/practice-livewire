@@ -47,6 +47,7 @@
                     size="xs"
                     icon="check-circle"
                     variant="ghost"
+                    aria-label="Mark task as complete"
                     wire:click="toggleComplete({{ $task->id }})"
                 />
             @else
@@ -54,6 +55,7 @@
                     size="xs"
                     icon="arrow-path"
                     variant="ghost"
+                    aria-label="Mark task as incomplete"
                     wire:click="toggleComplete({{ $task->id }})"
                 />
             @endif
@@ -62,6 +64,7 @@
                 size="xs"
                 icon="pencil"
                 variant="ghost"
+                aria-label="Edit task"
                 wire:click="$dispatchTo('task-modal', 'open-task-modal', { taskId: {{ $task->id }} })"
             />
 
@@ -70,6 +73,7 @@
                 icon="trash"
                 variant="ghost"
                 color="red"
+                aria-label="Delete task"
                 wire:click="delete({{ $task->id }})"
                 wire:confirm="Are you sure?"
             />
