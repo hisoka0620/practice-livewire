@@ -5,22 +5,24 @@ import interactionPlugin from "@fullcalendar/interaction";
 import tippy from "tippy.js";
 import flatpickr from "flatpickr";
 import monthSelectPlugin from "flatpickr/dist/plugins/monthSelect/index.js";
+import { getUserTimeZone } from "./deadline";
 
 /**
  * deadline（UTC offset付きISO 8601文字列）から表示用文字列を生成するヘルパー群
  */
-function formatEventTime(isoString) {
+function formatEventTime(isoString, timeZone) {
     if (!isoString) return "";
     return new Intl.DateTimeFormat("en-US", {
         hour: "numeric",
         minute: "2-digit",
         hour12: true,
+        timeZone,
     })
         .format(new Date(isoString))
         .toLowerCase();
 }
 
-function formatTooltipDeadline(isoString) {
+function formatTooltipDeadline(isoString, timeZone) {
     if (!isoString) return "none";
     // toDayDateTimeString() と同等の見た目（例: "Sun, Jun 1, 2025 3:00 PM"）を再現
     return new Intl.DateTimeFormat("en-US", {
@@ -31,6 +33,7 @@ function formatTooltipDeadline(isoString) {
         hour: "numeric",
         minute: "2-digit",
         hour12: true,
+        timeZone,
     }).format(new Date(isoString));
 }
 
@@ -102,6 +105,7 @@ const LOADING_DELAY_MS = 200;
  */
 export default (wire) => ({
     calendar: null,
+    userTimeZone: getUserTimeZone(),
     flatPickr: null, // flatpickr（月選択）インスタンス
     isLoading: false,
     errorMessage: "",
@@ -457,7 +461,7 @@ export default (wire) => ({
                 const dotColor = priorityMap[rawPriority]?.color || "#94a3b8";
 
                 // UTC offset付きISO 8601文字列をローカル時刻として表示する
-                const time = formatEventTime(props.deadline);
+                const time = formatEventTime(props.deadline, this.userTimeZone);
 
                 return {
                     html: /* HTML */ `
@@ -490,7 +494,11 @@ export default (wire) => ({
                     <div style="text-align: left; padding: 4px;">
                         <strong>${title}</strong><br />
                         <hr style="border-color: #555; margin: 4px 0;" />
-                        ⏰ Deadline: ${formatTooltipDeadline(props.deadline)}<br />
+                        ⏰ Deadline:
+                        ${formatTooltipDeadline(
+                            props.deadline,
+                            this.userTimeZone,
+                        )}<br />
                         🔥 Priority: ${priority}<br />
                         📌 Status:
                         <span style="color: #fff;">${status}</span>

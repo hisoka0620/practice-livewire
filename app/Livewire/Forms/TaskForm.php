@@ -20,7 +20,7 @@ class TaskForm extends Form
     #[Validate('required|in:low,medium,high')]
     public string $priority = 'medium';
 
-    #[Validate('nullable|date')]
+    #[Validate('nullable|date_format:Y-m-d\TH:i:s.v\Z')]
     public ?string $deadline = null;
 
     private const TASK_FIELDS = ['title', 'description', 'priority', 'deadline'];
@@ -31,9 +31,7 @@ class TaskForm extends Form
         $this->title = $task->title;
         $this->priority = $task->priority;
         $this->description = $task->description;
-        $this->deadline = $task->deadline
-                ?->setTimezone(config('app.timezone'))
-            ->format('Y-m-d\TH:i');
+        $this->deadline = $task->deadline?->utc()->format('Y-m-d\TH:i:s.v\Z');
     }
 
     public function setDeadlineDate(string $prefillDeadline): void
@@ -73,6 +71,6 @@ class TaskForm extends Form
     {
         return blank($deadline)
             ? null
-            : Carbon::parse($deadline, config('app.timezone'));
+            : Carbon::parse($deadline)->setTimezone(config('app.timezone'));
     }
 }

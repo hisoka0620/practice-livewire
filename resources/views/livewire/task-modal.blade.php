@@ -1,6 +1,11 @@
 <div>
     {{-- モーダル表示 --}}
-    <flux:modal wire:model="show" name="task-modal" class="md:w-96" wire:close="close">
+    <flux:modal
+        wire:model="show"
+        name="task-modal"
+        class="md:w-96"
+        wire:close="close"
+    >
         <form wire:submit="save">
             <div class="space-y-6">
                 <div>
@@ -11,11 +16,22 @@
                         {{ $task ? 'Edit your task.' : "Let's create your task." }}
                     </flux:text>
                 </div>
-                <flux:input wire:model.blur="form.title" label="Title" placeholder="Enter Title" />
-                <flux:textarea wire:model.blur="form.description" label="Description"
-                    placeholder="Enter description." />
+                <flux:input
+                    wire:model.blur="form.title"
+                    label="Title"
+                    placeholder="Enter Title"
+                />
+                <flux:textarea
+                    wire:model.blur="form.description"
+                    label="Description"
+                    placeholder="Enter description."
+                />
                 <div class="w-fit">
-                    <flux:select wire:model.blur="form.priority" label="Priority" placeholder="Select priority">
+                    <flux:select
+                        wire:model.blur="form.priority"
+                        label="Priority"
+                        placeholder="Select priority"
+                    >
                         <flux:select.option value="low">
                             Low</flux:select.option>
                         <flux:select.option value="medium">
@@ -24,14 +40,22 @@
                             High</flux:select.option>
                     </flux:select>
                 </div>
-                <div>
-                    <flux:input type="datetime-local" wire:model.blur="form.deadline" label="Deadline" />
+                <div x-data="taskDeadlineInput($wire)">
+                    <flux:input
+                        type="datetime-local"
+                        x-ref="deadline"
+                        x-on:change="update($event.target.value)"
+                        label="Deadline"
+                    />
                 </div>
                 <div class="flex space-x-2">
                     <flux:spacer />
                     <flux:button wire:click="close">Cancel
                     </flux:button>
-                    <flux:button type="submit" variant="primary">
+                    <flux:button
+                        type="submit"
+                        variant="primary"
+                    >
                         {{ $task ? 'Update' : 'Create' }}
                     </flux:button>
                 </div>
