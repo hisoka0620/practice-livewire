@@ -1,6 +1,7 @@
 <?php
 
 use App\Livewire\CalendarView;
+use App\Livewire\TodoList;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -63,4 +64,27 @@ it('saves a UTC calendar deadline without changing its instant', function () {
     $inputInstant = Carbon::parse('2026-09-24T15:45:00.000Z');
 
     expect($savedDeadline->equalTo($inputInstant))->toBeTrue();
+});
+
+it('refreshes the overdue task count after calendar completion', function () {
+    Carbon::setTestNow(Carbon::parse('2026-09-29 12:00:00', config('app.timezone')));
+
+    $user = User::factory()->create();
+    $task = Task::factory()->for($user)->create([
+        'deadline' => now()->subDay(),
+        'is_completed' => false,
+    ]);
+    $this->actingAs($user);
+
+    $todoList = Livewire::test(TodoList::class)
+        ->assertSet('overdueTasksCount', 1);
+
+    Livewire::test(CalendarView::class)
+        ->call('toggleTaskCompletion', $task->id)
+        ->assertDispatched('task-list-updated');
+
+    expect($task->refresh()->is_completed)->toBeTrue();
+    expect(app(\App\Application\Tasks\TaskQuery::class)->overdueCount($user))->toBe(0);
+
+    $todoList->dispatch('task-list-updated')->assertSet('overdueTasksCount', 0);
 });

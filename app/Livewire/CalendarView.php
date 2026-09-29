@@ -116,6 +116,8 @@ class CalendarView extends Component
             Carbon::parse($newDeadline)->setTimezone(config('app.timezone')),
         );
 
+        $this->dispatch('task-list-updated')->to(TodoList::class);
+
         return $this->loadEvents($this->rangeStart, $this->rangeEnd);
     }
 
@@ -137,6 +139,8 @@ class CalendarView extends Component
             $taskId,
         );
 
+        $this->dispatch('task-list-updated')->to(TodoList::class);
+
         return $this->loadEvents($this->rangeStart, $this->rangeEnd);
     }
 
@@ -149,6 +153,8 @@ class CalendarView extends Component
             Auth::user(),
             $taskId,
         );
+
+        $this->dispatch('task-list-updated')->to(TodoList::class);
 
         return $this->loadEvents($this->rangeStart, $this->rangeEnd);
     }
