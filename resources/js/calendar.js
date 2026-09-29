@@ -1,33 +1,13 @@
 import { Calendar } from "@fullcalendar/core";
-import dayGridPlugin from "@fullcalendar/daygrid";
-import timeGridPlugin from "@fullcalendar/timegrid";
-import interactionPlugin from "@fullcalendar/interaction";
-import tippy from "tippy.js";
 import flatpickr from "flatpickr";
 import monthSelectPlugin from "flatpickr/dist/plugins/monthSelect/index.js";
 import { getUserTimeZone } from "./deadline";
+import { createCalendarOptions } from "./calendar/options";
 import {
     combineDateAndTime,
-    formatEventTime,
     formatForServer,
-    formatTooltipDeadline,
     resolveNewDeadline,
 } from "./calendar/date-utils";
-
-/** HTMLエスケープ */
-function escapeHtml(value) {
-    return String(value ?? "").replace(
-        /[&<>"']/g,
-        (character) =>
-            ({
-                "&": "&amp;",
-                "<": "&lt;",
-                ">": "&gt;",
-                '"': "&quot;",
-                "'": "&#039;",
-            })[character],
-    );
-}
 
 //
 const LOADING_DELAY_MS = 200;
@@ -255,224 +235,88 @@ export default (wire) => ({
             true, // true = キャプチャフェーズで登録
         );
 
-        this.calendar = new Calendar(calendarEl, {
-            plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
-            timeZone: "local",
-            initialView: "dayGridMonth",
-            headerToolbar: {
-                left: "prev,next today",
-                center: "title",
-                right: "dayGridMonth,timeGridWeek",
-            },
-            views: {
-                timeGridWeek: {
-                    allDaySlot: false,
-                    eventMinHeight: 30,
+        this.calendar = new Calendar(
+            calendarEl,
+            createCalendarOptions({
+                userTimeZone: this.userTimeZone,
+                onEventDrop: (info) => {
+                    const taskId = info.event.id;
+                    const newDeadline = resolveNewDeadline(info); // ドロップ後の新しい日時（Dateオブジェクト）
+
+                    this.runWireAction(
+                        wire.updateTaskDeadline(
+                            taskId,
+                            formatForServer(newDeadline),
+                        ),
+                        {
+                            onFailure: () => info.revert(),
+                        },
+                    );
                 },
-            },
-            events: [],
-            editable: true,
-            eventStartEditable: true,
-            eventDurationEditable: false, // リサイズは無効
-            eventDrop: (info) => {
-                const taskId = info.event.id;
-                const newDeadline = resolveNewDeadline(info); // ドロップ後の新しい日時（Dateオブジェクト）
+                onDateClick: (info) => {
+                    const clicked = info.date;
+                    let deadline;
 
-                this.runWireAction(
-                    wire.updateTaskDeadline(
-                        taskId,
-                        formatForServer(newDeadline),
-                    ),
-                    {
-                        onFailure: () => info.revert(),
-                    },
-                );
-            },
-            dateClick: (info) => {
-                const clicked = info.date;
-                let deadline;
+                    if (info.view.type === "dayGridMonth") {
+                        const today = new Date();
+                        const todayDateOnly = new Date(
+                            today.getFullYear(),
+                            today.getMonth(),
+                            today.getDate(),
+                        );
+                        const isPast = clicked < todayDateOnly;
+                        // 過去日: 0:00固定 / 今日以降: 現在時刻を合成
+                        deadline = combineDateAndTime(
+                            clicked,
+                            isPast ? null : new Date(),
+                        );
+                    } else {
+                        // 週表示: クリックした時間スロットをそのまま使う（合成不要）
+                        deadline = clicked;
+                    }
 
-                if (info.view.type === "dayGridMonth") {
-                    const today = new Date();
-                    const todayDateOnly = new Date(
-                        today.getFullYear(),
-                        today.getMonth(),
-                        today.getDate(),
+                    wire.$dispatchTo("task-modal", "open-task-modal", {
+                        taskId: null, // nullの場合は新規作成モードとしてtask-modal側で判定
+                        prefillDeadline: formatForServer(deadline),
+                    });
+                },
+                onDatesSet: (info) => {
+                    const viewType = info.view.type;
+                    this.currentDatePickerValue = info.view.currentStart;
+                    if (this.currentViewType !== viewType) {
+                        // dayGridMonth ⇔ timeGridWeek の切り替え：flatpickrを作り直す
+                        this.initFlatPickr(viewType);
+                    } else if (this._skipDatePickerSync) {
+                        // flatpickr自身の選択操作によるgotoDateなので、
+                        // 選んだ日付の表示を週の開始日で上書きしないようスキップする
+                        this._skipDatePickerSync = false;
+                    } else {
+                        // prev/next/todayボタン等による移動：表示値を同期する
+                        this.syncDatePicker(viewType, info.view.currentStart);
+                    }
+                    // ビュー切替時はFullCalendarが該当DOMを作り直すため、
+                    // 監視対象・オーバーレイの付け替え先を張り直して最新の状態を反映する
+                    this.observeCalendarLayout();
+                    this.attachOverlayToHarness();
+                    this.runWireAction(
+                        wire.loadEvents(
+                            info.start.toISOString(),
+                            info.end.toISOString(),
+                        ),
                     );
-                    const isPast = clicked < todayDateOnly;
-                    // 過去日: 0:00固定 / 今日以降: 現在時刻を合成
-                    deadline = combineDateAndTime(
-                        clicked,
-                        isPast ? null : new Date(),
-                    );
-                } else {
-                    // 週表示: クリックした時間スロットをそのまま使う（合成不要）
-                    deadline = clicked;
-                }
-
-                wire.$dispatchTo("task-modal", "open-task-modal", {
-                    taskId: null, // nullの場合は新規作成モードとしてtask-modal側で判定
-                    prefillDeadline: formatForServer(deadline),
-                });
-            },
-            datesSet: (info) => {
-                const viewType = info.view.type;
-                this.currentDatePickerValue = info.view.currentStart;
-                if (this.currentViewType !== viewType) {
-                    // dayGridMonth ⇔ timeGridWeek の切り替え：flatpickrを作り直す
-                    this.initFlatPickr(viewType);
-                } else if (this._skipDatePickerSync) {
-                    // flatpickr自身の選択操作によるgotoDateなので、
-                    // 選んだ日付の表示を週の開始日で上書きしないようスキップする
-                    this._skipDatePickerSync = false;
-                } else {
-                    // prev/next/todayボタン等による移動：表示値を同期する
-                    this.syncDatePicker(viewType, info.view.currentStart);
-                }
-                // ビュー切替時はFullCalendarが該当DOMを作り直すため、
-                // 監視対象・オーバーレイの付け替え先を張り直して最新の状態を反映する
-                this.observeCalendarLayout();
-                this.attachOverlayToHarness();
-                this.runWireAction(
-                    wire.loadEvents(
-                        info.start.toISOString(),
-                        info.end.toISOString(),
-                    ),
-                );
-            },
-            eventClick: (info) => {
-                info.jsEvent.preventDefault();
-                const taskId = info.event.id;
-                if (!taskId) return;
-                wire.$dispatchTo("task-modal", "open-task-modal", {
-                    taskId: Number(taskId),
-                });
-            },
-            eventDisplay: "block",
-            height: "100%",
-            fixedWeekCount: false,
-            dayMaxEvents: true,
-            eventMaxStack: 2, // スタックの最大数を制限
-            moreLinkContent: (args) => `+${args.num} more`,
-            eventOrder: (firstEvent, secondEvent) => {
-                const priorityRank = {
-                    high: 3,
-                    medium: 2,
-                    low: 1,
-                };
-
-                const firstRank =
-                    priorityRank[firstEvent.extendedProps.priority] ?? 0;
-                const secondRank =
-                    priorityRank[secondEvent.extendedProps.priority] ?? 0;
-
-                if (firstRank !== secondRank) {
-                    return secondRank - firstRank;
-                }
-
-                const firstDeadline = new Date(
-                    firstEvent.extendedProps.deadline,
-                );
-                const secondDeadline = new Date(
-                    secondEvent.extendedProps.deadline,
-                );
-
-                return firstDeadline - secondDeadline;
-            },
-            eventOrderStrict: true,
-            eventContent: (arg) => {
-                const props = arg.event.extendedProps || {};
-                const rawPriority = String(props.priority ?? "").toLowerCase();
-                const title = escapeHtml(arg.event.title || "");
-                const priorityMap = {
-                    low: { color: "#3b82f6" }, // blue
-                    medium: { color: "#fbbf24" }, // yellow
-                    high: { color: "#ef4444" }, // red
-                };
-
-                const dotColor = priorityMap[rawPriority]?.color || "#94a3b8";
-
-                // UTC offset付きISO 8601文字列をローカル時刻として表示する
-                const time = formatEventTime(props.deadline, this.userTimeZone);
-
-                return {
-                    html: /* HTML */ `
-                        <div class="fc-custom-event">
-                            <span
-                                class="fc-priority-dot"
-                                style="background:${dotColor};"
-                            ></span>
-                            <div class="fc-event-content">
-                                <div class="fc-event-time">${time}</div>
-                                <div class="fc-event-title">${title}</div>
-                            </div>
-                        </div>
-                    `,
-                };
-            },
-            // イベントのDOMがマウントされた時に呼ばれるフック
-            eventDidMount: (info) => {
-                const props = info.event.extendedProps;
-                const title = escapeHtml(info.event.title || "");
-                const priority = escapeHtml(props.priority || "none");
-                const status = escapeHtml(props.status || "none");
-
-                if (info.el._tippy) {
-                    info.el._tippy.destroy();
-                }
-
-                // ツールチップに表示したいHTMLコンテンツを作成
-                const tooltipContent = /* HTML */ `
-                    <div style="text-align: left; padding: 4px;">
-                        <strong>${title}</strong><br />
-                        <hr style="border-color: #555; margin: 4px 0;" />
-                        ⏰ Deadline:
-                        ${formatTooltipDeadline(
-                            props.deadline,
-                            this.userTimeZone,
-                        )}<br />
-                        🔥 Priority: ${priority}<br />
-                        📌 Status:
-                        <span style="color: #fff;">${status}</span>
-                    </div>
-                `;
-
-                const tooltipOptions = {
-                    content: tooltipContent,
-                    allowHTML: true, // HTMLタグを有効にする
-                    placement: "right-start", // 表示位置 (top, bottom, left, right)
-                    theme: "dark", // テーマ (必要に応じてCSSでカスタム可能)
-                    animation: "scale", // アニメーション効果
-                    trigger: "mouseenter focus",
-                    // flipはデフォルトで有効。fallbackの候補を明示したい場合はここで指定する
-                    popperOptions: {
-                        modifiers: [
-                            {
-                                name: "flip",
-                                options: {
-                                    fallbackPlacements: [
-                                        "left-start",
-                                        "top",
-                                        "bottom",
-                                    ],
-                                },
-                            },
-                        ],
-                    },
-                };
-
-                // Tippy.js をバインド
-                info.el._tippy = tippy(info.el, tooltipOptions);
-
-                info.el.addEventListener("contextmenu", (jsEvent) => {
-                    jsEvent.preventDefault(); // ブラウザ標準の右クリックメニューを抑制
-                    this.openContextMenu(jsEvent, info.event);
-                });
-            },
-            eventWillUnmount: (info) => {
-                info.el._tippy?.destroy(); // ツールチップの破棄
-            },
-        });
+                },
+                onEventClick: (info) => {
+                    info.jsEvent.preventDefault();
+                    const taskId = info.event.id;
+                    if (!taskId) return;
+                    wire.$dispatchTo("task-modal", "open-task-modal", {
+                        taskId: Number(taskId),
+                    });
+                },
+                onEventContextMenu: (jsEvent, event) =>
+                    this.openContextMenu(jsEvent, event),
+            }),
+        );
 
         this.calendar.render();
         // 初回描画直後にヘッダー高さの監視を開始し、オーバーレイをharnessへ付け替える

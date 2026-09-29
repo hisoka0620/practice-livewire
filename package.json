@@ -4,7 +4,7 @@
     "scripts": {
         "build": "vite build",
         "dev": "vite",
-        "test:unit:calendar": "TZ=America/Los_Angeles node --test tests/Unit/JavaScript/calendar-date-utils.test.js",
+        "test:unit:calendar": "TZ=America/Los_Angeles node --test tests/Unit/JavaScript/calendar-*.test.js",
         "pretest:e2e": "npm run build",
         "test:e2e": "playwright test",
         "test:e2e:install": "playwright install chromium"
