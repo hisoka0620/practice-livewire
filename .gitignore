@@ -1,6 +1,9 @@
 
 /.phpunit.cache
 /node_modules
+/database/e2e.sqlite
+/playwright-report
+/test-results
 /public/build
 /public/hot
 /public/storage

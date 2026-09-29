@@ -3,7 +3,10 @@
     "type": "module",
     "scripts": {
         "build": "vite build",
-        "dev": "vite"
+        "dev": "vite",
+        "pretest:e2e": "npm run build",
+        "test:e2e": "playwright test",
+        "test:e2e:install": "playwright install chromium"
     },
     "dependencies": {
         "@fullcalendar/core": "^6.1.21",
@@ -25,5 +28,8 @@
         "@rollup/rollup-linux-x64-gnu": "4.9.5",
         "@tailwindcss/oxide-linux-x64-gnu": "^4.0.1",
         "lightningcss-linux-x64-gnu": "^1.29.1"
+    },
+    "devDependencies": {
+        "@playwright/test": "^1.63.0"
     }
 }
