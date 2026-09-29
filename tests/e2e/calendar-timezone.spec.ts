@@ -1,6 +1,6 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
-async function signInAndOpenCalendar(page) {
+async function signInAndOpenCalendar(page: Page) {
     await page.goto("/todo-list");
     await page.getByLabel("Email address").fill("calendar-e2e@example.test");
     await page.getByRole("textbox", { name: "Password" }).fill("password");
@@ -8,6 +8,84 @@ async function signInAndOpenCalendar(page) {
     await expect(page).toHaveURL(/\/todo-list$/);
     await page.getByRole("button", { name: "Calendar", exact: true }).click();
 }
+
+test("releases calendar listeners when its view is destroyed and recreated", async ({
+    page,
+}) => {
+    await page.addInitScript(() => {
+        const stats = { added: 0, removed: 0, active: new Set() };
+        Object.defineProperty(window, "__calendarMouseDownStats", {
+            value: stats,
+        });
+
+        const addEventListener = EventTarget.prototype.addEventListener;
+        const removeEventListener = EventTarget.prototype.removeEventListener;
+        const isCalendarListener = (
+            target: EventTarget,
+            type: string,
+            options?: boolean | AddEventListenerOptions,
+        ) =>
+            target instanceof HTMLElement &&
+            target.id === "task-calendar" &&
+            type === "mousedown" &&
+            options === true;
+
+        EventTarget.prototype.addEventListener = function (
+            type,
+            listener,
+            options,
+        ) {
+            if (isCalendarListener(this, type, options)) {
+                stats.added++;
+                stats.active.add(listener);
+            }
+            return addEventListener.call(this, type, listener, options);
+        };
+        EventTarget.prototype.removeEventListener = function (
+            type,
+            listener,
+            options,
+        ) {
+            if (isCalendarListener(this, type, options)) {
+                stats.removed++;
+                stats.active.delete(listener);
+            }
+            return removeEventListener.call(this, type, listener, options);
+        };
+    });
+
+    await signInAndOpenCalendar(page);
+    await expect(
+        page.locator('#task-calendar .fc-daygrid-day[data-date="2026-10-01"]'),
+    ).toBeVisible();
+    await expect
+        .poll(() =>
+            page.evaluate(
+                () => (window as any).__calendarMouseDownStats.active.size,
+            ),
+        )
+        .toBe(1);
+
+    await page.getByRole("button", { name: "List", exact: true }).click();
+    await expect(page.locator("#task-calendar")).toHaveCount(0);
+    await expect
+        .poll(() =>
+            page.evaluate(
+                () => (window as any).__calendarMouseDownStats.active.size,
+            ),
+        )
+        .toBe(0);
+
+    await page.getByRole("button", { name: "Calendar", exact: true }).click();
+    await expect(
+        page.locator('#task-calendar .fc-daygrid-day[data-date="2026-10-01"]'),
+    ).toBeVisible();
+    await expect
+        .poll(() =>
+            page.evaluate(() => (window as any).__calendarMouseDownStats),
+        )
+        .toMatchObject({ added: 2, removed: 1 });
+});
 
 test("shows and drags a Tokyo deadline in Los Angeles local time", async ({
     page,
@@ -48,7 +126,7 @@ test("shows and drags a Tokyo deadline in Los Angeles local time", async ({
     const boundaryUpdate = page.waitForRequest(
         (request) =>
             request.url().includes("/livewire/update") &&
-            request.postData()?.includes(localBoundaryIso),
+            Boolean(request.postData()?.includes(localBoundaryIso)),
     );
     await deadlineInput.fill("2026-10-01T23:30");
     expect((await boundaryUpdate).postData()).toContain(localBoundaryIso);
@@ -123,7 +201,7 @@ test("applies deterministic daylight-saving rules to local modal times", async (
     const springUpdate = page.waitForRequest(
         (request) =>
             request.url().includes("/livewire/update") &&
-            request.postData()?.includes(springGapIso),
+            Boolean(request.postData()?.includes(springGapIso)),
     );
     await deadlineInput.fill("2026-03-08T02:30");
     expect((await springUpdate).postData()).toContain(springGapIso);
@@ -145,7 +223,7 @@ test("applies deterministic daylight-saving rules to local modal times", async (
     const fallUpdate = page.waitForRequest(
         (request) =>
             request.url().includes("/livewire/update") &&
-            request.postData()?.includes(fallOverlapIso),
+            Boolean(request.postData()?.includes(fallOverlapIso)),
     );
     await deadlineInput.fill("2026-11-01T01:30");
     expect((await fallUpdate).postData()).toContain(fallOverlapIso);

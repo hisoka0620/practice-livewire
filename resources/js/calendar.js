@@ -2,6 +2,10 @@ import { Calendar } from "@fullcalendar/core";
 import flatpickr from "flatpickr";
 import monthSelectPlugin from "flatpickr/dist/plugins/monthSelect/index.js";
 import { getUserTimeZone } from "./deadline";
+import {
+    attachCalendarOverlay,
+    createCalendarLayoutObserver,
+} from "./calendar/layout";
 import { createCalendarOptions } from "./calendar/options";
 import {
     combineDateAndTime,
@@ -28,6 +32,8 @@ export default (wire) => ({
     _destroyed: false, // Livewire.hookがこのコンポーネントの破棄後に実行されるのを防ぐガード
     _offCommitHook: null,
     _onScroll: null, // document.addEventListener("scroll", ...)に渡した関数参照（removeEventListenerで同一参照が必要なため保持）
+    _calendarEl: null,
+    _onCalendarMouseDown: null,
     _layoutResizeObserver: null, // ツールバー要素の高さ監視用ResizeObserver（--fc-header-height反映用）
     contextMenu: {
         visible: false,
@@ -100,6 +106,7 @@ export default (wire) => ({
             this._offCommitHook();
         }
         document.removeEventListener("scroll", this._onScroll, true);
+        this.removeCalendarMouseDownListener();
         this._layoutResizeObserver?.disconnect();
         this.flatPickr?.destroy();
         this.calendar?.destroy();
@@ -219,20 +226,23 @@ export default (wire) => ({
         if (this.calendar) {
             this.calendar.destroy();
         }
+        this.removeCalendarMouseDownListener();
 
         // コンテキストメニューが開いている間、それを閉じるためのクリックが
         // FullCalendar自身のクリック検出（mousedown起点）に渡らないよう、
         // mousedownの段階でキャプチャフェーズで先に握りつぶす
+        this._calendarEl = calendarEl;
+        this._onCalendarMouseDown = (jsEvent) => {
+            if (this.contextMenu.visible) {
+                jsEvent.preventDefault();
+                jsEvent.stopPropagation();
+                this.closeContextMenu();
+            }
+        };
         calendarEl.addEventListener(
             "mousedown",
-            (jsEvent) => {
-                if (this.contextMenu.visible) {
-                    jsEvent.preventDefault();
-                    jsEvent.stopPropagation();
-                    this.closeContextMenu();
-                }
-            },
-            true, // true = キャプチャフェーズで登録
+            this._onCalendarMouseDown,
+            true,
         );
 
         this.calendar = new Calendar(
@@ -324,27 +334,18 @@ export default (wire) => ({
         this.attachOverlayToHarness();
     },
 
-    /**
-     * ツールバーの高さを実測し、#task-calendarのCSS変数
-     * --fc-header-height に反映する（.fc-no-events-overlay のpadding-top/
-     * グラデーション境界に使用）。
-     */
-    updateHeaderHeight() {
-        const calendarEl = this.$el?.querySelector("#task-calendar");
-        if (!calendarEl) return;
+    removeCalendarMouseDownListener() {
+        if (!this._calendarEl || !this._onCalendarMouseDown) return;
 
-        const toolbarEl = calendarEl.querySelector(".fc-header-toolbar");
-
-        // offsetHeightはmargin-bottomを含まないため、要素があれば
-        // computed styleから明示的に加算する
-        const marginBottom = (el) =>
-            el ? parseFloat(getComputedStyle(el).marginBottom) || 0 : 0;
-        const height = (toolbarEl?.offsetHeight ?? 0) + marginBottom(toolbarEl);
-
-        if (height > 0) {
-            calendarEl.style.setProperty("--fc-header-height", `${height}px`);
-        }
+        this._calendarEl.removeEventListener(
+            "mousedown",
+            this._onCalendarMouseDown,
+            true,
+        );
+        this._calendarEl = null;
+        this._onCalendarMouseDown = null;
     },
+
     /**
      * ローディングオーバーレイ(x-ref="tableOverlay")を .fc-view-harness
      * （FullCalendarのツールバーを除いたテーブル本体部分。FullCalendar自身が
@@ -358,16 +359,12 @@ export default (wire) => ({
      */
     attachOverlayToHarness() {
         const calendarEl = this.$el?.querySelector("#task-calendar");
-        const harnessEl = calendarEl?.querySelector(".fc-view-harness");
         const overlayEl = this.$refs?.tableOverlay;
-        if (!harnessEl || !overlayEl) return;
-        if (overlayEl.parentElement !== harnessEl) {
-            harnessEl.appendChild(overlayEl); // 元の要素を削除して新しい親に付け替える
-        }
+        attachCalendarOverlay(calendarEl, overlayEl);
     },
     /**
      * ツールバーの高さ変化、およびカレンダー自体の幅の変化を監視し、
-     * 変化のたびに updateHeaderHeight() を呼ぶ（--fc-header-height反映用）。
+     * 変化のたびにlayoutモジュールでヘッダー高さを更新する。
      * FullCalendarはビュー切替時に該当DOMを作り直すため、呼ばれるたびに
      * 監視対象を張り直す（disconnect→observe）。
      * ローディングオーバーレイの位置は attachOverlayToHarness() が別途担当するため
@@ -378,18 +375,7 @@ export default (wire) => ({
         if (!calendarEl) return;
 
         this._layoutResizeObserver?.disconnect();
-        this._layoutResizeObserver = new ResizeObserver(() => {
-            this.updateHeaderHeight();
-        });
-
-        const toolbarEl = calendarEl.querySelector(".fc-header-toolbar");
-        if (toolbarEl) this._layoutResizeObserver.observe(toolbarEl);
-        // 幅の変化（ウィンドウリサイズ等）でも正方形を保つよう、
-        // カレンダー要素自体の幅も監視対象に加える
-        this._layoutResizeObserver.observe(calendarEl);
-
-        // 張り直した直後は次の変化を待たず即座に反映する
-        this.updateHeaderHeight();
+        this._layoutResizeObserver = createCalendarLayoutObserver(calendarEl);
     },
     /**
      * 一定時間(LOADING_DELAY_MS)経過してもまだ処理中の場合のみisLoadingを表示する
