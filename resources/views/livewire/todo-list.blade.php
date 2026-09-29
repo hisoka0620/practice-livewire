@@ -91,6 +91,7 @@
         <livewire:task-list
             wire:key="task-list"
             wire:model.live="filters"
+            :sort="$sort"
         />
     @endif
 
