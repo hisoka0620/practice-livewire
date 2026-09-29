@@ -6,81 +6,13 @@ import tippy from "tippy.js";
 import flatpickr from "flatpickr";
 import monthSelectPlugin from "flatpickr/dist/plugins/monthSelect/index.js";
 import { getUserTimeZone } from "./deadline";
-
-/**
- * deadline（UTC offset付きISO 8601文字列）から表示用文字列を生成するヘルパー群
- */
-function formatEventTime(isoString, timeZone) {
-    if (!isoString) return "";
-    return new Intl.DateTimeFormat("en-US", {
-        hour: "numeric",
-        minute: "2-digit",
-        hour12: true,
-        timeZone,
-    })
-        .format(new Date(isoString))
-        .toLowerCase();
-}
-
-function formatTooltipDeadline(isoString, timeZone) {
-    if (!isoString) return "none";
-    // toDayDateTimeString() と同等の見た目（例: "Sun, Jun 1, 2025 3:00 PM"）を再現
-    return new Intl.DateTimeFormat("en-US", {
-        weekday: "short",
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-        hour: "numeric",
-        minute: "2-digit",
-        hour12: true,
-        timeZone,
-    }).format(new Date(isoString));
-}
-
-function formatForServer(date) {
-    return date.toISOString();
-}
-
-/**
- * datePartの「日付」とtimePartの「時刻」を合成した新しいDateを返す。
- * timePartがnull/undefinedの場合は時刻を0:00:00として扱う。
- * - resolveNewDeadline: ドロップ後の日付 + 元のdeadlineの時刻
- * - dateClick: クリックした日付 + 現在時刻
- * など、「日付だけ変えたいが時刻は別の値から持ってきたい」場面で共通利用する。
- */
-function combineDateAndTime(datePart, timePart) {
-    return new Date(
-        datePart.getFullYear(),
-        datePart.getMonth(),
-        datePart.getDate(),
-        timePart ? timePart.getHours() : 0,
-        timePart ? timePart.getMinutes() : 0,
-        timePart ? timePart.getSeconds() : 0,
-    );
-}
-
-/**
- * ドラッグ&ドロップ後の新しいdeadline（Dateオブジェクト）を、
- * 現在のビュー種別に応じて算出する。
- * - dayGridMonth: 終日イベント（allDay:true）として描画しているため、
- *   ドラッグ後のstartは時刻情報を持たない。元のdeadline（extendedProps）から
- *   時刻を取り出し、ドロップ後の「日付」と合成する。
- * - それ以外（timeGridWeek等）: ドラッグ自体が時刻変更の操作なので、
- *   info.event.startをそのまま使う。
- */
-function resolveNewDeadline(info) {
-    const currentView = info.view.type;
-
-    if (currentView !== "dayGridMonth") {
-        return info.event.start;
-    }
-
-    const oldDeadlineStr = info.oldEvent.extendedProps?.deadline;
-    const oldTime = oldDeadlineStr ? new Date(oldDeadlineStr) : null;
-    const newDateOnly = info.event.start;
-
-    return combineDateAndTime(newDateOnly, oldTime);
-}
+import {
+    combineDateAndTime,
+    formatEventTime,
+    formatForServer,
+    formatTooltipDeadline,
+    resolveNewDeadline,
+} from "./calendar/date-utils";
 
 /** HTMLエスケープ */
 function escapeHtml(value) {
