@@ -31,21 +31,19 @@ class CalendarView extends Component
 
     public function updatedFilters(): void
     {
-        $this->loadEventsIfRangeSet();
+        $this->reloadCurrentRange();
     }
 
     public function clearFilters(): void
     {
         $this->filters['priority'] = '';
         $this->filters['taskStatus'] = '';
-        $this->loadEventsIfRangeSet();
+        $this->reloadCurrentRange();
     }
 
-    private function loadEventsIfRangeSet(): void
+    private function reloadCurrentRange(): bool
     {
-        if ($this->rangeStart && $this->rangeEnd) {
-            $this->loadEvents($this->rangeStart, $this->rangeEnd);
-        }
+        return $this->loadEvents($this->rangeStart, $this->rangeEnd);
     }
 
     public function openCreateTaskModal(): void
@@ -118,15 +116,13 @@ class CalendarView extends Component
 
         $this->dispatch('task-list-updated')->to(TodoList::class);
 
-        return $this->loadEvents($this->rangeStart, $this->rangeEnd);
+        return $this->reloadCurrentRange();
     }
 
     #[On('task-saved')]
     public function handleTaskSaved(): void
     {
-        if ($this->rangeStart && $this->rangeEnd) {
-            $this->loadEvents($this->rangeStart, $this->rangeEnd);
-        }
+        $this->reloadCurrentRange();
     }
 
     /**
@@ -141,7 +137,7 @@ class CalendarView extends Component
 
         $this->dispatch('task-list-updated')->to(TodoList::class);
 
-        return $this->loadEvents($this->rangeStart, $this->rangeEnd);
+        return $this->reloadCurrentRange();
     }
 
     /**
@@ -156,7 +152,7 @@ class CalendarView extends Component
 
         $this->dispatch('task-list-updated')->to(TodoList::class);
 
-        return $this->loadEvents($this->rangeStart, $this->rangeEnd);
+        return $this->reloadCurrentRange();
     }
 
     public function render()
