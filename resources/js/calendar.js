@@ -6,6 +6,7 @@ import {
     attachCalendarOverlay,
     createCalendarLayoutObserver,
 } from "./calendar/layout";
+import { createLoadingState } from "./calendar/loading-state";
 import { processEventsByView } from "./calendar/event-utils";
 import { createCalendarOptions } from "./calendar/options";
 import {
@@ -25,11 +26,11 @@ export default (wire) => ({
     userTimeZone: getUserTimeZone(),
     flatPickr: null, // flatpickr（月選択）インスタンス
     isLoading: false,
+    _loadingState: null,
     errorMessage: "",
     currentViewType: "dayGridMonth",
     currentDatePickerValue: null, // fullcalendarの開始日付Dateオブジェクト用
     _skipDatePickerSync: false, // flatpickr自身の選択操作によるgotoDateの場合、選んだ日付表示を上書きしないためのフラグ
-    _loadingTimer: null, // 遅延表示用タイマー
     _destroyed: false, // Livewire.hookがこのコンポーネントの破棄後に実行されるのを防ぐガード
     _offCommitHook: null,
     _onScroll: null, // document.addEventListener("scroll", ...)に渡した関数参照（removeEventListenerで同一参照が必要なため保持）
@@ -45,6 +46,12 @@ export default (wire) => ({
     }, //　右クリック時に表示されるコンテキストメニューの状態管理
     init() {
         this._destroyed = false;
+        this._loadingState = createLoadingState(
+            LOADING_DELAY_MS,
+            (isLoading) => {
+                this.isLoading = isLoading;
+            },
+        );
         // calendarEventsプロパティが更新されるたびに発火
         wire.on("calendarEventsUpdated", (payload) => {
             if (!this.calendar) return;
@@ -57,9 +64,6 @@ export default (wire) => ({
             this.calendar.removeAllEventSources();
             this.calendar.addEventSource(events);
             this.toggleNoEventsMessage(events.length === 0);
-            // task-saved 経由のリロードもここで確実に完了するため、
-            // 安全策としてここでも stopLoading しておく（冪等なので害はない）
-            this.stopLoading();
         });
 
         // このコンポーネントの通信（プロパティ更新・メソッド呼び出し）を検知し、
@@ -78,7 +82,7 @@ export default (wire) => ({
                         ));
 
                 // task-savedはTaskModalなど他コンポーネントのcommitとして
-                // 流れてくるため、component.idでの絞り込みをかけない
+                // dispatchされ、listener側のcommitになるためcall内容で判定する
                 const isTaskSavedDispatch = (commit.calls ?? []).some(
                     (call) =>
                         call.method === "__dispatch" &&
@@ -87,10 +91,10 @@ export default (wire) => ({
 
                 if (!isOwnFilterCommit && !isTaskSavedDispatch) return;
 
-                this.startLoading();
-                succeed(() => this.stopLoading());
+                const stopLoading = this.startLoading();
+                succeed(stopLoading);
                 fail(() => {
-                    this.stopLoading();
+                    stopLoading();
                     this.notifyError("The operation failed. Please try again.");
                 });
             },
@@ -347,18 +351,7 @@ export default (wire) => ({
      * 一定時間(LOADING_DELAY_MS)経過してもまだ処理中の場合のみisLoadingを表示する
      */
     startLoading() {
-        clearTimeout(this._loadingTimer);
-        this._loadingTimer = setTimeout(() => {
-            this.isLoading = true;
-        }, LOADING_DELAY_MS);
-    },
-
-    /**
-     * ローディング状態を解除する（表示前でもタイマーを確実にキャンセルする）
-     */
-    stopLoading() {
-        clearTimeout(this._loadingTimer);
-        this.isLoading = false;
+        return this._loadingState.start();
     },
 
     /**
@@ -368,7 +361,7 @@ export default (wire) => ({
      * @param {() => void} [options.onFailure] - 失敗時（false or 例外）に呼ぶ追加処理（例: info.revert()）
      */
     async runWireAction(promise, { onFailure } = {}) {
-        this.startLoading();
+        const stopLoading = this.startLoading();
         try {
             const success = await promise;
             if (!success) {
@@ -383,7 +376,7 @@ export default (wire) => ({
                 "A communication error occurred. Please try again.",
             );
         } finally {
-            this.stopLoading();
+            stopLoading();
         }
     },
 
