@@ -7,6 +7,7 @@ import {
     createCalendarLayoutObserver,
 } from "./calendar/layout";
 import { createLoadingState } from "./calendar/loading-state";
+import { registerCalendarCommitLoadingHook } from "./calendar/commit-hook";
 import { processEventsByView } from "./calendar/event-utils";
 import { createCalendarOptions } from "./calendar/options";
 import {
@@ -69,36 +70,13 @@ export default (wire) => ({
         // このコンポーネントの通信（プロパティ更新・メソッド呼び出し）を検知し、
         // フィルター関連の操作だけ isLoading に反映する（月移動・週移動は
         // datesSet → runWireAction 側が引き続き担当）
-        this._offCommitHook = Livewire.hook(
-            "commit",
-            ({ component, commit, succeed, fail }) => {
-                if (this._destroyed) return; // 破棄済みインスタンスでは何もしない
-                const isOwnFilterCommit =
-                    component.id === wire.$id &&
-                    ("calendarPriority" in (commit.updates ?? {}) ||
-                        "calendarTaskStatus" in (commit.updates ?? {}) ||
-                        (commit.calls ?? []).some(
-                            (call) => call.method === "clearFilters",
-                        ));
-
-                // task-savedはTaskModalなど他コンポーネントのcommitとして
-                // dispatchされ、listener側のcommitになるためcall内容で判定する
-                const isTaskSavedDispatch = (commit.calls ?? []).some(
-                    (call) =>
-                        call.method === "__dispatch" &&
-                        call.params?.[0] === "task-saved",
-                );
-
-                if (!isOwnFilterCommit && !isTaskSavedDispatch) return;
-
-                const stopLoading = this.startLoading();
-                succeed(stopLoading);
-                fail(() => {
-                    stopLoading();
-                    this.notifyError("The operation failed. Please try again.");
-                });
-            },
-        );
+        this._offCommitHook = registerCalendarCommitLoadingHook({
+            hook: Livewire.hook.bind(Livewire),
+            componentId: wire.$id,
+            isDestroyed: () => this._destroyed,
+            startLoading: () => this.startLoading(),
+            notifyError: (message) => this.notifyError(message),
+        });
 
         // スクロール時にメニューを閉じる
         this._onScroll = () => this.closeContextMenu();
