@@ -41,9 +41,15 @@ class CalendarView extends Component
         $this->reloadCurrentRange();
     }
 
-    private function reloadCurrentRange(): bool
+    private function reloadCurrentRange(): void
     {
-        return $this->loadEvents($this->rangeStart, $this->rangeEnd);
+        $this->loadEvents($this->rangeStart, $this->rangeEnd);
+    }
+
+    private function refreshAfterTaskMutation(): void
+    {
+        $this->dispatch('task-list-updated')->to(TodoList::class);
+        $this->reloadCurrentRange();
     }
 
     public function openCreateTaskModal(): void
@@ -114,9 +120,9 @@ class CalendarView extends Component
             Carbon::parse($newDeadline)->setTimezone(config('app.timezone')),
         );
 
-        $this->dispatch('task-list-updated')->to(TodoList::class);
+        $this->refreshAfterTaskMutation();
 
-        return $this->reloadCurrentRange();
+        return true;
     }
 
     #[On('task-saved')]
@@ -135,9 +141,9 @@ class CalendarView extends Component
             $taskId,
         );
 
-        $this->dispatch('task-list-updated')->to(TodoList::class);
+        $this->refreshAfterTaskMutation();
 
-        return $this->reloadCurrentRange();
+        return true;
     }
 
     /**
@@ -150,9 +156,9 @@ class CalendarView extends Component
             $taskId,
         );
 
-        $this->dispatch('task-list-updated')->to(TodoList::class);
+        $this->refreshAfterTaskMutation();
 
-        return $this->reloadCurrentRange();
+        return true;
     }
 
     public function render()

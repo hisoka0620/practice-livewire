@@ -74,7 +74,7 @@ it('does not reload events for filters or task changes before a calendar range i
     ]);
     $this->actingAs($user);
 
-    Livewire::test(CalendarView::class)
+    $component = Livewire::test(CalendarView::class)
         ->set('filters.priority', 'high')
         ->assertNotDispatched('calendarEventsUpdated')
         ->call('clearFilters')
@@ -82,15 +82,21 @@ it('does not reload events for filters or task changes before a calendar range i
         ->dispatch('task-saved')
         ->assertNotDispatched('calendarEventsUpdated')
         ->call('updateTaskDeadline', $task->id, '2026-09-24T15:45:00.000Z')
-        ->assertReturned(false)
+        ->assertReturned(true)
         ->assertDispatched('task-list-updated')
-        ->assertNotDispatched('calendarEventsUpdated')
-        ->call('toggleTaskCompletion', $task->id)
-        ->assertReturned(false)
+        ->assertNotDispatched('calendarEventsUpdated');
+
+    expect($task->refresh()->deadline->equalTo(Carbon::parse('2026-09-24T15:45:00.000Z')))->toBeTrue();
+
+    $component->call('toggleTaskCompletion', $task->id)
+        ->assertReturned(true)
         ->assertDispatched('task-list-updated')
-        ->assertNotDispatched('calendarEventsUpdated')
-        ->call('deleteTask', $task->id)
-        ->assertReturned(false)
+        ->assertNotDispatched('calendarEventsUpdated');
+
+    expect($task->refresh()->is_completed)->toBeTrue();
+
+    $component->call('deleteTask', $task->id)
+        ->assertReturned(true)
         ->assertDispatched('task-list-updated')
         ->assertNotDispatched('calendarEventsUpdated');
 
