@@ -6,6 +6,7 @@ import {
     attachCalendarOverlay,
     createCalendarLayoutObserver,
 } from "./calendar/layout";
+import { processEventsByView } from "./calendar/event-utils";
 import { createCalendarOptions } from "./calendar/options";
 import {
     combineDateAndTime,
@@ -49,7 +50,10 @@ export default (wire) => ({
             if (!this.calendar) return;
             const rawEvents = payload?.events ?? payload ?? [];
             // 現在のビューに応じてイベントを加工
-            const events = this.processEventsByView(rawEvents);
+            const events = processEventsByView(
+                rawEvents,
+                this.calendar.view.type,
+            );
             this.calendar.removeAllEventSources();
             this.calendar.addEventSource(events);
             this.toggleNoEventsMessage(events.length === 0);
@@ -174,44 +178,6 @@ export default (wire) => ({
         } else {
             this.flatPickr.setDate(this.currentDatePickerValue, false);
         }
-    },
-    /**
-     * 現在のカレンダービューに応じてイベント情報を加工します
-     * - dayGridMonth: 日付のみ表示（allDay: true）
-     * - timeGridWeek: 時間付きで1時間の期間で表示（allDay: false）
-     */
-    processEventsByView(events) {
-        if (!this.calendar || !events.length) {
-            return events;
-        }
-
-        const currentView = this.calendar.view.type;
-
-        return events.map((event) => {
-            if (currentView === "dayGridMonth") {
-                // dayGridMonthでは終日イベントとして表示（時間情報を削除）
-                return {
-                    ...event,
-                    allDay: true,
-                    start: event.start, // 日付のみ
-                    end: null, // endを削除して、startだけの単一日イベントに
-                };
-            } else if (currentView === "timeGridWeek") {
-                if (event.start) {
-                    const startDate = new Date(event.start);
-
-                    return {
-                        ...event,
-                        allDay: false,
-                        start: startDate,
-                        end: null, // defaultTimedEventDurationに委ねる（実時間ではなく表示上の幅）
-                    };
-                }
-                return event;
-            }
-
-            return event;
-        });
     },
     renderCalendar() {
         if (!this.$el) {
