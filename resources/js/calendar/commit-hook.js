@@ -9,10 +9,12 @@ export function registerCalendarCommitLoadingHook({
         if (isDestroyed()) return;
 
         const calls = commit.calls ?? [];
+        const updates = commit.updates ?? {};
         const isOwnFilterCommit =
             component.id === componentId &&
-            ("filters.priority" in (commit.updates ?? {}) ||
-                "filters.taskStatus" in (commit.updates ?? {}) ||
+            ("filters.priority" in updates ||
+                "filters.taskStatus" in updates ||
+                "filters.search" in updates ||
                 calls.some((call) => call.method === "clearFilters"));
         const isTaskSavedDispatch = calls.some(
             (call) =>

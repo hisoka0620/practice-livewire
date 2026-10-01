@@ -87,6 +87,128 @@ test("releases calendar listeners when its view is destroyed and recreated", asy
         .toMatchObject({ added: 2, removed: 1 });
 });
 
+test("shows calendar loading while search refreshes matching events", async ({
+    page,
+}) => {
+    await page.clock.install({
+        time: new Date("2026-10-01T12:00:00-07:00"),
+    });
+    await page.addInitScript(() => {
+        document.addEventListener("livewire:init", () => {
+            (window as any).__calendarCommits = [];
+            (window as any).Livewire.hook(
+                "commit",
+                ({ component, commit }: any) => {
+                    (window as any).__calendarCommits.push({
+                        componentId: component.id,
+                        componentName: component.name,
+                        updates: commit.updates,
+                        calls: commit.calls,
+                    });
+                },
+            );
+        });
+    });
+
+    let releaseSearchResponse: (() => void) | undefined;
+    let markSearchRequestStarted: (() => void) | undefined;
+    const searchRequestStarted = new Promise<void>((resolve) => {
+        markSearchRequestStarted = resolve;
+    });
+    let shouldHoldSearchResponse = true;
+
+    await page.route("**/livewire/update", async (route) => {
+        const postData = route.request().postData() ?? "";
+
+        if (shouldHoldSearchResponse && postData.includes('"filters.search"')) {
+            shouldHoldSearchResponse = false;
+            markSearchRequestStarted?.();
+            await new Promise<void>((resolve) => {
+                releaseSearchResponse = resolve;
+            });
+        }
+
+        await route.continue();
+    });
+
+    await signInAndOpenCalendar(page);
+    await expect(
+        page.locator('#task-calendar .fc-daygrid-day[data-date="2026-10-01"]'),
+    ).toBeVisible();
+    await expect(
+        page
+            .locator("#task-calendar .fc-event")
+            .filter({ hasText: "Timezone boundary task" }),
+    ).toBeVisible();
+
+    const searchInput = page.getByPlaceholder("Search tasks...");
+    const loadingOverlay = page.locator(
+        '#calendar-container [x-ref="tableOverlay"]',
+    );
+    await searchInput.fill("no matching task");
+    await searchRequestStarted;
+
+    try {
+        const commitInfo = await page.evaluate(() => {
+            const calendar = document
+                .querySelector("#task-calendar")
+                ?.closest("[wire\\:id]");
+            const parent = calendar?.parentElement?.closest("[wire\\:id]");
+            const filtersBar = document
+                .querySelector<HTMLInputElement>(
+                    'input[placeholder="Search tasks..."]',
+                )
+                ?.closest("[wire\\:id]");
+            const searchCommits = (window as any).__calendarCommits.filter(
+                (commit: any) => "filters.search" in commit.updates,
+            );
+
+            return {
+                calendarId: calendar?.getAttribute("wire:id"),
+                parentId: parent?.getAttribute("wire:id"),
+                filtersBarId: filtersBar?.getAttribute("wire:id"),
+                searchCommits,
+            };
+        });
+
+        await expect(loadingOverlay).toBeVisible();
+
+        expect(commitInfo.parentId).not.toBe(commitInfo.calendarId);
+        expect(commitInfo.searchCommits).toHaveLength(3);
+        expect(commitInfo.searchCommits).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    componentId: commitInfo.parentId,
+                    componentName: "todo-list",
+                    updates: { "filters.search": "no matching task" },
+                }),
+                expect.objectContaining({
+                    componentId: commitInfo.filtersBarId,
+                    componentName: "task-filters-bar",
+                    updates: { "filters.search": "no matching task" },
+                }),
+                expect.objectContaining({
+                    componentId: commitInfo.calendarId,
+                    componentName: "calendar-view",
+                    updates: { "filters.search": "no matching task" },
+                }),
+            ]),
+        );
+    } finally {
+        releaseSearchResponse?.();
+    }
+
+    await expect(loadingOverlay).toBeHidden();
+    await expect(page.locator("#task-calendar .fc-event")).toHaveCount(0);
+
+    await searchInput.fill("Timezone boundary task");
+    await expect(
+        page
+            .locator("#task-calendar .fc-event")
+            .filter({ hasText: "Timezone boundary task" }),
+    ).toBeVisible();
+});
+
 test("shows and drags a Tokyo deadline in Los Angeles local time", async ({
     page,
 }) => {
