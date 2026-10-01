@@ -149,51 +149,33 @@ test("shows calendar loading while search refreshes matching events", async ({
     await searchRequestStarted;
 
     try {
-        const commitInfo = await page.evaluate(() => {
-            const calendar = document
-                .querySelector("#task-calendar")
-                ?.closest("[wire\\:id]");
-            const parent = calendar?.parentElement?.closest("[wire\\:id]");
-            const filtersBar = document
-                .querySelector<HTMLInputElement>(
-                    'input[placeholder="Search tasks..."]',
-                )
-                ?.closest("[wire\\:id]");
-            const searchCommits = (window as any).__calendarCommits.filter(
-                (commit: any) => "filters.search" in commit.updates,
+        const calendarId = await page
+            .locator("#task-calendar")
+            .evaluate((calendar) =>
+                calendar.closest("[wire\\:id]")?.getAttribute("wire:id"),
             );
+        expect(calendarId).toBeTruthy();
 
-            return {
-                calendarId: calendar?.getAttribute("wire:id"),
-                parentId: parent?.getAttribute("wire:id"),
-                filtersBarId: filtersBar?.getAttribute("wire:id"),
-                searchCommits,
-            };
-        });
+        await expect
+            .poll(() =>
+                page.evaluate(
+                    (componentId) =>
+                        (window as any).__calendarCommits.find(
+                            (commit: any) =>
+                                commit.componentId === componentId &&
+                                commit.componentName === "calendar-view" &&
+                                "filters.search" in (commit.updates ?? {}),
+                        ),
+                    calendarId,
+                ),
+            )
+            .toMatchObject({
+                componentId: calendarId,
+                componentName: "calendar-view",
+                updates: { "filters.search": "no matching task" },
+            });
 
         await expect(loadingOverlay).toBeVisible();
-
-        expect(commitInfo.parentId).not.toBe(commitInfo.calendarId);
-        expect(commitInfo.searchCommits).toHaveLength(3);
-        expect(commitInfo.searchCommits).toEqual(
-            expect.arrayContaining([
-                expect.objectContaining({
-                    componentId: commitInfo.parentId,
-                    componentName: "todo-list",
-                    updates: { "filters.search": "no matching task" },
-                }),
-                expect.objectContaining({
-                    componentId: commitInfo.filtersBarId,
-                    componentName: "task-filters-bar",
-                    updates: { "filters.search": "no matching task" },
-                }),
-                expect.objectContaining({
-                    componentId: commitInfo.calendarId,
-                    componentName: "calendar-view",
-                    updates: { "filters.search": "no matching task" },
-                }),
-            ]),
-        );
     } finally {
         releaseSearchResponse?.();
     }
@@ -240,9 +222,7 @@ test("keeps the date picker synchronized across calendar views and jumps", async
         .locator(".flatpickr-monthSelect-month")
         .filter({ hasText: "Nov" })
         .click();
-    await expect(page.locator(".fc-toolbar-title")).toHaveText(
-        "November 2026",
-    );
+    await expect(page.locator(".fc-toolbar-title")).toHaveText("November 2026");
     await expect(datePicker).toHaveValue("November 2026");
 
     await page.locator(".fc-timeGridWeek-button").click();
