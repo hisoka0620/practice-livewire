@@ -2,12 +2,12 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 class Task extends Model
@@ -46,7 +46,7 @@ class Task extends Model
     protected function deadline(): Attribute
     {
         return Attribute::make(
-            set: fn($value) => blank($value) ? null : $value,
+            set: fn ($value) => blank($value) ? null : $value,
         );
     }
 
@@ -60,11 +60,11 @@ class Task extends Model
                 $deadline = $this->deadline;
                 $now = Carbon::now();
                 $tomorrow = $now->copy()->addDay();
+
                 return match (true) {
-                    $this->is_completed => null,
                     $deadline?->isPast() => 'overdue',
                     $deadline?->between($now, $tomorrow) => 'due_soon',
-                    default => null,
+                    default => 'in_progress',
                 };
             }
         );
@@ -92,7 +92,7 @@ class Task extends Model
     protected function deadlineHumanDiff(): Attribute
     {
         return Attribute::make(
-            get: fn(mixed $value, array $attributes) => $this->deadline?->diffForHumans(),
+            get: fn (mixed $value, array $attributes) => $this->deadline?->diffForHumans(),
         );
     }
 
@@ -102,9 +102,9 @@ class Task extends Model
     protected function visualStatus(): Attribute
     {
         return Attribute::make(
-            get: fn() => $this->is_completed
-                ? 'completed'
-                : $this->deadline_status
+            get: fn () => $this->is_completed
+            ? 'completed'
+            : $this->deadline_status
         );
     }
 
@@ -112,13 +112,13 @@ class Task extends Model
     protected function filterBySearch(Builder $query, string $search = ''): void
     {
         if (blank(mb_convert_kana($search, 's'))) {
-            $query;
+            return;
         }
 
         $query->whereAny(
             ['title', 'description', 'priority'],
             'like',
-            '%' . trim(mb_convert_kana($search, 's')) . '%'
+            '%'.trim(mb_convert_kana($search, 's')).'%'
         );
     }
 
@@ -133,7 +133,9 @@ class Task extends Model
     {
         match ($taskStatus) {
             'completed' => $query->where('is_completed', true),
-            'incomplete' => $query->where('is_completed', false),
+            'incomplete' => $query->where('is_completed', false)
+                ->where(fn (Builder $q) => $q->whereNull('deadline')
+                    ->orWhere('deadline', '>=', Carbon::now())),
             'expired' => $query->where('is_completed', false)->where('deadline', '<', Carbon::now()),
             default => $query,
         };
