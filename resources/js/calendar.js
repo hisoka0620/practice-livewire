@@ -29,8 +29,7 @@ export default (wire) => ({
     isLoading: false,
     _loadingState: null,
     errorMessage: "",
-    currentViewType: "dayGridMonth",
-    currentDatePickerValue: null, // fullcalendarの開始日付Dateオブジェクト用
+    datePickerViewType: "dayGridMonth",
     _skipDatePickerSync: false, // flatpickr自身の選択操作によるgotoDateの場合、選んだ日付表示を上書きしないためのフラグ
     _destroyed: false, // Livewire.hookがこのコンポーネントの破棄後に実行されるのを防ぐガード
     _offCommitHook: null,
@@ -114,52 +113,43 @@ export default (wire) => ({
             this.flatPickr = null;
         }
 
-        this.currentViewType = viewType;
+        this.datePickerViewType = viewType;
 
-        if (viewType === "dayGridMonth") {
-            this.flatPickr = flatpickr(inputEl, {
-                plugins: [
-                    new monthSelectPlugin({
-                        shorthand: true,
-                        dateFormat: "Y-m",
-                        altFormat: "F Y",
-                        theme: "dark",
-                    }),
-                ],
-                altInput: true,
-                disableMobile: true,
-                defaultDate: this.currentDatePickerValue || new Date(),
-                onChange: (selectedDates, dateStr) => {
-                    this.jumpToDate(dateStr);
-                },
-            });
-        } else {
-            // 週表示では日付単位でジャンプできるよう、通常の日付ピッカーに切り替える
-            this.flatPickr = flatpickr(inputEl, {
-                dateFormat: "Y-m-d",
-                altInput: true,
-                altFormat: "F j, Y",
-                disableMobile: true,
-                defaultDate: this.calendar?.getDate() ?? new Date(),
-                onChange: (selectedDates, dateStr) => {
-                    this.jumpToDate(dateStr);
-                },
-            });
-        }
+        const viewOptions =
+            viewType === "dayGridMonth"
+                ? {
+                      plugins: [
+                          new monthSelectPlugin({
+                              shorthand: true,
+                              dateFormat: "Y-m",
+                              altFormat: "F Y",
+                              theme: "dark",
+                          }),
+                      ],
+                      dateFormat: "Y-m",
+                      altFormat: "F Y",
+                  }
+                : {
+                      dateFormat: "Y-m-d",
+                      altFormat: "F j, Y",
+                  };
+
+        this.flatPickr = flatpickr(inputEl, {
+            ...viewOptions,
+            altInput: true,
+            disableMobile: true,
+            defaultDate: this.calendar?.getDate() ?? new Date(),
+            onChange: (_selectedDates, dateStr) => this.jumpToDate(dateStr),
+        });
     },
     /**
-     * flatpickrの表示値のみをFullCalendarの現在位置に同期する（モード切替は伴わない）。
-     * @param {string} viewType
+     * flatpickrの表示値のみをFullCalendarの表示期間に同期する。
      * @param {Date} currentStart - info.view.currentStart
      */
-    syncDatePicker(viewType, currentStart) {
+    syncDatePicker(currentStart) {
         if (!this.flatPickr) return;
 
-        if (viewType === "timeGridWeek") {
-            this.flatPickr.setDate(currentStart, false);
-        } else {
-            this.flatPickr.setDate(this.currentDatePickerValue, false);
-        }
+        this.flatPickr.setDate(currentStart, false);
     },
     renderCalendar() {
         if (!this.$el) {
@@ -240,8 +230,7 @@ export default (wire) => ({
                 },
                 onDatesSet: (info) => {
                     const viewType = info.view.type;
-                    this.currentDatePickerValue = info.view.currentStart;
-                    if (this.currentViewType !== viewType) {
+                    if (this.datePickerViewType !== viewType) {
                         // dayGridMonth ⇔ timeGridWeek の切り替え：flatpickrを作り直す
                         this.initFlatPickr(viewType);
                     } else if (this._skipDatePickerSync) {
@@ -250,7 +239,7 @@ export default (wire) => ({
                         this._skipDatePickerSync = false;
                     } else {
                         // prev/next/todayボタン等による移動：表示値を同期する
-                        this.syncDatePicker(viewType, info.view.currentStart);
+                        this.syncDatePicker(info.view.currentStart);
                     }
                     // ビュー切替時はFullCalendarが該当DOMを作り直すため、
                     // 監視対象・オーバーレイの付け替え先を張り直して最新の状態を反映する
