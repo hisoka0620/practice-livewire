@@ -6,6 +6,7 @@ use App\Models\Task;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
@@ -62,6 +63,51 @@ it('rejects invalid calendar ranges without changing state or dispatching events
     'impossible start' => ['2026-02-30T15:00:00.000Z', '2026-09-23T15:00:00.000Z', 'start'],
     'malformed end' => ['2026-09-22T15:00:00.000Z', '2026-09-23T15:00:00Z', 'end'],
     'impossible end' => ['2026-09-22T15:00:00.000Z', '2026-02-30T15:00:00.000Z', 'end'],
+]);
+
+it('accepts a calendar range of exactly six weeks', function () {
+    $user = User::factory()->create();
+    $task = Task::factory()->for($user)->create([
+        'deadline' => Carbon::parse('2026-09-20 12:00:00', config('app.timezone')),
+        'is_completed' => false,
+    ]);
+    $this->actingAs($user);
+
+    Livewire::test(CalendarView::class)
+        ->call('loadEvents', '2026-09-01T00:00:00.000Z', '2026-10-13T00:00:00.000Z')
+        ->assertHasNoErrors()
+        ->assertSet('rangeStart', '2026-09-01T00:00:00.000Z')
+        ->assertSet('rangeEnd', '2026-10-13T00:00:00.000Z')
+        ->assertSet('calendarEvents', fn (array $events) => count($events) === 1 && $events[0]['id'] === (string) $task->id)
+        ->assertDispatched('calendarEventsUpdated');
+});
+
+it('rejects semantically invalid calendar ranges without changing state or querying tasks', function (string $start, string $end, string $errorField) {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+    DB::enableQueryLog();
+    DB::flushQueryLog();
+
+    Livewire::test(CalendarView::class)
+        ->set('rangeStart', 'previous-start')
+        ->set('rangeEnd', 'previous-end')
+        ->set('calendarEvents', [['id' => 'previous-event']])
+        ->call('loadEvents', $start, $end)
+        ->assertHasErrors($errorField)
+        ->assertSet('rangeStart', 'previous-start')
+        ->assertSet('rangeEnd', 'previous-end')
+        ->assertSet('calendarEvents', [['id' => 'previous-event']])
+        ->assertNotDispatched('calendarEventsUpdated');
+
+    $taskQueries = collect(DB::getQueryLog())
+        ->filter(fn (array $query) => str_contains(strtolower($query['query']), 'tasks'));
+    DB::disableQueryLog();
+
+    expect($taskQueries)->toBeEmpty();
+})->with([
+    'range longer than six weeks' => ['2026-09-01T00:00:00.000Z', '2026-10-13T00:00:00.001Z', 'end'],
+    'reversed range' => ['2026-10-13T00:00:00.000Z', '2026-09-01T00:00:00.000Z', 'start'],
+    'empty range' => ['2026-09-01T00:00:00.000Z', '2026-09-01T00:00:00.000Z', 'start'],
 ]);
 
 it('rejects invalid task deadlines without changing the task or dispatching events', function (string $newDeadline) {

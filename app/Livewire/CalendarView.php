@@ -18,6 +18,8 @@ class CalendarView extends Component
 {
     private const UTC_ISO_DATETIME_FORMAT = 'Y-m-d\TH:i:s.v\Z';
 
+    private const MAX_RANGE_DAYS = 42;
+
     #[Modelable]
     public array $filters = [
         'search' => '',
@@ -80,13 +82,21 @@ class CalendarView extends Component
             'end' => ['required', 'date_format:'.self::UTC_ISO_DATETIME_FORMAT],
         ])->validate();
 
-        // 期間を保存しておく
-        $this->rangeStart = $validated['start'];
-        $this->rangeEnd = $validated['end'];
-
         // FullCalendarから送られてくるISO 8601文字列をパース
         $startDate = Carbon::parse($validated['start'])->setTimezone(config('app.timezone'));
         $endDate = Carbon::parse($validated['end'])->setTimezone(config('app.timezone'));
+
+        Validator::make($validated, [])->after(function ($validator) use ($startDate, $endDate): void {
+            if ($endDate->lessThanOrEqualTo($startDate)) {
+                $validator->errors()->add('start', '表示期間の開始日時は終了日時より前にしてください。');
+            } elseif ($endDate->greaterThan($startDate->copy()->addSeconds(self::MAX_RANGE_DAYS * 24 * 60 * 60))) {
+                $validator->errors()->add('end', sprintf('表示期間は%d日以内にしてください。', self::MAX_RANGE_DAYS));
+            }
+        })->validate();
+
+        // 期間を保存しておく
+        $this->rangeStart = $validated['start'];
+        $this->rangeEnd = $validated['end'];
 
         $filters = TaskFilters::fromLivewire(
             search: $this->filters['search'] ?? '',
