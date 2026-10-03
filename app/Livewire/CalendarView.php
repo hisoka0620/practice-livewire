@@ -9,12 +9,15 @@ use App\Models\Task;
 use App\Presenters\TaskCalendarEventMapper;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
 use Livewire\Attributes\Modelable;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
 class CalendarView extends Component
 {
+    private const UTC_ISO_DATETIME_FORMAT = 'Y-m-d\TH:i:s.v\Z';
+
     #[Modelable]
     public array $filters = [
         'search' => '',
@@ -69,13 +72,21 @@ class CalendarView extends Component
             return false;
         }
 
+        $validated = Validator::make([
+            'start' => $start,
+            'end' => $end,
+        ], [
+            'start' => ['required', 'date_format:'.self::UTC_ISO_DATETIME_FORMAT],
+            'end' => ['required', 'date_format:'.self::UTC_ISO_DATETIME_FORMAT],
+        ])->validate();
+
         // 期間を保存しておく
-        $this->rangeStart = $start;
-        $this->rangeEnd = $end;
+        $this->rangeStart = $validated['start'];
+        $this->rangeEnd = $validated['end'];
 
         // FullCalendarから送られてくるISO 8601文字列をパース
-        $startDate = Carbon::parse($start)->setTimezone(config('app.timezone'));
-        $endDate = Carbon::parse($end)->setTimezone(config('app.timezone'));
+        $startDate = Carbon::parse($validated['start'])->setTimezone(config('app.timezone'));
+        $endDate = Carbon::parse($validated['end'])->setTimezone(config('app.timezone'));
 
         $filters = TaskFilters::fromLivewire(
             search: $this->filters['search'] ?? '',
@@ -97,7 +108,7 @@ class CalendarView extends Component
         $this->calendarEvents = $taskQuery
             ->withinPeriod($tasks, $startDate, $endDate)
             ->get()
-            ->map(fn(Task $task) => $mapper->map($task))
+            ->map(fn (Task $task) => $mapper->map($task))
             ->values()
             ->toArray();
 
@@ -114,10 +125,16 @@ class CalendarView extends Component
         int $taskId,
         string $newDeadline
     ): bool {
+        $validated = Validator::make([
+            'newDeadline' => $newDeadline,
+        ], [
+            'newDeadline' => ['required', 'date_format:'.self::UTC_ISO_DATETIME_FORMAT],
+        ])->validate();
+
         app(TaskActions::class)->updateDeadline(
             Auth::user(),
             $taskId,
-            Carbon::parse($newDeadline)->setTimezone(config('app.timezone')),
+            Carbon::parse($validated['newDeadline'])->setTimezone(config('app.timezone')),
         );
 
         $this->refreshAfterTaskMutation();

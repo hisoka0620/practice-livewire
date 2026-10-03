@@ -43,6 +43,48 @@ it('loads the authenticated users tasks from a UTC calendar range', function () 
         ->and($events[0]['extendedProps']['deadline'])->toBe($events[0]['start']);
 });
 
+it('rejects invalid calendar ranges without changing state or dispatching events', function (string $start, string $end, string $errorField) {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    Livewire::test(CalendarView::class)
+        ->set('rangeStart', 'previous-start')
+        ->set('rangeEnd', 'previous-end')
+        ->set('calendarEvents', [['id' => 'previous-event']])
+        ->call('loadEvents', $start, $end)
+        ->assertHasErrors($errorField)
+        ->assertSet('rangeStart', 'previous-start')
+        ->assertSet('rangeEnd', 'previous-end')
+        ->assertSet('calendarEvents', [['id' => 'previous-event']])
+        ->assertNotDispatched('calendarEventsUpdated');
+})->with([
+    'malformed start' => ['2026-09-22T15:00:00Z', '2026-09-23T15:00:00.000Z', 'start'],
+    'impossible start' => ['2026-02-30T15:00:00.000Z', '2026-09-23T15:00:00.000Z', 'start'],
+    'malformed end' => ['2026-09-22T15:00:00.000Z', '2026-09-23T15:00:00Z', 'end'],
+    'impossible end' => ['2026-09-22T15:00:00.000Z', '2026-02-30T15:00:00.000Z', 'end'],
+]);
+
+it('rejects invalid task deadlines without changing the task or dispatching events', function (string $newDeadline) {
+    $user = User::factory()->create();
+    $originalDeadline = Carbon::parse('2026-09-23 18:30:00', config('app.timezone'));
+    $task = Task::factory()->for($user)->create([
+        'deadline' => $originalDeadline,
+        'is_completed' => false,
+    ]);
+    $this->actingAs($user);
+
+    Livewire::test(CalendarView::class)
+        ->call('updateTaskDeadline', $task->id, $newDeadline)
+        ->assertHasErrors('newDeadline')
+        ->assertNotDispatched('task-list-updated')
+        ->assertNotDispatched('calendarEventsUpdated');
+
+    expect($task->refresh()->deadline->equalTo($originalDeadline))->toBeTrue();
+})->with([
+    'malformed deadline' => '2026-09-24T15:45:00Z',
+    'impossible deadline' => '2026-02-30T15:45:00.000Z',
+]);
+
 it('saves a UTC calendar deadline without changing its instant', function () {
     Carbon::setTestNow(Carbon::parse('2026-09-22 12:00:00', config('app.timezone')));
 
@@ -123,11 +165,11 @@ it('refreshes the current range after filters and task changes', function () {
 
     $component = Livewire::test(CalendarView::class)
         ->call('loadEvents', '2026-09-22T15:00:00.000Z', '2026-09-25T15:00:00.000Z')
-        ->assertSet('calendarEvents', fn(array $events) => count($events) === 2)
+        ->assertSet('calendarEvents', fn (array $events) => count($events) === 2)
         ->set('filters.priority', 'high')
-        ->assertSet('calendarEvents', fn(array $events) => count($events) === 1 && $events[0]['id'] === (string) $highTask->id)
+        ->assertSet('calendarEvents', fn (array $events) => count($events) === 1 && $events[0]['id'] === (string) $highTask->id)
         ->call('clearFilters')
-        ->assertSet('calendarEvents', fn(array $events) => count($events) === 2);
+        ->assertSet('calendarEvents', fn (array $events) => count($events) === 2);
 
     $savedTask = Task::factory()->for($user)->create([
         'priority' => 'medium',
@@ -135,16 +177,16 @@ it('refreshes the current range after filters and task changes', function () {
     ]);
 
     $component->dispatch('task-saved')
-        ->assertSet('calendarEvents', fn(array $events) => count($events) === 3)
+        ->assertSet('calendarEvents', fn (array $events) => count($events) === 3)
         ->call('updateTaskDeadline', $lowTask->id, '2026-09-26T15:45:00.000Z')
         ->assertReturned(true)
-        ->assertSet('calendarEvents', fn(array $events) => count($events) === 2)
+        ->assertSet('calendarEvents', fn (array $events) => count($events) === 2)
         ->call('toggleTaskCompletion', $highTask->id)
         ->assertReturned(true)
-        ->assertSet('calendarEvents', fn(array $events) => count($events) === 2 && collect($events)->firstWhere('id', (string) $highTask->id)['extendedProps']['completed'] === true)
+        ->assertSet('calendarEvents', fn (array $events) => count($events) === 2 && collect($events)->firstWhere('id', (string) $highTask->id)['extendedProps']['completed'] === true)
         ->call('deleteTask', $highTask->id)
         ->assertReturned(true)
-        ->assertSet('calendarEvents', fn(array $events) => count($events) === 1 && $events[0]['id'] === (string) $savedTask->id);
+        ->assertSet('calendarEvents', fn (array $events) => count($events) === 1 && $events[0]['id'] === (string) $savedTask->id);
 });
 
 it('refreshes the overdue task count after calendar completion', function () {
