@@ -82,6 +82,31 @@ it('accepts a calendar range of exactly six weeks', function () {
         ->assertDispatched('calendarEventsUpdated');
 });
 
+it('accepts a six-week local calendar range across the end of daylight saving time', function () {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    // [Sep 27 00:00 EDT, Nov 8 00:00 EST) is 42 local days plus one elapsed hour.
+    Livewire::test(CalendarView::class)
+        ->call('loadEvents', '2026-09-27T04:00:00.000Z', '2026-11-08T05:00:00.000Z')
+        ->assertHasNoErrors()
+        ->assertSet('rangeStart', '2026-09-27T04:00:00.000Z')
+        ->assertSet('rangeEnd', '2026-11-08T05:00:00.000Z')
+        ->assertDispatched('calendarEventsUpdated');
+});
+
+it('accepts a range exactly at the elapsed-time limit', function () {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    Livewire::test(CalendarView::class)
+        ->call('loadEvents', '2026-09-01T00:00:00.000Z', '2026-10-15T00:00:00.000Z')
+        ->assertHasNoErrors()
+        ->assertSet('rangeStart', '2026-09-01T00:00:00.000Z')
+        ->assertSet('rangeEnd', '2026-10-15T00:00:00.000Z')
+        ->assertDispatched('calendarEventsUpdated');
+});
+
 it('rejects semantically invalid calendar ranges without changing state or querying tasks', function (string $start, string $end, string $errorField) {
     $user = User::factory()->create();
     $this->actingAs($user);
@@ -105,7 +130,7 @@ it('rejects semantically invalid calendar ranges without changing state or query
 
     expect($taskQueries)->toBeEmpty();
 })->with([
-    'range longer than six weeks' => ['2026-09-01T00:00:00.000Z', '2026-10-13T00:00:00.001Z', 'end'],
+    'range over the 44-day elapsed-time limit' => ['2026-09-01T00:00:00.000Z', '2026-10-15T00:00:00.001Z', 'end'],
     'reversed range' => ['2026-10-13T00:00:00.000Z', '2026-09-01T00:00:00.000Z', 'start'],
     'empty range' => ['2026-09-01T00:00:00.000Z', '2026-09-01T00:00:00.000Z', 'start'],
 ]);
