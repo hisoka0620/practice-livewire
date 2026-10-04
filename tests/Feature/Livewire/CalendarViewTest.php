@@ -65,7 +65,7 @@ it('rejects invalid calendar ranges without changing state or dispatching events
     'impossible end' => ['2026-09-22T15:00:00.000Z', '2026-02-30T15:00:00.000Z', 'end'],
 ]);
 
-it('accepts a calendar range of exactly six weeks', function () {
+it('accepts a 42-day calendar range', function () {
     $user = User::factory()->create();
     $task = Task::factory()->for($user)->create([
         'deadline' => Carbon::parse('2026-09-20 12:00:00', config('app.timezone')),
@@ -82,7 +82,7 @@ it('accepts a calendar range of exactly six weeks', function () {
         ->assertDispatched('calendarEventsUpdated');
 });
 
-it('accepts a six-week local calendar range across the end of daylight saving time', function () {
+it('accepts a 42-local-day calendar range across DST end', function () {
     $user = User::factory()->create();
     $this->actingAs($user);
 
@@ -95,7 +95,7 @@ it('accepts a six-week local calendar range across the end of daylight saving ti
         ->assertDispatched('calendarEventsUpdated');
 });
 
-it('accepts a range exactly at the elapsed-time limit', function () {
+it('accepts a range at the maximum allowed elapsed duration', function () {
     $user = User::factory()->create();
     $this->actingAs($user);
 
@@ -107,7 +107,7 @@ it('accepts a range exactly at the elapsed-time limit', function () {
         ->assertDispatched('calendarEventsUpdated');
 });
 
-it('rejects semantically invalid calendar ranges without changing state or querying tasks', function (string $start, string $end, string $errorField) {
+it('rejects ranges over the maximum allowed elapsed duration or with invalid ordering', function (string $start, string $end, string $errorField) {
     $user = User::factory()->create();
     $this->actingAs($user);
     DB::enableQueryLog();
@@ -130,7 +130,7 @@ it('rejects semantically invalid calendar ranges without changing state or query
 
     expect($taskQueries)->toBeEmpty();
 })->with([
-    'range over the 44-day elapsed-time limit' => ['2026-09-01T00:00:00.000Z', '2026-10-15T00:00:00.001Z', 'end'],
+    'one millisecond over maximum elapsed duration' => ['2026-09-01T00:00:00.000Z', '2026-10-15T00:00:00.001Z', 'end'],
     'reversed range' => ['2026-10-13T00:00:00.000Z', '2026-09-01T00:00:00.000Z', 'start'],
     'empty range' => ['2026-09-01T00:00:00.000Z', '2026-09-01T00:00:00.000Z', 'start'],
 ]);
