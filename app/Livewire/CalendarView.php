@@ -20,10 +20,10 @@ class CalendarView extends Component
 
     private const MAX_CALENDAR_RANGE_DAYS = 42;
 
-    // UTC offsets stay within +/-24 hours, so endpoint offsets can differ by under 48 hours.
-    private const MAX_TIMEZONE_OFFSET_DELTA_HOURS = 48;
+    // FullCalendar's 42 calendar days allow up to 48 hours of endpoint UTC offset difference (44 elapsed days).
+    private const MAX_ENDPOINT_UTC_OFFSET_DIFFERENCE_HOURS = 48;
 
-    private const MAX_RANGE_SECONDS = (self::MAX_CALENDAR_RANGE_DAYS * 24 + self::MAX_TIMEZONE_OFFSET_DELTA_HOURS) * 60 * 60;
+    private const MAX_CALENDAR_RANGE_SECONDS = (self::MAX_CALENDAR_RANGE_DAYS * 24 + self::MAX_ENDPOINT_UTC_OFFSET_DIFFERENCE_HOURS) * 60 * 60;
 
     #[Modelable]
     public array $filters = [
@@ -94,7 +94,7 @@ class CalendarView extends Component
         Validator::make($validated, [])->after(function ($validator) use ($startDate, $endDate): void {
             if ($endDate->lessThanOrEqualTo($startDate)) {
                 $validator->errors()->add('start', '表示期間の開始日時は終了日時より前にしてください。');
-            } elseif ($endDate->greaterThan($startDate->copy()->addSeconds(self::MAX_RANGE_SECONDS))) {
+            } elseif ($endDate->greaterThan($startDate->copy()->addSeconds(self::MAX_CALENDAR_RANGE_SECONDS))) {
                 $validator->errors()->add('end', '表示期間がカレンダーの許容範囲を超えています。');
             }
         })->validate();
