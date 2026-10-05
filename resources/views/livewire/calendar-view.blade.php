@@ -1,6 +1,6 @@
 <div>
     <div
-        class="mt-2 hidden rounded-xl border border-zinc-700 bg-zinc-800/90 p-4 text-zinc-100 shadow-sm xl:block"
+        class="mt-2 rounded-xl border border-zinc-700 bg-zinc-800/90 p-4 text-zinc-100 shadow-sm"
         x-data="taskCalendar($wire)"
     >
 
@@ -51,7 +51,4 @@
         {{-- エラー通知用モーダル --}}
         <x-calendar.error-modal />
     </div>
-
-    {{-- 1280px未満では案内メッセージのみ --}}
-    <x-calendar.unsupported />
 </div>

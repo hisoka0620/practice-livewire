@@ -1,6 +1,18 @@
 import { expect, test } from "@playwright/test";
 import { signInAndOpenCalendar } from "./support/calendar";
 
+test("shows the calendar at narrow and desktop widths", async ({ page }) => {
+    await signInAndOpenCalendar(page);
+
+    const calendar = page.locator("#task-calendar .fc-daygrid");
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(calendar).toBeVisible();
+
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await expect(calendar).toBeVisible();
+});
+
 test("keeps the date picker synchronized across calendar views and jumps", async ({
     page,
 }) => {
