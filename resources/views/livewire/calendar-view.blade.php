@@ -19,7 +19,8 @@
                     )
                 }
             }"
-            class="flex w-full flex-wrap items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-800/90 px-3 py-2.5 text-zinc-100 shadow-sm"
+            id="calendar-controls"
+            class="flex w-full min-w-0 flex-wrap items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-800/90 px-3 py-2.5 text-zinc-100 shadow-sm"
         >
             {{-- 日付ジャンプ --}}
             <x-calendar.date-picker />

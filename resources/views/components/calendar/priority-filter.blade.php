@@ -1,4 +1,4 @@
-<div class="min-w-auto flex items-center gap-2 rounded-lg border border-zinc-700/70 bg-zinc-900/90 px-2.5 py-2">
+<div class="flex min-w-0 grow basis-36 items-center gap-2 rounded-lg border border-zinc-700/70 bg-zinc-900/90 px-2.5 py-2 sm:basis-auto sm:grow-0">
     <flux:icon
         name="flag"
         class="size-4 shrink-0 text-zinc-400"

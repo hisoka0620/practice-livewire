@@ -1,4 +1,4 @@
-<div class="flex min-w-0 flex-1 flex-wrap items-center gap-2 text-zinc-100">
+<div class="flex w-full min-w-0 flex-1 flex-wrap items-center gap-2 text-zinc-100 sm:w-auto">
 
     {{-- Priority フィルター --}}
     <x-calendar.priority-filter />

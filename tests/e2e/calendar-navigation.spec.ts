@@ -1,16 +1,70 @@
 import { expect, test } from "@playwright/test";
 import { signInAndOpenCalendar } from "./support/calendar";
 
-test("shows the calendar at narrow and desktop widths", async ({ page }) => {
+test("keeps calendar controls usable across viewport widths", async ({ page }) => {
     await signInAndOpenCalendar(page);
 
     const calendar = page.locator("#task-calendar .fc-daygrid");
 
-    await page.setViewportSize({ width: 390, height: 844 });
-    await expect(calendar).toBeVisible();
+    for (const width of [320, 390, 768, 1280]) {
+        await page.setViewportSize({ width, height: 900 });
+        await expect(calendar).toBeVisible();
 
-    await page.setViewportSize({ width: 1280, height: 900 });
-    await expect(calendar).toBeVisible();
+        const layout = await page.evaluate(() => {
+            const intersects = (first, second) =>
+                first.left < second.right - 1 &&
+                first.right > second.left + 1 &&
+                first.top < second.bottom - 1 &&
+                first.bottom > second.top + 1;
+            const rect = (element) => {
+                const { left, right, top, bottom } =
+                    element.getBoundingClientRect();
+                return { left, right, top, bottom };
+            };
+            const controls = document.querySelector("#calendar-controls");
+            const controlElements = Array.from(controls.children).flatMap(
+                (element, index) =>
+                    index === 1 ? Array.from(element.children) : [element],
+            );
+            const controlBounds = rect(controls);
+            const controlRects = controlElements
+                .filter((element) => element.getClientRects().length > 0)
+                .map(rect);
+            const toolbar = document.querySelector(
+                "#task-calendar .fc-toolbar",
+            );
+            const toolbarChunks = Array.from(
+                toolbar.querySelectorAll(":scope > .fc-toolbar-chunk"),
+            ).map(rect);
+
+            return {
+                horizontalOverflow:
+                    document.documentElement.scrollWidth > window.innerWidth,
+                controlsOverflow: controlRects.some(
+                    (box) =>
+                        box.left < controlBounds.left ||
+                        box.right > controlBounds.right,
+                ),
+                controlsOverlap: controlRects.some((box, index) =>
+                    controlRects
+                        .slice(index + 1)
+                        .some((other) => intersects(box, other)),
+                ),
+                toolbarOverflow: toolbar.scrollWidth > toolbar.clientWidth,
+                toolbarOverlap: toolbarChunks.some((box, index) =>
+                    toolbarChunks
+                        .slice(index + 1)
+                        .some((other) => intersects(box, other)),
+                ),
+            };
+        });
+
+        expect(layout.horizontalOverflow, `viewport width ${width}`).toBe(false);
+        expect(layout.controlsOverflow, `viewport width ${width}`).toBe(false);
+        expect(layout.controlsOverlap, `viewport width ${width}`).toBe(false);
+        expect(layout.toolbarOverflow, `viewport width ${width}`).toBe(false);
+        expect(layout.toolbarOverlap, `viewport width ${width}`).toBe(false);
+    }
 });
 
 test("keeps the date picker synchronized across calendar views and jumps", async ({

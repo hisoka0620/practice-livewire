@@ -50,6 +50,34 @@
     min-height: 2rem;
 }
 
+@media (max-width: 639px) {
+    #task-calendar .fc-toolbar {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    #task-calendar .fc-toolbar-chunk {
+        min-width: 0;
+        max-width: 100%;
+        justify-content: center;
+    }
+
+    #task-calendar .fc-toolbar-chunk:nth-child(2) {
+        flex: 1 0 100%;
+        order: -1;
+        text-align: center;
+    }
+
+    #task-calendar .fc-toolbar-title {
+        font-size: 1.25rem;
+    }
+
+    #task-calendar .fc-toolbar .fc-button {
+        padding: 0.3rem 0.45rem;
+        font-size: 0.875rem;
+    }
+}
+
 #task-calendar .fc-button {
     color: #cbd5e1;
     border-color: rgba(148, 163, 184, 0.24);
