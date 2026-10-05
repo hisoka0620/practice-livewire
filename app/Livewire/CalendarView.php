@@ -53,6 +53,10 @@ class CalendarView extends Component
 
     private function reloadCurrentRange(): void
     {
+        if (blank($this->rangeStart) || blank($this->rangeEnd)) {
+            return;
+        }
+
         $this->loadEvents($this->rangeStart, $this->rangeEnd);
     }
 
@@ -71,20 +75,15 @@ class CalendarView extends Component
      * カレンダーの表示期間に応じてイベントを動的に取得する
      */
     public function loadEvents(
-        string $start,
-        string $end
+        mixed $start,
+        mixed $end
     ): bool {
-        if (blank($start) || blank($end)) {
-            // 表示期間が未確定（初回のdatesSet前）の場合は何もしない
-            return false;
-        }
-
         $validated = Validator::make([
             'start' => $start,
             'end' => $end,
         ], [
-            'start' => ['required', 'date_format:'.self::UTC_ISO_DATETIME_FORMAT],
-            'end' => ['required', 'date_format:'.self::UTC_ISO_DATETIME_FORMAT],
+            'start' => ['bail', 'required', 'string', 'date_format:'.self::UTC_ISO_DATETIME_FORMAT],
+            'end' => ['bail', 'required', 'string', 'date_format:'.self::UTC_ISO_DATETIME_FORMAT],
         ])->validate();
 
         // FullCalendarから送られてくるISO 8601文字列をパース
@@ -138,12 +137,12 @@ class CalendarView extends Component
      */
     public function updateTaskDeadline(
         int $taskId,
-        string $newDeadline
+        mixed $newDeadline
     ): bool {
         $validated = Validator::make([
             'newDeadline' => $newDeadline,
         ], [
-            'newDeadline' => ['required', 'date_format:'.self::UTC_ISO_DATETIME_FORMAT],
+            'newDeadline' => ['bail', 'required', 'string', 'date_format:'.self::UTC_ISO_DATETIME_FORMAT],
         ])->validate();
 
         app(TaskActions::class)->updateDeadline(

@@ -44,9 +44,11 @@ it('loads the authenticated users tasks from a UTC calendar range', function () 
         ->and($events[0]['extendedProps']['deadline'])->toBe($events[0]['start']);
 });
 
-it('rejects invalid calendar ranges without changing state or dispatching events', function (string $start, string $end, string $errorField) {
+it('rejects invalid calendar ranges without changing state or dispatching events', function (mixed $start, mixed $end, string $errorField) {
     $user = User::factory()->create();
     $this->actingAs($user);
+    DB::enableQueryLog();
+    DB::flushQueryLog();
 
     Livewire::test(CalendarView::class)
         ->set('rangeStart', 'previous-start')
@@ -58,11 +60,23 @@ it('rejects invalid calendar ranges without changing state or dispatching events
         ->assertSet('rangeEnd', 'previous-end')
         ->assertSet('calendarEvents', [['id' => 'previous-event']])
         ->assertNotDispatched('calendarEventsUpdated');
+
+    $taskQueries = collect(DB::getQueryLog())
+        ->filter(fn (array $query) => str_contains(strtolower($query['query']), 'tasks'));
+    DB::disableQueryLog();
+
+    expect($taskQueries)->toBeEmpty();
 })->with([
     'malformed start' => ['2026-09-22T15:00:00Z', '2026-09-23T15:00:00.000Z', 'start'],
     'impossible start' => ['2026-02-30T15:00:00.000Z', '2026-09-23T15:00:00.000Z', 'start'],
+    'array start' => [['2026-09-22T15:00:00.000Z'], '2026-09-23T15:00:00.000Z', 'start'],
+    'numeric start' => [123, '2026-09-23T15:00:00.000Z', 'start'],
+    'empty start' => ['', '2026-09-23T15:00:00.000Z', 'start'],
     'malformed end' => ['2026-09-22T15:00:00.000Z', '2026-09-23T15:00:00Z', 'end'],
     'impossible end' => ['2026-09-22T15:00:00.000Z', '2026-02-30T15:00:00.000Z', 'end'],
+    'array end' => ['2026-09-22T15:00:00.000Z', ['2026-09-23T15:00:00.000Z'], 'end'],
+    'numeric end' => ['2026-09-22T15:00:00.000Z', 123, 'end'],
+    'empty end' => ['2026-09-22T15:00:00.000Z', '', 'end'],
 ]);
 
 it('accepts a 42-day calendar range', function () {
@@ -135,7 +149,7 @@ it('rejects ranges over the maximum allowed elapsed duration or with invalid ord
     'empty range' => ['2026-09-01T00:00:00.000Z', '2026-09-01T00:00:00.000Z', 'start'],
 ]);
 
-it('rejects invalid task deadlines without changing the task or dispatching events', function (string $newDeadline) {
+it('rejects invalid task deadlines without changing the task or dispatching events', function (mixed $newDeadline) {
     $user = User::factory()->create();
     $originalDeadline = Carbon::parse('2026-09-23 18:30:00', config('app.timezone'));
     $task = Task::factory()->for($user)->create([
@@ -152,6 +166,9 @@ it('rejects invalid task deadlines without changing the task or dispatching even
 
     expect($task->refresh()->deadline->equalTo($originalDeadline))->toBeTrue();
 })->with([
+    'array deadline' => [['2026-09-24T15:45:00.000Z']],
+    'numeric deadline' => [123],
+    'empty deadline' => [''],
     'malformed deadline' => '2026-09-24T15:45:00Z',
     'impossible deadline' => '2026-02-30T15:45:00.000Z',
 ]);
