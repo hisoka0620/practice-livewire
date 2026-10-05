@@ -51,6 +51,14 @@
 }
 
 @media (max-width: 639px) {
+    #calendar-container {
+        height: clamp(520px, 68vh, 640px);
+    }
+
+    #task-calendar .fc-daygrid-day-frame {
+        min-height: 64px;
+    }
+
     #task-calendar .fc-toolbar {
         flex-wrap: wrap;
         justify-content: center;
