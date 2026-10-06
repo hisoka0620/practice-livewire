@@ -84,6 +84,77 @@
         padding: 0.3rem 0.45rem;
         font-size: 0.875rem;
     }
+
+    #task-calendar .fc-daygrid-event .fc-custom-event {
+        align-items: flex-start;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 1rem;
+        grid-template-rows: auto auto;
+        white-space: normal;
+    }
+
+    #task-calendar .fc-daygrid-event .fc-priority-dot {
+        display: none;
+    }
+
+    #task-calendar .fc-daygrid-event .fc-event-time {
+        display: none;
+    }
+
+    #task-calendar .fc-daygrid-event .fc-event-actions-trigger {
+        grid-column: 2;
+        grid-row: 2;
+        justify-self: end;
+        flex: none;
+        width: 1rem;
+        height: 1rem;
+        font-size: 0.75rem;
+    }
+
+    #task-calendar .fc-daygrid-event .fc-event-content {
+        display: block;
+        grid-column: 1 / -1;
+        grid-row: 1;
+        width: 100%;
+    }
+
+    #task-calendar .fc-daygrid-event .fc-event-title {
+        display: -webkit-box;
+        overflow: hidden;
+        overflow-wrap: anywhere;
+        white-space: normal;
+        text-overflow: clip;
+        line-height: 1.1;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+    }
+
+    #task-calendar .fc-popover .fc-daygrid-event .fc-event-title {
+        display: block;
+        overflow: visible;
+        text-overflow: clip;
+        -webkit-line-clamp: unset;
+    }
+
+    #task-calendar .fc-popover .fc-daygrid-event .fc-custom-event {
+        display: flex;
+    }
+
+    #task-calendar .fc-popover .fc-daygrid-event .fc-event-content {
+        flex: 1;
+        min-width: 0;
+        width: auto;
+    }
+
+    #task-calendar .fc-popover .fc-daygrid-event .fc-event-actions-trigger {
+        position: static;
+        flex: 0 0 1rem;
+    }
+
+    #task-calendar .fc-popover-body {
+        max-height: min(60vh, 360px);
+        overflow-y: auto;
+    }
 }
 
 #task-calendar .fc-button {
@@ -296,7 +367,7 @@
     padding-bottom: 0;
     /* グリッド部分だけをうっすら暗幕で覆う */
     background: rgba(9, 9, 11, 0.6);
-    background-clip: content-box;  /* 背景色をコンテンツ領域だけに制限 */
+    background-clip: content-box; /* 背景色をコンテンツ領域だけに制限 */
     pointer-events: none;
     z-index: 10;
     border-radius: 0 0 0.75rem 0.75rem;

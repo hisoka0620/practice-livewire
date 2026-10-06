@@ -1,7 +1,9 @@
 import { expect, test } from "@playwright/test";
 import { signInAndOpenCalendar } from "./support/calendar";
 
-test("keeps calendar controls usable across viewport widths", async ({ page }) => {
+test("keeps calendar controls usable across viewport widths", async ({
+    page,
+}) => {
     await signInAndOpenCalendar(page);
 
     const calendar = page.locator("#task-calendar .fc-daygrid");
@@ -59,7 +61,9 @@ test("keeps calendar controls usable across viewport widths", async ({ page }) =
             };
         });
 
-        expect(layout.horizontalOverflow, `viewport width ${width}`).toBe(false);
+        expect(layout.horizontalOverflow, `viewport width ${width}`).toBe(
+            false,
+        );
         expect(layout.controlsOverflow, `viewport width ${width}`).toBe(false);
         expect(layout.controlsOverlap, `viewport width ${width}`).toBe(false);
         expect(layout.toolbarOverflow, `viewport width ${width}`).toBe(false);
@@ -115,7 +119,9 @@ test("fits a six-week month on mobile and preserves desktop sizing", async ({
     await page.locator(".fc-next-button").click();
     await page.locator(".fc-next-button").click();
     const event = page
-        .locator('#task-calendar .fc-daygrid-day[data-date="2026-10-01"] .fc-event')
+        .locator(
+            '#task-calendar .fc-daygrid-day[data-date="2026-10-01"] .fc-event',
+        )
         .filter({ hasText: "Timezone boundary task" });
     await expect(event).toBeVisible();
 
@@ -126,13 +132,20 @@ test("fits a six-week month on mobile and preserves desktop sizing", async ({
             path: `test-results/calendar-responsive-${width}.png`,
             fullPage: true,
         });
+
+        await event.locator(".fc-event-title").click();
+        const editDialog = page.getByRole("dialog");
+        await expect(editDialog.getByLabel("Title")).toHaveValue(
+            "Timezone boundary task",
+        );
+        await editDialog.getByRole("button", { name: "Close modal" }).click();
     }
 
     await page.setViewportSize({ width: 1280, height: 900 });
     const desktopSize = await page.evaluate(() => ({
-        containerHeight: document.querySelector(
-            "#calendar-container",
-        ).getBoundingClientRect().height,
+        containerHeight: document
+            .querySelector("#calendar-container")
+            .getBoundingClientRect().height,
         minCellHeight: getComputedStyle(
             document.querySelector("#task-calendar .fc-daygrid-day-frame"),
         ).minHeight,
@@ -140,6 +153,58 @@ test("fits a six-week month on mobile and preserves desktop sizing", async ({
 
     expect(desktopSize.containerHeight).toBe(860);
     expect(desktopSize.minCellHeight).toBe("120px");
+});
+
+test("keeps dense mobile month events reachable through the more popover", async ({
+    page,
+}) => {
+    await page.clock.install({
+        time: new Date("2026-10-01T12:00:00-07:00"),
+    });
+    await page.setViewportSize({ width: 320, height: 844 });
+    await signInAndOpenCalendar(page);
+
+    for (const title of [
+        "Readable mobile event one",
+        "Readable mobile event two",
+        "Readable mobile event three",
+    ]) {
+        await page.getByRole("button", { name: "Create Task" }).click();
+        const dialog = page.getByRole("dialog");
+        await dialog.getByLabel("Title").fill(title);
+        await dialog.getByLabel("Deadline").fill("2026-10-01T10:00");
+        const creation = page.waitForResponse((response) =>
+            response.url().includes("/livewire/update"),
+        );
+        await dialog.getByRole("button", { name: "Create" }).click();
+        await creation;
+        await expect(dialog).toBeHidden();
+    }
+
+    const day = page.locator(
+        '#task-calendar .fc-daygrid-day[data-date="2026-10-01"]',
+    );
+    const moreLink = day.locator(".fc-daygrid-more-link");
+    await expect(moreLink).toBeVisible();
+    await moreLink.click();
+
+    const popover = page.locator("#task-calendar .fc-popover");
+    await expect(popover).toBeVisible();
+    await expect(popover).toContainText("Readable mobile event one");
+    await expect(popover).toContainText("Readable mobile event two");
+    await expect(popover).toContainText("Readable mobile event three");
+
+    const bounds = await popover.evaluate((element) => {
+        const { left, right } = element.getBoundingClientRect();
+        return { left, right, viewportWidth: window.innerWidth };
+    });
+    expect(bounds.left).toBeGreaterThanOrEqual(0);
+    expect(bounds.right).toBeLessThanOrEqual(bounds.viewportWidth + 1);
+    expect(
+        await page.evaluate(
+            () => document.documentElement.scrollWidth <= window.innerWidth,
+        ),
+    ).toBe(true);
 });
 
 test("keeps the date picker synchronized across calendar views and jumps", async ({
