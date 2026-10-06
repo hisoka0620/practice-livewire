@@ -119,6 +119,15 @@ test("fits a six-week month on mobile and preserves desktop sizing", async ({
         .filter({ hasText: "Timezone boundary task" });
     await expect(event).toBeVisible();
 
+    for (const width of [320, 390]) {
+        await page.setViewportSize({ width, height: 844 });
+        await expect(event).toBeVisible();
+        await page.screenshot({
+            path: `test-results/calendar-responsive-${width}.png`,
+            fullPage: true,
+        });
+    }
+
     await page.setViewportSize({ width: 1280, height: 900 });
     const desktopSize = await page.evaluate(() => ({
         containerHeight: document.querySelector(
