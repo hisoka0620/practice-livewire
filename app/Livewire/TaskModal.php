@@ -75,7 +75,8 @@ class TaskModal extends Component
 
     public function close(): void
     {
-        $this->reset();
+        $this->form->reset();
+        $this->reset(['task', 'show', 'editTaskId', 'createTask']);
     }
 
     public function render()

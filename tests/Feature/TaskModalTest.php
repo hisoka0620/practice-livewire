@@ -91,3 +91,35 @@ it('resets reminder state only when the deadline changes', function () {
 
     expect($task->refresh()->deadline_notified_at)->toBeNull();
 });
+
+it('resets form values on close and supports reopening for create and edit', function () {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+    $task = Task::factory()->for($user)->create();
+
+    Livewire::test(TaskModal::class)
+        ->call('open')
+        ->set('form.title', 'Unsaved task')
+        ->set('form.deadline', '2026-09-24T17:45:00.000Z')
+        ->call('close')
+        ->assertSet('show', false)
+        ->assertSet('task', null)
+        ->assertSet('editTaskId', 0)
+        ->assertSet('createTask', 0)
+        ->assertSet('form.title', null)
+        ->assertSet('form.deadline', null)
+        ->call('open', $task->id)
+        ->assertSet('form.title', $task->title)
+        ->assertSet('editTaskId', $task->id)
+        ->set('form.title', 'Updated task')
+        ->call('save')
+        ->assertSet('show', false)
+        ->assertSet('task', null)
+        ->assertSet('form.title', null)
+        ->call('open')
+        ->assertSet('form.title', null)
+        ->assertSet('form.deadline', null)
+        ->assertSet('createTask', 1);
+
+    expect($task->refresh()->title)->toBe('Updated task');
+});
