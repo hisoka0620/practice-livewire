@@ -1,7 +1,8 @@
-<div x-show="contextMenu.visible" x-cloak x-on:click.outside="closeContextMenu()"
+<div x-ref="contextMenu" x-show="contextMenu.visible" x-cloak x-on:click.outside="closeContextMenu()"
+    x-on:keydown.escape.stop.prevent="closeContextMenu()"
     class="fixed z-50 w-44 rounded-lg border border-zinc-700 bg-zinc-800 py-1 text-sm text-zinc-100 shadow-lg"
     x-bind:style="`left: ${contextMenu.x}px; top: ${contextMenu.y}px;`">
-    <button type="button" x-on:click="toggleTaskCompletion()"
+    <button x-ref="contextMenuFirstAction" type="button" x-on:click="toggleTaskCompletion()"
         class="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-zinc-700">
         <flux:icon name="check-circle" class="size-4" />
         <span x-text="contextMenu.isCompleted ? 'Mark as Incomplete' : 'Mark as Complete'"></span>

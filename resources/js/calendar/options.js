@@ -101,6 +101,11 @@ export function createCalendarOptions({
                             <div class="fc-event-time">${time}</div>
                             <div class="fc-event-title">${title}</div>
                         </div>
+                        <button
+                            class="fc-event-actions-trigger"
+                            type="button"
+                            aria-label="Actions for ${title}"
+                        ><span aria-hidden="true">&#8942;</span></button>
                     </div>
                 `,
             };

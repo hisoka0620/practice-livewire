@@ -254,6 +254,18 @@ export default (wire) => ({
                 },
                 onEventClick: (info) => {
                     info.jsEvent.preventDefault();
+                    const actionTrigger = info.jsEvent.target.closest(
+                        ".fc-event-actions-trigger",
+                    );
+                    if (actionTrigger) {
+                        this.openContextMenu(
+                            info.jsEvent,
+                            info.event,
+                            actionTrigger,
+                        );
+                        return;
+                    }
+
                     const taskId = info.event.id;
                     if (!taskId) return;
                     wire.$dispatchTo("task-modal", "open-task-modal", {
@@ -357,15 +369,25 @@ export default (wire) => ({
     /**
      * 右クリックメニューを開く
      */
-    openContextMenu(jsEvent, event) {
+    openContextMenu(jsEvent, event, trigger = null) {
         const props = event.extendedProps || {};
+        const triggerBounds = trigger?.getBoundingClientRect();
         this.contextMenu = {
             visible: true,
-            x: jsEvent.clientX,
-            y: jsEvent.clientY,
+            x: triggerBounds
+                ? Math.min(triggerBounds.right, Math.max(0, window.innerWidth - 176))
+                : jsEvent.clientX,
+            y: triggerBounds
+                ? Math.min(triggerBounds.bottom, Math.max(0, window.innerHeight - 96))
+                : jsEvent.clientY,
             taskId: event.id,
             isCompleted: !!props.completed,
         };
+        if (trigger) {
+            requestAnimationFrame(() =>
+                this.$refs.contextMenuFirstAction?.focus(),
+            );
+        }
     },
 
     closeContextMenu() {
