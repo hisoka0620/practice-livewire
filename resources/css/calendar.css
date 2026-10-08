@@ -273,6 +273,26 @@
     }
 }
 
+@media (any-pointer: coarse) {
+    #task-calendar .fc-event-actions-trigger {
+        flex: 0 0 24px;
+        width: 24px;
+        height: 24px;
+        min-width: 24px;
+        min-height: 24px;
+        opacity: 1;
+    }
+
+    #task-calendar .fc-custom-event .fc-event-content {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    #task-calendar .fc-daygrid-event .fc-event-time {
+        display: none;
+    }
+}
+
 #task-calendar .fc-custom-event .fc-priority-dot {
     display: inline-block;
     width: 0.55rem;

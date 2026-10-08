@@ -136,6 +136,91 @@ test("supports touch and keyboard task actions without hijacking task clicks", a
     await expect(task).toHaveCount(0);
 });
 
+test("keeps touch action targets large in landscape tablet-width calendars", async ({
+    page,
+}) => {
+    await page.setViewportSize({ width: 844, height: 390 });
+    await page.clock.install({
+        time: new Date("2026-10-01T12:00:00-07:00"),
+    });
+    await signInAndOpenCalendar(page);
+
+    await page.getByRole("button", { name: "Create Task" }).click();
+    const dialog = page.getByRole("dialog");
+    await dialog.getByLabel("Title").fill("Landscape touch action task");
+    await dialog.getByLabel("Priority").selectOption("high");
+    await dialog.getByLabel("Deadline").fill("2026-10-15T10:00");
+    const creation = page.waitForResponse((response) =>
+        response.url().includes("/livewire/update"),
+    );
+    await dialog.getByRole("button", { name: "Create" }).click();
+    await creation;
+
+    const task = page
+        .locator('#task-calendar [data-date="2026-10-15"] .fc-event')
+        .filter({ hasText: "Landscape touch action task" });
+    const actions = task.getByRole("button", {
+        name: "Actions for Landscape touch action task",
+    });
+    await expect(actions).toBeVisible();
+    await actions.scrollIntoViewIfNeeded();
+    const actionGeometry = await actions.evaluate((button) => {
+        const actionRect = button.getBoundingClientRect();
+        const titleRect = button
+            .closest(".fc-event")
+            ?.querySelector(".fc-event-title")
+            ?.getBoundingClientRect();
+        const dayRect = button
+            .closest(".fc-daygrid-day")
+            ?.getBoundingClientRect();
+        const hitTarget = document.elementFromPoint(
+            actionRect.left + actionRect.width / 2,
+            actionRect.top + actionRect.height / 2,
+        );
+
+        return {
+            width: actionRect.width,
+            height: actionRect.height,
+            withinDay: Boolean(
+                dayRect &&
+                    actionRect.left >= dayRect.left &&
+                    actionRect.right <= dayRect.right &&
+                    actionRect.top >= dayRect.top &&
+                    actionRect.bottom <= dayRect.bottom,
+            ),
+            overlapsTitle: Boolean(
+                titleRect &&
+                    actionRect.left < titleRect.right &&
+                    actionRect.right > titleRect.left &&
+                    actionRect.top < titleRect.bottom &&
+                    actionRect.bottom > titleRect.top,
+            ),
+            hitTargetIsAction: Boolean(
+                hitTarget?.closest(".fc-event-actions-trigger"),
+            ),
+        };
+    });
+
+    expect(actionGeometry.width).toBeGreaterThanOrEqual(24);
+    expect(actionGeometry.height).toBeGreaterThanOrEqual(24);
+    expect(actionGeometry.withinDay).toBe(true);
+    expect(actionGeometry.overlapsTitle).toBe(false);
+    expect(actionGeometry.hitTargetIsAction).toBe(true);
+
+    await actions.tap();
+    await expect(
+        page.getByRole("button", { name: "Mark as Complete" }),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "Delete", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Delete Task" })).toBeVisible();
+    const deletion = page.waitForResponse((response) =>
+        response.url().includes("/livewire/update"),
+    );
+    await page.getByRole("button", { name: "Delete", exact: true }).last().click();
+    await deletion;
+    await expect(task).toHaveCount(0);
+});
+
 test("shows mobile priority badges that match the calendar legend", async ({
     page,
 }) => {
