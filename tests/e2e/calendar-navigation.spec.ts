@@ -250,3 +250,62 @@ test("keeps the date picker synchronized across calendar views and jumps", async
     await expect(page.locator(".fc-toolbar-title")).toContainText("15");
     await expect(datePicker).toHaveValue("November 15, 2026");
 });
+
+test("keeps mobile in month view and synchronizes after resizing", async ({
+    page,
+}) => {
+    await page.clock.install({
+        time: new Date("2026-10-01T12:00:00-07:00"),
+    });
+    await page.setViewportSize({ width: 320, height: 844 });
+    await signInAndOpenCalendar(page);
+
+    const datePicker = page.locator(
+        'input[type="text"][placeholder="Select Date.."]',
+    );
+    const weekButton = page.locator(".fc-timeGridWeek-button");
+    const taskTitle = "Responsive calendar task";
+
+    for (const width of [320, 390]) {
+        await page.setViewportSize({ width, height: 844 });
+        await expect(page.locator("#task-calendar .fc-daygrid")).toBeVisible();
+        await expect(weekButton).toBeHidden();
+        await expect(datePicker).toHaveValue("October 2026");
+    }
+
+    await page.getByRole("button", { name: "Create Task" }).click();
+    const dialog = page.getByRole("dialog");
+    await dialog.getByLabel("Title").fill(taskTitle);
+    await dialog.getByLabel("Deadline").fill("2026-10-15T10:00");
+    const creation = page.waitForResponse((response) =>
+        response.url().includes("/livewire/update"),
+    );
+    await dialog.getByRole("button", { name: "Create" }).click();
+    await creation;
+    await expect(dialog).toBeHidden();
+
+    const event = page
+        .locator('#task-calendar [data-date="2026-10-15"] .fc-event')
+        .filter({ hasText: taskTitle });
+    await expect(event).toBeVisible();
+
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await expect(weekButton).toBeVisible();
+    await expect(weekButton).toBeEnabled();
+    await weekButton.click();
+    await expect(page.locator("#task-calendar .fc-timegrid")).toBeVisible();
+    await expect(datePicker).toHaveValue("October 1, 2026");
+    await page.locator(".fc-next-button").click();
+    await expect(datePicker).toHaveValue("October 4, 2026");
+    await page.locator(".fc-next-button").click();
+    await expect(datePicker).toHaveValue("October 11, 2026");
+    await expect(
+        page.locator("#task-calendar .fc-event").filter({ hasText: taskTitle }),
+    ).toBeVisible();
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(page.locator("#task-calendar .fc-daygrid")).toBeVisible();
+    await expect(weekButton).toBeHidden();
+    await expect(datePicker).toHaveValue("October 2026");
+    await expect(event).toBeVisible();
+});

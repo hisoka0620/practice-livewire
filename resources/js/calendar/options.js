@@ -4,6 +4,8 @@ import timeGridPlugin from "@fullcalendar/timegrid";
 import tippy from "tippy.js";
 import { formatEventTime, formatTooltipDeadline } from "./date-utils.js";
 
+export const MOBILE_CALENDAR_MAX_WIDTH = 639;
+
 function escapeHtml(value) {
     return String(value ?? "").replace(
         /[&<>"']/g,

@@ -9,7 +9,10 @@ import {
 import { createLoadingState } from "./calendar/loading-state";
 import { registerCalendarCommitLoadingHook } from "./calendar/commit-hook";
 import { processEventsByView } from "./calendar/event-utils";
-import { createCalendarOptions } from "./calendar/options";
+import {
+    createCalendarOptions,
+    MOBILE_CALENDAR_MAX_WIDTH,
+} from "./calendar/options";
 import {
     combineDateAndTime,
     formatForServer,
@@ -34,6 +37,7 @@ export default (wire) => ({
     _destroyed: false, // Livewire.hookがこのコンポーネントの破棄後に実行されるのを防ぐガード
     _offCommitHook: null,
     _onScroll: null, // document.addEventListener("scroll", ...)に渡した関数参照（removeEventListenerで同一参照が必要なため保持）
+    _onWindowResize: null,
     _calendarEl: null,
     _onCalendarMouseDown: null,
     _layoutResizeObserver: null, // ツールバー要素の高さ監視用ResizeObserver（--fc-header-height反映用）
@@ -81,7 +85,14 @@ export default (wire) => ({
         this._onScroll = () => this.closeContextMenu();
         document.addEventListener("scroll", this._onScroll, true);
 
+        if (this._onWindowResize) {
+            window.removeEventListener("resize", this._onWindowResize);
+        }
+        this._onWindowResize = () => this.syncResponsiveView();
+        window.addEventListener("resize", this._onWindowResize);
+
         this.renderCalendar();
+        this.syncResponsiveView();
         this.initFlatPickr();
     },
     destroy() {
@@ -91,6 +102,10 @@ export default (wire) => ({
             this._offCommitHook();
         }
         document.removeEventListener("scroll", this._onScroll, true);
+        if (this._onWindowResize) {
+            window.removeEventListener("resize", this._onWindowResize);
+            this._onWindowResize = null;
+        }
         this.removeCalendarMouseDownListener();
         this._layoutResizeObserver?.disconnect();
         this.flatPickr?.destroy();
@@ -281,6 +296,25 @@ export default (wire) => ({
         // 初回描画直後にヘッダー高さの監視を開始し、オーバーレイをharnessへ付け替える
         this.observeCalendarLayout();
         this.attachOverlayToHarness();
+    },
+
+    syncResponsiveView() {
+        if (!this.calendar) return;
+
+        const isMobile = window.innerWidth <= MOBILE_CALENDAR_MAX_WIDTH;
+        const weekButton = this.$el?.querySelector(
+            ".fc-timeGridWeek-button",
+        );
+        if (weekButton) {
+            weekButton.disabled = isMobile;
+            weekButton.style.display = isMobile ? "none" : "";
+            weekButton.setAttribute("aria-hidden", String(isMobile));
+            weekButton.tabIndex = isMobile ? -1 : 0;
+        }
+
+        if (isMobile && this.calendar.view.type === "timeGridWeek") {
+            this.calendar.changeView("dayGridMonth");
+        }
     },
 
     removeCalendarMouseDownListener() {
