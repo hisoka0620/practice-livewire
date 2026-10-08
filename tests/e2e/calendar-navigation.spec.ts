@@ -226,6 +226,69 @@ test("adapts calendar density to short viewports without clipping the month", as
     }
 });
 
+test("truncates long mobile event titles to two lines and preserves the full edit value", async ({
+    page,
+}) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.clock.install({
+        time: new Date("2026-10-01T12:00:00-07:00"),
+    });
+    await signInAndOpenCalendar(page);
+
+    const title =
+        "A deliberately long mobile calendar title that should be truncated after two visible lines";
+    await page.getByRole("button", { name: "Create Task" }).click();
+    const createDialog = page.getByRole("dialog");
+    await createDialog.getByLabel("Title").fill(title);
+    await createDialog.getByLabel("Deadline").fill("2026-10-20T10:00");
+    const creation = page.waitForResponse((response) =>
+        response.url().includes("/livewire/update"),
+    );
+    await createDialog.getByRole("button", { name: "Create" }).click();
+    await creation;
+    await expect(createDialog).toBeHidden();
+
+    const event = page
+        .locator('#task-calendar [data-date="2026-10-20"] .fc-event')
+        .filter({ hasText: title });
+    await expect(event).toBeVisible();
+    const eventTitle = event.locator(".fc-event-title");
+    const titleLayout = await eventTitle.evaluate((element) => {
+        const style = getComputedStyle(element);
+        const lineHeight = Number.parseFloat(style.lineHeight);
+        const originalStyles = {
+            display: element.style.display,
+            overflow: element.style.overflow,
+            webkitLineClamp: element.style.webkitLineClamp,
+        };
+        element.style.display = "block";
+        element.style.overflow = "visible";
+        element.style.webkitLineClamp = "unset";
+        const fullLineCount = Math.ceil(element.scrollHeight / lineHeight);
+        element.style.display = originalStyles.display;
+        element.style.overflow = originalStyles.overflow;
+        element.style.webkitLineClamp = originalStyles.webkitLineClamp;
+
+        return {
+            lineClamp: style.webkitLineClamp,
+            textOverflow: style.textOverflow,
+            lineHeight,
+            height: element.getBoundingClientRect().height,
+            fullLineCount,
+        };
+    });
+    expect(titleLayout.lineClamp).toBe("2");
+    expect(titleLayout.textOverflow).toBe("ellipsis");
+    expect(titleLayout.fullLineCount).toBeGreaterThan(2);
+    expect(titleLayout.height).toBeLessThanOrEqual(
+        titleLayout.lineHeight * 2 + 2.5,
+    );
+
+    await eventTitle.click();
+    const editDialog = page.getByRole("dialog");
+    await expect(editDialog.getByLabel("Title")).toHaveValue(title);
+});
+
 test.describe("dense mobile month calendar", () => {
     test.use({
         viewport: { width: 320, height: 844 },
