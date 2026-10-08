@@ -85,12 +85,16 @@ export function createCalendarOptions({
             const rawPriority = String(props.priority ?? "").toLowerCase();
             const title = escapeHtml(arg.event.title || "");
             const priorityMap = {
-                low: { color: "#3b82f6" },
-                medium: { color: "#fbbf24" },
-                high: { color: "#ef4444" },
+                low: { color: "#3b82f6", label: "L", name: "Low" },
+                medium: { color: "#fbbf24", label: "M", name: "Medium" },
+                high: { color: "#ef4444", label: "H", name: "High" },
             };
 
-            const dotColor = priorityMap[rawPriority]?.color || "#94a3b8";
+            const priority = priorityMap[rawPriority] || {
+                color: "#94a3b8",
+                label: "?",
+                name: "Unknown",
+            };
             const time = formatEventTime(props.deadline, userTimeZone);
 
             return {
@@ -98,8 +102,14 @@ export function createCalendarOptions({
                     <div class="fc-custom-event">
                         <span
                             class="fc-priority-dot"
-                            style="background:${dotColor};"
+                            style="background:${priority.color};"
                         ></span>
+                        <span
+                            class="fc-priority-badge"
+                            role="img"
+                            aria-label="Priority: ${priority.name}"
+                            style="--priority-color:${priority.color};"
+                        >${priority.label}</span>
                         <div class="fc-event-content">
                             <div class="fc-event-time">${time}</div>
                             <div class="fc-event-title">${title}</div>

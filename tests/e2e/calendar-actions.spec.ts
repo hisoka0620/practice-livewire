@@ -33,6 +33,7 @@ test("supports touch and keyboard task actions without hijacking task clicks", a
         name: "Actions for Touch action test task",
     });
 
+    await expect(task.locator(".fc-priority-badge")).toHaveText("H");
     await expect(actions).toBeVisible();
     await actions.scrollIntoViewIfNeeded();
     const actionGeometry = await actions.evaluate((button) => {
@@ -133,4 +134,71 @@ test("supports touch and keyboard task actions without hijacking task clicks", a
     await deletion;
 
     await expect(task).toHaveCount(0);
+});
+
+test("shows mobile priority badges that match the calendar legend", async ({
+    page,
+}) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.clock.install({
+        time: new Date("2026-10-01T12:00:00-07:00"),
+    });
+    await signInAndOpenCalendar(page);
+
+    const priorities = [
+        { title: "High priority badge", value: "high", badge: "H", day: "12" },
+        { title: "Medium priority badge", value: "medium", badge: "M", day: "13" },
+        { title: "Low priority badge", value: "low", badge: "L", day: "14" },
+    ];
+
+    for (const priority of priorities) {
+        await page.getByRole("button", { name: "Create Task" }).click();
+        const dialog = page.getByRole("dialog");
+        await dialog.getByLabel("Title").fill(priority.title);
+        await dialog.getByLabel("Priority").selectOption(priority.value);
+        await dialog
+            .getByLabel("Deadline")
+            .fill(`2026-10-${priority.day}T10:00`);
+        const creation = page.waitForResponse((response) =>
+            response.url().includes("/livewire/update"),
+        );
+        await dialog.getByRole("button", { name: "Create" }).click();
+        await creation;
+        await expect(dialog).toBeHidden();
+    }
+
+    for (const priority of priorities) {
+        const event = page
+            .locator(`#task-calendar [data-date="2026-10-${priority.day}"] .fc-event`)
+            .filter({ hasText: priority.title });
+        const badge = event.locator(".fc-priority-badge");
+        await expect(badge).toBeVisible();
+        await expect(badge).toHaveText(priority.badge);
+        await expect(
+            page.getByText(
+                `${priority.badge} ${priority.value[0].toUpperCase()}${priority.value.slice(1)}`,
+                { exact: true },
+            ),
+        ).toBeVisible();
+    }
+
+    const mediumEvent = page
+        .locator('#task-calendar [data-date="2026-10-13"] .fc-event')
+        .filter({ hasText: "Medium priority badge" });
+    const mediumActions = mediumEvent.getByRole("button", {
+        name: "Actions for Medium priority badge",
+    });
+    await mediumActions.tap();
+    await expect(
+        page.getByRole("button", { name: "Mark as Complete" }),
+    ).toBeVisible();
+
+    await page.setViewportSize({ width: 1280, height: 900 });
+    for (const priority of priorities) {
+        const event = page
+            .locator(`#task-calendar [data-date="2026-10-${priority.day}"] .fc-event`)
+            .filter({ hasText: priority.title });
+        await expect(event.locator(".fc-priority-dot")).toBeVisible();
+        await expect(event.locator(".fc-priority-badge")).toBeHidden();
+    }
 });
