@@ -302,6 +302,11 @@ export default (wire) => ({
         if (!this.calendar) return;
 
         const isMobile = window.innerWidth <= MOBILE_CALENDAR_MAX_WIDTH;
+        const dayMaxEvents = isMobile ? 2 : true;
+        if (this.calendar.getOption("dayMaxEvents") !== dayMaxEvents) {
+            this.calendar.setOption("dayMaxEvents", dayMaxEvents);
+        }
+
         const weekButton = this.$el?.querySelector(
             ".fc-timeGridWeek-button",
         );

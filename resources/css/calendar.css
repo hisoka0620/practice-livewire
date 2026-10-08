@@ -132,6 +132,10 @@
         font-size: 0.75rem;
     }
 
+    #task-calendar .fc-daygrid-day:has(.fc-daygrid-more-link) .fc-event-actions-trigger {
+        display: none;
+    }
+
     #task-calendar .fc-daygrid-event .fc-event-content {
         display: block;
         grid-column: 2;
@@ -174,6 +178,7 @@
     }
 
     #task-calendar .fc-popover .fc-daygrid-event .fc-event-actions-trigger {
+        display: flex;
         position: static;
         flex: 0 0 1.5rem;
         width: 1.5rem;

@@ -54,7 +54,7 @@ export function createCalendarOptions({
         eventDisplay: "block",
         height: "100%",
         fixedWeekCount: false,
-        dayMaxEvents: true,
+        dayMaxEvents: window.innerWidth <= MOBILE_CALENDAR_MAX_WIDTH ? 2 : true,
         eventMaxStack: 2,
         moreLinkClick: "popover",
         moreLinkContent: (args) => `+${args.num} more`,

@@ -340,7 +340,23 @@ test.describe("dense mobile month calendar", () => {
             '#task-calendar .fc-daygrid-day[data-date="2026-10-01"]',
         );
         const moreLink = day.locator(".fc-daygrid-more-link");
-        await expect(moreLink).toBeVisible();
+
+        for (const width of [320, 390]) {
+            await page.setViewportSize({ width, height: 844 });
+            const visibleEvent = day.locator(".fc-event:visible").first();
+            await expect(visibleEvent).toBeVisible();
+            await expect(
+                visibleEvent.locator(".fc-priority-badge"),
+            ).toBeVisible();
+            await expect(moreLink).toBeVisible();
+        }
+
+        const visibleEvent = day.locator(".fc-event:visible").first();
+        await visibleEvent.locator(".fc-event-title").click();
+        const editDialog = page.getByRole("dialog");
+        await expect(editDialog).toBeVisible();
+        await editDialog.getByRole("button", { name: "Close modal" }).click();
+
         await moreLink.click();
 
         const popover = page.locator("#task-calendar .fc-popover");
@@ -380,6 +396,7 @@ test.describe("dense mobile month calendar", () => {
         await expect(
             page.getByRole("button", { name: "Mark as Complete" }),
         ).toBeVisible();
+        await expect(page.getByRole("button", { name: "Delete" })).toBeVisible();
 
         const bounds = await popover.evaluate((element) => {
             const { left, right } = element.getBoundingClientRect();
