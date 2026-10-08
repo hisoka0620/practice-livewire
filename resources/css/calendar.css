@@ -339,6 +339,28 @@
     color: var(--fc-event-text, #ffffff);
 }
 
+@media (min-width: 640px) and (max-width: 900px) {
+    #task-calendar .fc-daygrid-event .fc-event-main,
+    #task-calendar .fc-daygrid-event .fc-custom-event {
+        min-width: 0;
+        gap: 0.125rem;
+    }
+
+    #task-calendar .fc-daygrid-event .fc-event-time {
+        display: none;
+    }
+
+    #task-calendar .fc-daygrid-event .fc-event-content {
+        flex: 1 1 0%;
+        min-width: 0;
+    }
+
+    #task-calendar .fc-daygrid-event .fc-event-title {
+        flex: 1 1 0%;
+        min-width: 0;
+    }
+}
+
 @media (max-width: 639px) {
     #task-calendar .fc-daygrid-event .fc-event-title {
         white-space: normal;

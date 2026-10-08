@@ -289,6 +289,129 @@ test("truncates long mobile event titles to two lines and preserves the full edi
     await expect(editDialog.getByLabel("Title")).toHaveValue(title);
 });
 
+test("preserves event title space at intermediate widths", async ({ page }) => {
+    await page.clock.install({
+        time: new Date("2026-10-01T12:00:00-07:00"),
+    });
+    await signInAndOpenCalendar(page);
+
+    const shortTitle = "Planning";
+    const longTitle =
+        "A long calendar title for intermediate widths that should truncate without covering event controls";
+
+    for (const title of [shortTitle, longTitle]) {
+        await page.getByRole("button", { name: "Create Task" }).click();
+        const dialog = page.getByRole("dialog");
+        await dialog.getByLabel("Title").fill(title);
+        await dialog.getByLabel("Deadline").fill("2026-10-20T10:00");
+        const creation = page.waitForResponse((response) =>
+            response.url().includes("/livewire/update"),
+        );
+        await dialog.getByRole("button", { name: "Create" }).click();
+        await creation;
+        await expect(dialog).toBeHidden();
+    }
+
+    const day = page.locator('#task-calendar [data-date="2026-10-20"]');
+    const shortEvent = day.locator(".fc-event").filter({ hasText: shortTitle });
+    const longEvent = day.locator(".fc-event").filter({ hasText: longTitle });
+
+    for (const width of [640, 768, 900]) {
+        await page.setViewportSize({ width, height: 900 });
+
+        for (const event of [shortEvent, longEvent]) {
+            await expect(event).toBeVisible();
+            const layout = await event.evaluate((element) => {
+                const title = element.querySelector(".fc-event-title");
+                const priority = element.querySelector(".fc-priority-dot");
+                const actions = element.querySelector(
+                    ".fc-event-actions-trigger",
+                );
+                const time = element.querySelector(".fc-event-time");
+                const bounds = (node) => node.getBoundingClientRect();
+                const intersects = (first, second) =>
+                    first.left < second.right - 1 &&
+                    first.right > second.left + 1 &&
+                    first.top < second.bottom - 1 &&
+                    first.bottom > second.top + 1;
+
+                return {
+                    titleWidth: title.clientWidth,
+                    titleScrollWidth: title.scrollWidth,
+                    titleTextOverflow: getComputedStyle(title).textOverflow,
+                    titlePriorityOverlap: intersects(
+                        bounds(title),
+                        bounds(priority),
+                    ),
+                    titleActionsOverlap: intersects(
+                        bounds(title),
+                        bounds(actions),
+                    ),
+                    timeDisplay: getComputedStyle(time).display,
+                };
+            });
+
+            expect(
+                layout.titleWidth,
+                `title width at ${width}px`,
+            ).toBeGreaterThanOrEqual(30);
+            expect(layout.titlePriorityOverlap).toBe(false);
+            expect(layout.titleActionsOverlap).toBe(false);
+            expect(layout.timeDisplay).toBe("none");
+
+            if (event === longEvent) {
+                expect(layout.titleScrollWidth).toBeGreaterThan(
+                    layout.titleWidth,
+                );
+                expect(layout.titleTextOverflow).toBe("ellipsis");
+            }
+        }
+    }
+
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await expect(longEvent.locator(".fc-event-time")).not.toHaveCSS(
+        "display",
+        "none",
+    );
+    await longEvent.hover();
+    await expect(longEvent.locator(".fc-event-time")).toBeVisible();
+    await expect(longEvent.locator(".fc-event-title")).toHaveText(longTitle);
+    await expect(
+        longEvent.locator(".fc-event-actions-trigger"),
+    ).toHaveCSS("opacity", "1");
+
+    const desktopLayout = await longEvent.evaluate((element) => {
+        const title = element.querySelector(".fc-event-title");
+        const priority = element.querySelector(".fc-priority-dot");
+        const actions = element.querySelector(".fc-event-actions-trigger");
+        const bounds = (node) => node.getBoundingClientRect();
+        const intersects = (first, second) =>
+            first.left < second.right - 1 &&
+            first.right > second.left + 1 &&
+            first.top < second.bottom - 1 &&
+            first.bottom > second.top + 1;
+
+        return {
+            titleWidth: title.clientWidth,
+            titlePriorityOverlap: intersects(
+                bounds(title),
+                bounds(priority),
+            ),
+            titleActionsOverlap: intersects(
+                bounds(title),
+                bounds(actions),
+            ),
+        };
+    });
+    expect(desktopLayout.titlePriorityOverlap).toBe(false);
+    expect(desktopLayout.titleActionsOverlap).toBe(false);
+
+    await longEvent.locator(".fc-event-title").click();
+    await expect(page.getByRole("dialog").getByLabel("Title")).toHaveValue(
+        longTitle,
+    );
+});
+
 test.describe("dense mobile month calendar", () => {
     test.use({
         viewport: { width: 320, height: 844 },
