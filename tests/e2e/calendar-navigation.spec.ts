@@ -155,6 +155,77 @@ test("fits a six-week month on mobile and preserves desktop sizing", async ({
     expect(desktopSize.minCellHeight).toBe("120px");
 });
 
+test("adapts calendar density to short viewports without clipping the month", async ({
+    page,
+}) => {
+    await page.clock.install({
+        time: new Date("2026-08-01T12:00:00-07:00"),
+    });
+    await signInAndOpenCalendar(page);
+
+    const dayCells = page.locator("#task-calendar .fc-daygrid-day");
+    const toolbar = page.locator("#task-calendar .fc-toolbar");
+    const container = page.locator("#calendar-container");
+
+    for (const viewport of [
+        { width: 844, height: 390, expectedHeight: 500, expectedCellHeight: "64px" },
+        { width: 1024, height: 600, expectedHeight: 520, expectedCellHeight: "64px" },
+        { width: 1280, height: 900, expectedHeight: 860, expectedCellHeight: "120px" },
+    ]) {
+        await page.setViewportSize({
+            width: viewport.width,
+            height: viewport.height,
+        });
+        await expect(dayCells).toHaveCount(42);
+        await expect(toolbar).toBeVisible();
+        await expect(
+            page.locator('#task-calendar [data-date="2026-08-31"]'),
+        ).toBeVisible();
+
+        const layout = await page.evaluate(() => {
+            const calendarContainer = document.querySelector(
+                "#calendar-container",
+            );
+            const calendar = document.querySelector("#task-calendar");
+            const toolbarElement = document.querySelector(
+                "#task-calendar .fc-toolbar",
+            );
+            const grid = document.querySelector("#task-calendar .fc-daygrid");
+            const dayFrame = document.querySelector(
+                "#task-calendar .fc-daygrid-day-frame",
+            );
+            const containerBounds = calendarContainer.getBoundingClientRect();
+            const gridBounds = grid.getBoundingClientRect();
+
+            return {
+                containerHeight: containerBounds.height,
+                cellMinHeight: getComputedStyle(dayFrame).minHeight,
+                gridFitsContainer: gridBounds.bottom <= containerBounds.bottom + 1,
+                toolbarFitsCalendar:
+                    toolbarElement.scrollWidth <= toolbarElement.clientWidth,
+                calendarFitsContainer:
+                    calendar.scrollWidth <= calendar.clientWidth,
+                horizontalOverflow:
+                    document.documentElement.scrollWidth > window.innerWidth,
+                pageCanScroll: document.documentElement.scrollHeight > window.innerHeight,
+            };
+        });
+
+        expect(layout.containerHeight, `${viewport.width}x${viewport.height}`).toBe(
+            viewport.expectedHeight,
+        );
+        expect(layout.cellMinHeight).toBe(viewport.expectedCellHeight);
+        expect(layout.gridFitsContainer).toBe(true);
+        expect(layout.toolbarFitsCalendar).toBe(true);
+        expect(layout.calendarFitsContainer).toBe(true);
+        expect(layout.horizontalOverflow).toBe(false);
+
+        if (viewport.height < 640) {
+            expect(layout.pageCanScroll).toBe(true);
+        }
+    }
+});
+
 test.describe("dense mobile month calendar", () => {
     test.use({
         viewport: { width: 320, height: 844 },

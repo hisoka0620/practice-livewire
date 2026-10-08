@@ -167,6 +167,16 @@
     }
 }
 
+@media (max-height: 640px) {
+    #calendar-container {
+        height: clamp(500px, calc(100vh - 80px), 560px);
+    }
+
+    #task-calendar .fc-daygrid-day-frame {
+        min-height: 64px;
+    }
+}
+
 #task-calendar .fc-button {
     color: #cbd5e1;
     border-color: rgba(148, 163, 184, 0.24);
