@@ -34,15 +34,62 @@ test("supports touch and keyboard task actions without hijacking task clicks", a
     });
 
     await expect(actions).toBeVisible();
-    await task.locator(".fc-event-title").click();
+    await actions.scrollIntoViewIfNeeded();
+    const actionGeometry = await actions.evaluate((button) => {
+        const actionRect = button.getBoundingClientRect();
+        const titleRect = button
+            .closest(".fc-event")
+            ?.querySelector(".fc-event-title")
+            ?.getBoundingClientRect();
+        const dayRect = button
+            .closest(".fc-daygrid-day")
+            ?.getBoundingClientRect();
+        const hitTarget = document.elementFromPoint(
+            actionRect.left + actionRect.width / 2,
+            actionRect.top + actionRect.height / 2,
+        );
+
+        return {
+            width: actionRect.width,
+            height: actionRect.height,
+            hitTargetIsAction: Boolean(
+                hitTarget?.closest(".fc-event-actions-trigger"),
+            ),
+            withinDay: Boolean(
+                dayRect &&
+                    actionRect.left >= dayRect.left &&
+                    actionRect.right <= dayRect.right &&
+                    actionRect.top >= dayRect.top &&
+                    actionRect.bottom <= dayRect.bottom,
+            ),
+            overlapsTitle: Boolean(
+                titleRect &&
+                    actionRect.left < titleRect.right &&
+                    actionRect.right > titleRect.left &&
+                    actionRect.top < titleRect.bottom &&
+                    actionRect.bottom > titleRect.top,
+            ),
+        };
+    });
+    expect(actionGeometry.width).toBeGreaterThanOrEqual(24);
+    expect(actionGeometry.height).toBeGreaterThanOrEqual(24);
+    expect(actionGeometry.withinDay).toBe(true);
+    expect(actionGeometry.overlapsTitle).toBe(false);
+    expect(actionGeometry.hitTargetIsAction).toBe(true);
+
+    await actions.tap();
+    const markComplete = page.getByRole("button", {
+        name: "Mark as Complete",
+    });
+    await expect(markComplete).toBeVisible();
+    await page.keyboard.press("Escape");
+
+    await task.locator(".fc-event-title").tap();
     const editDialog = page.getByRole("dialog");
     await expect(editDialog.getByText("Edit task")).toBeVisible();
     await editDialog.getByRole("button", { name: "Close modal" }).click();
 
     await task.click({ button: "right" });
-    const markComplete = page.getByRole("button", {
-        name: "Mark as Complete",
-    });
     await expect(markComplete).toBeVisible();
     await markComplete.focus();
     await page.keyboard.press("Escape");
