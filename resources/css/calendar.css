@@ -156,6 +156,11 @@
         height: 1.5rem;
     }
 
+    #task-calendar .fc-popover {
+        box-sizing: border-box;
+        max-width: calc(100vw - 1rem);
+    }
+
     #task-calendar .fc-popover-body {
         max-height: min(60vh, 360px);
         overflow-y: auto;

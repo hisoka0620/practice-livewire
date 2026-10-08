@@ -155,56 +155,110 @@ test("fits a six-week month on mobile and preserves desktop sizing", async ({
     expect(desktopSize.minCellHeight).toBe("120px");
 });
 
-test("keeps dense mobile month events reachable through the more popover", async ({
-    page,
-}) => {
-    await page.clock.install({
-        time: new Date("2026-10-01T12:00:00-07:00"),
+test.describe("dense mobile month calendar", () => {
+    test.use({
+        viewport: { width: 320, height: 844 },
+        isMobile: true,
+        hasTouch: true,
     });
-    await page.setViewportSize({ width: 320, height: 844 });
-    await signInAndOpenCalendar(page);
 
-    for (const title of [
-        "Readable mobile event one",
-        "Readable mobile event two",
-        "Readable mobile event three",
-    ]) {
-        await page.getByRole("button", { name: "Create Task" }).click();
-        const dialog = page.getByRole("dialog");
-        await dialog.getByLabel("Title").fill(title);
-        await dialog.getByLabel("Deadline").fill("2026-10-01T10:00");
-        const creation = page.waitForResponse((response) =>
-            response.url().includes("/livewire/update"),
+    test("keeps all events reachable through the scrollable more popover", async ({
+        page,
+    }) => {
+        await page.clock.install({
+            time: new Date("2026-10-01T12:00:00-07:00"),
+        });
+        await signInAndOpenCalendar(page);
+
+        const longTitle =
+            "A deliberately long mobile calendar event title that should wrap across several visible lines";
+        const titles = [
+            "Dense mobile event one",
+            "Dense mobile event two",
+            "Dense mobile event three",
+            "Dense mobile event four",
+            "Dense mobile event five",
+            "Dense mobile event six",
+            "Dense mobile event seven",
+            "Dense mobile event eight",
+            "Dense mobile event nine",
+            "Dense mobile event ten",
+            "Dense mobile event eleven",
+            "Dense mobile event twelve",
+            "Dense mobile event thirteen",
+            longTitle,
+        ];
+
+        for (const title of titles) {
+            await page.getByRole("button", { name: "Create Task" }).click();
+            const dialog = page.getByRole("dialog");
+            await dialog.getByLabel("Title").fill(title);
+            await dialog.getByLabel("Deadline").fill("2026-10-01T10:00");
+            const creation = page.waitForResponse((response) =>
+                response.url().includes("/livewire/update"),
+            );
+            await dialog.getByRole("button", { name: "Create" }).click();
+            await creation;
+            await expect(dialog).toBeHidden();
+        }
+
+        const day = page.locator(
+            '#task-calendar .fc-daygrid-day[data-date="2026-10-01"]',
         );
-        await dialog.getByRole("button", { name: "Create" }).click();
-        await creation;
-        await expect(dialog).toBeHidden();
-    }
+        const moreLink = day.locator(".fc-daygrid-more-link");
+        await expect(moreLink).toBeVisible();
+        await moreLink.click();
 
-    const day = page.locator(
-        '#task-calendar .fc-daygrid-day[data-date="2026-10-01"]',
-    );
-    const moreLink = day.locator(".fc-daygrid-more-link");
-    await expect(moreLink).toBeVisible();
-    await moreLink.click();
+        const popover = page.locator("#task-calendar .fc-popover");
+        await expect(popover).toBeVisible();
+        for (const title of titles) {
+            await expect(popover).toContainText(title);
+        }
 
-    const popover = page.locator("#task-calendar .fc-popover");
-    await expect(popover).toBeVisible();
-    await expect(popover).toContainText("Readable mobile event one");
-    await expect(popover).toContainText("Readable mobile event two");
-    await expect(popover).toContainText("Readable mobile event three");
+        const popoverBody = popover.locator(".fc-popover-body");
+        const scrollMetrics = await popoverBody.evaluate((element) => ({
+            clientHeight: element.clientHeight,
+            scrollHeight: element.scrollHeight,
+        }));
+        expect(scrollMetrics.scrollHeight).toBeGreaterThan(
+            scrollMetrics.clientHeight,
+        );
+        await popoverBody.evaluate((element) => {
+            element.scrollTop = element.scrollHeight;
+        });
+        await expect(
+            popover.getByText(longTitle, { exact: true }),
+        ).toBeVisible();
 
-    const bounds = await popover.evaluate((element) => {
-        const { left, right } = element.getBoundingClientRect();
-        return { left, right, viewportWidth: window.innerWidth };
-    });
-    expect(bounds.left).toBeGreaterThanOrEqual(0);
-    expect(bounds.right).toBeLessThanOrEqual(bounds.viewportWidth + 1);
-    expect(
-        await page.evaluate(
-            () => document.documentElement.scrollWidth <= window.innerWidth,
-        ),
-    ).toBe(true);
+        const longTitleLayout = await popover
+            .getByText(longTitle, { exact: true })
+            .evaluate((element) => ({
+                clientHeight: element.clientHeight,
+                scrollHeight: element.scrollHeight,
+            }));
+        expect(longTitleLayout.scrollHeight).toBeLessThanOrEqual(
+            longTitleLayout.clientHeight + 1,
+        );
+
+        await popoverBody
+            .getByRole("button", { name: `Actions for ${longTitle}` })
+            .tap();
+        await expect(
+            page.getByRole("button", { name: "Mark as Complete" }),
+        ).toBeVisible();
+
+        const bounds = await popover.evaluate((element) => {
+            const { left, right } = element.getBoundingClientRect();
+            return { left, right, viewportWidth: window.innerWidth };
+        });
+        expect(bounds.left).toBeGreaterThanOrEqual(0);
+        expect(bounds.right).toBeLessThanOrEqual(bounds.viewportWidth + 1);
+        expect(
+            await page.evaluate(
+                () => document.documentElement.scrollWidth <= window.innerWidth,
+            ),
+        ).toBe(true);
+        });
 });
 
 test("keeps the date picker synchronized across calendar views and jumps", async ({

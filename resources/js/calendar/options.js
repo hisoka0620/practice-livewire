@@ -56,6 +56,7 @@ export function createCalendarOptions({
         fixedWeekCount: false,
         dayMaxEvents: true,
         eventMaxStack: 2,
+        moreLinkClick: "popover",
         moreLinkContent: (args) => `+${args.num} more`,
         eventOrder: (firstEvent, secondEvent) => {
             const priorityRank = {
