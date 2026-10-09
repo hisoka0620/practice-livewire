@@ -54,7 +54,10 @@ export function createCalendarOptions({
         eventDisplay: "block",
         height: "100%",
         fixedWeekCount: false,
-        dayMaxEvents: window.innerWidth <= MOBILE_CALENDAR_MAX_WIDTH ? 2 : true,
+        dayMaxEvents:
+            (globalThis.window?.innerWidth ?? 1024) <= MOBILE_CALENDAR_MAX_WIDTH
+                ? 2
+                : true,
         eventMaxStack: 2,
         moreLinkClick: "popover",
         moreLinkContent: (args) => `+${args.num} more`,
@@ -109,7 +112,8 @@ export function createCalendarOptions({
                             role="img"
                             aria-label="Priority: ${priority.name}"
                             style="--priority-color:${priority.color};"
-                        >${priority.label}</span>
+                            >${priority.label}</span
+                        >
                         <div class="fc-event-content">
                             <div class="fc-event-time">${time}</div>
                             <div class="fc-event-title">${title}</div>
@@ -118,7 +122,9 @@ export function createCalendarOptions({
                             class="fc-event-actions-trigger"
                             type="button"
                             aria-label="Actions for ${title}"
-                        ><span aria-hidden="true">&#8942;</span></button>
+                        >
+                            <span aria-hidden="true">&#8942;</span>
+                        </button>
                     </div>
                 `,
             };

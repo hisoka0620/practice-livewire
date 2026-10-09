@@ -86,12 +86,10 @@
     }
 
     #task-calendar .fc-daygrid-event .fc-custom-event {
-        align-items: start;
-        display: grid;
-        grid-template-columns: 1rem minmax(0, 1fr);
-        grid-template-rows: auto auto;
-        gap: 0 0.125rem;
-        white-space: normal;
+        align-items: center;
+        display: flex;
+        gap: 0.125rem;
+        white-space: nowrap;
     }
 
     #task-calendar .fc-daygrid-event .fc-priority-dot {
@@ -109,8 +107,7 @@
         border: 1px solid var(--priority-color);
         border-radius: 0.2rem;
         color: #fff;
-        font-size: 0.6rem;
-        font-weight: 700;
+        font-size: 0;
         line-height: 1;
         flex: none;
     }
@@ -120,44 +117,35 @@
     }
 
     #task-calendar .fc-daygrid-event .fc-event-actions-trigger {
-        grid-column: 2;
-        grid-row: 2;
-        justify-self: end;
-        flex: none;
-        width: 1.5rem;
-        height: 1.5rem;
-        position: relative;
-        right: 0.25rem;
-        z-index: 1;
-        font-size: 0.75rem;
+        display: none;
     }
 
-    #task-calendar .fc-daygrid-day:has(.fc-daygrid-more-link) .fc-event-actions-trigger {
+    #task-calendar
+        .fc-daygrid-day:has(.fc-daygrid-more-link)
+        .fc-event-actions-trigger {
         display: none;
     }
 
     #task-calendar .fc-daygrid-event .fc-event-content {
         display: block;
-        grid-column: 2;
-        grid-row: 1;
+        flex: 1 1 auto;
         min-width: 0;
         width: 100%;
     }
 
     #task-calendar .fc-daygrid-event .fc-event-title {
-        display: -webkit-box;
+        display: block;
         overflow: hidden;
-        overflow-wrap: anywhere;
-        white-space: normal;
+        white-space: nowrap;
         text-overflow: ellipsis;
         line-height: 1.1;
-        -webkit-box-orient: vertical;
-        -webkit-line-clamp: 2;
     }
 
     #task-calendar .fc-popover .fc-daygrid-event .fc-event-title {
         display: block;
         overflow: visible;
+        overflow-wrap: anywhere;
+        white-space: normal;
         text-overflow: clip;
         -webkit-line-clamp: unset;
     }
@@ -358,12 +346,6 @@
     #task-calendar .fc-daygrid-event .fc-event-title {
         flex: 1 1 0%;
         min-width: 0;
-    }
-}
-
-@media (max-width: 639px) {
-    #task-calendar .fc-daygrid-event .fc-event-title {
-        white-space: normal;
     }
 }
 

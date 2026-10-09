@@ -168,9 +168,24 @@ test("adapts calendar density to short viewports without clipping the month", as
     const container = page.locator("#calendar-container");
 
     for (const viewport of [
-        { width: 844, height: 390, expectedHeight: 500, expectedCellHeight: "64px" },
-        { width: 1024, height: 600, expectedHeight: 520, expectedCellHeight: "64px" },
-        { width: 1280, height: 900, expectedHeight: 860, expectedCellHeight: "120px" },
+        {
+            width: 844,
+            height: 390,
+            expectedHeight: 500,
+            expectedCellHeight: "64px",
+        },
+        {
+            width: 1024,
+            height: 600,
+            expectedHeight: 520,
+            expectedCellHeight: "64px",
+        },
+        {
+            width: 1280,
+            height: 900,
+            expectedHeight: 860,
+            expectedCellHeight: "120px",
+        },
     ]) {
         await page.setViewportSize({
             width: viewport.width,
@@ -200,20 +215,23 @@ test("adapts calendar density to short viewports without clipping the month", as
             return {
                 containerHeight: containerBounds.height,
                 cellMinHeight: getComputedStyle(dayFrame).minHeight,
-                gridFitsContainer: gridBounds.bottom <= containerBounds.bottom + 1,
+                gridFitsContainer:
+                    gridBounds.bottom <= containerBounds.bottom + 1,
                 toolbarFitsCalendar:
                     toolbarElement.scrollWidth <= toolbarElement.clientWidth,
                 calendarFitsContainer:
                     calendar.scrollWidth <= calendar.clientWidth,
                 horizontalOverflow:
                     document.documentElement.scrollWidth > window.innerWidth,
-                pageCanScroll: document.documentElement.scrollHeight > window.innerHeight,
+                pageCanScroll:
+                    document.documentElement.scrollHeight > window.innerHeight,
             };
         });
 
-        expect(layout.containerHeight, `${viewport.width}x${viewport.height}`).toBe(
-            viewport.expectedHeight,
-        );
+        expect(
+            layout.containerHeight,
+            `${viewport.width}x${viewport.height}`,
+        ).toBe(viewport.expectedHeight);
         expect(layout.cellMinHeight).toBe(viewport.expectedCellHeight);
         expect(layout.gridFitsContainer).toBe(true);
         expect(layout.toolbarFitsCalendar).toBe(true);
@@ -226,7 +244,7 @@ test("adapts calendar density to short viewports without clipping the month", as
     }
 });
 
-test("truncates long mobile event titles to two lines and preserves the full edit value", async ({
+test("keeps mobile event titles on one line and preserves the full edit value", async ({
     page,
 }) => {
     await page.setViewportSize({ width: 390, height: 844 });
@@ -253,36 +271,40 @@ test("truncates long mobile event titles to two lines and preserves the full edi
         .filter({ hasText: title });
     await expect(event).toBeVisible();
     const eventTitle = event.locator(".fc-event-title");
-    const titleLayout = await eventTitle.evaluate((element) => {
-        const style = getComputedStyle(element);
-        const lineHeight = Number.parseFloat(style.lineHeight);
-        const originalStyles = {
-            display: element.style.display,
-            overflow: element.style.overflow,
-            webkitLineClamp: element.style.webkitLineClamp,
-        };
-        element.style.display = "block";
-        element.style.overflow = "visible";
-        element.style.webkitLineClamp = "unset";
-        const fullLineCount = Math.ceil(element.scrollHeight / lineHeight);
-        element.style.display = originalStyles.display;
-        element.style.overflow = originalStyles.overflow;
-        element.style.webkitLineClamp = originalStyles.webkitLineClamp;
+    for (const width of [320, 390, 639]) {
+        await page.setViewportSize({ width, height: 844 });
+        const titleLayout = await eventTitle.evaluate((element) => {
+            const style = getComputedStyle(element);
+            const badge = element
+                .closest(".fc-custom-event")
+                .querySelector(".fc-priority-badge");
+            const actions = element
+                .closest(".fc-custom-event")
+                .querySelector(".fc-event-actions-trigger");
 
-        return {
-            lineClamp: style.webkitLineClamp,
-            textOverflow: style.textOverflow,
-            lineHeight,
-            height: element.getBoundingClientRect().height,
-            fullLineCount,
-        };
-    });
-    expect(titleLayout.lineClamp).toBe("2");
-    expect(titleLayout.textOverflow).toBe("ellipsis");
-    expect(titleLayout.fullLineCount).toBeGreaterThan(2);
-    expect(titleLayout.height).toBeLessThanOrEqual(
-        titleLayout.lineHeight * 2 + 2.5,
-    );
+            return {
+                whiteSpace: style.whiteSpace,
+                textOverflow: style.textOverflow,
+                lineHeight: Number.parseFloat(style.lineHeight),
+                height: element.getBoundingClientRect().height,
+                titleWidth: element.clientWidth,
+                titleScrollWidth: element.scrollWidth,
+                badgeFontSize: getComputedStyle(badge).fontSize,
+                actionsDisplay: getComputedStyle(actions).display,
+            };
+        });
+
+        expect(titleLayout.whiteSpace, `title at ${width}px`).toBe("nowrap");
+        expect(titleLayout.textOverflow).toBe("ellipsis");
+        expect(titleLayout.height).toBeLessThanOrEqual(
+            titleLayout.lineHeight + 2.5,
+        );
+        expect(titleLayout.titleScrollWidth).toBeGreaterThan(
+            titleLayout.titleWidth,
+        );
+        expect(titleLayout.badgeFontSize).toBe("0px");
+        expect(titleLayout.actionsDisplay).toBe("none");
+    }
 
     await eventTitle.click();
     const editDialog = page.getByRole("dialog");
@@ -347,6 +369,8 @@ test("preserves event title space at intermediate widths", async ({ page }) => {
                         bounds(title),
                         bounds(actions),
                     ),
+                    priorityDisplay: getComputedStyle(priority).display,
+                    actionsDisplay: getComputedStyle(actions).display,
                     timeDisplay: getComputedStyle(time).display,
                 };
             });
@@ -357,6 +381,8 @@ test("preserves event title space at intermediate widths", async ({ page }) => {
             ).toBeGreaterThanOrEqual(30);
             expect(layout.titlePriorityOverlap).toBe(false);
             expect(layout.titleActionsOverlap).toBe(false);
+            expect(layout.priorityDisplay).not.toBe("none");
+            expect(layout.actionsDisplay).not.toBe("none");
             expect(layout.timeDisplay).toBe("none");
 
             if (event === longEvent) {
@@ -368,6 +394,13 @@ test("preserves event title space at intermediate widths", async ({ page }) => {
         }
     }
 
+    await page.setViewportSize({ width: 640, height: 900 });
+    await longEvent.hover();
+    await expect(longEvent.locator(".fc-event-actions-trigger")).toHaveCSS(
+        "opacity",
+        "1",
+    );
+
     await page.setViewportSize({ width: 1280, height: 900 });
     await expect(longEvent.locator(".fc-event-time")).not.toHaveCSS(
         "display",
@@ -376,9 +409,10 @@ test("preserves event title space at intermediate widths", async ({ page }) => {
     await longEvent.hover();
     await expect(longEvent.locator(".fc-event-time")).toBeVisible();
     await expect(longEvent.locator(".fc-event-title")).toHaveText(longTitle);
-    await expect(
-        longEvent.locator(".fc-event-actions-trigger"),
-    ).toHaveCSS("opacity", "1");
+    await expect(longEvent.locator(".fc-event-actions-trigger")).toHaveCSS(
+        "opacity",
+        "1",
+    );
 
     const desktopLayout = await longEvent.evaluate((element) => {
         const title = element.querySelector(".fc-event-title");
@@ -393,14 +427,8 @@ test("preserves event title space at intermediate widths", async ({ page }) => {
 
         return {
             titleWidth: title.clientWidth,
-            titlePriorityOverlap: intersects(
-                bounds(title),
-                bounds(priority),
-            ),
-            titleActionsOverlap: intersects(
-                bounds(title),
-                bounds(actions),
-            ),
+            titlePriorityOverlap: intersects(bounds(title), bounds(priority)),
+            titleActionsOverlap: intersects(bounds(title), bounds(actions)),
         };
     });
     expect(desktopLayout.titlePriorityOverlap).toBe(false);
@@ -519,7 +547,9 @@ test.describe("dense mobile month calendar", () => {
         await expect(
             page.getByRole("button", { name: "Mark as Complete" }),
         ).toBeVisible();
-        await expect(page.getByRole("button", { name: "Delete" })).toBeVisible();
+        await expect(
+            page.getByRole("button", { name: "Delete" }),
+        ).toBeVisible();
 
         const bounds = await popover.evaluate((element) => {
             const { left, right } = element.getBoundingClientRect();
@@ -532,7 +562,7 @@ test.describe("dense mobile month calendar", () => {
                 () => document.documentElement.scrollWidth <= window.innerWidth,
             ),
         ).toBe(true);
-        });
+    });
 });
 
 test("keeps the date picker synchronized across calendar views and jumps", async ({
