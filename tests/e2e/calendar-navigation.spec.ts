@@ -383,7 +383,7 @@ test("preserves event title space at intermediate widths", async ({ page }) => {
             ).toBeGreaterThanOrEqual(30);
             expect(layout.titlePriorityOverlap).toBe(false);
             expect(layout.titleActionsOverlap).toBe(false);
-            expect(layout.badgeCount).toBe(1);
+            expect(layout.badgeCount).toBe(0);
             expect(layout.priorityDisplay).not.toBe("none");
             expect(layout.actionsDisplay).not.toBe("none");
             expect(layout.timeDisplay).toBe("none");
@@ -499,9 +499,7 @@ test.describe("dense mobile month calendar", () => {
             await page.setViewportSize({ width, height: 844 });
             const visibleEvent = day.locator(".fc-event:visible").first();
             await expect(visibleEvent).toBeVisible();
-            await expect(
-                visibleEvent.locator(".fc-priority-badge"),
-            ).toHaveCount(0);
+            await expect(page.locator(".fc-priority-badge")).toHaveCount(0);
             await expect(moreLink).toBeVisible();
         }
 
@@ -515,7 +513,7 @@ test.describe("dense mobile month calendar", () => {
 
         const popover = page.locator("#task-calendar .fc-popover");
         await expect(popover).toBeVisible();
-        await expect(popover.locator(".fc-priority-badge")).toHaveCount(0);
+        await expect(page.locator(".fc-priority-badge")).toHaveCount(0);
         for (const title of titles) {
             await expect(popover).toContainText(title);
         }
@@ -651,16 +649,19 @@ test("keeps mobile in month view and synchronizes after resizing", async ({
         .filter({ hasText: taskTitle });
     await expect(event).toBeVisible();
 
+    for (const width of [320, 639, 640, 1280, 640, 639]) {
+        await page.setViewportSize({
+            width,
+            height: width <= 639 ? 844 : 900,
+        });
+        await expect(page.locator(".fc-priority-badge")).toHaveCount(0);
+        await expect(event).toBeVisible();
+    }
+
     await page.setViewportSize({ width: 1280, height: 900 });
+    await expect(page.locator(".fc-priority-badge")).toHaveCount(0);
     await expect(weekButton).toBeVisible();
     await expect(weekButton).toBeEnabled();
-    await expect(event.locator(".fc-priority-badge")).toHaveCount(1);
-
-    await page.setViewportSize({ width: 639, height: 844 });
-    await expect(event.locator(".fc-priority-badge")).toHaveCount(0);
-
-    await page.setViewportSize({ width: 1280, height: 900 });
-    await expect(event.locator(".fc-priority-badge")).toHaveCount(1);
     await weekButton.click();
     await expect(page.locator("#task-calendar .fc-timegrid")).toBeVisible();
     await expect(datePicker).toHaveValue("October 1, 2026");

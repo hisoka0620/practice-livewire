@@ -4,21 +4,15 @@
         <span class="font-medium text-zinc-100">Priority:</span>
         <div class="flex items-center gap-1.5">
             <span class="h-2.5 w-2.5 rounded-full bg-[#ef4444]"></span>
-            <span class="text-zinc-100">
-                <span class="font-bold">H</span> High
-            </span>
+            <span class="text-zinc-100">High</span>
         </div>
         <div class="flex items-center gap-1.5">
             <span class="h-2.5 w-2.5 rounded-full bg-[#fbbf24]"></span>
-            <span class="text-zinc-100">
-                <span class="font-bold">M</span> Medium
-            </span>
+            <span class="text-zinc-100">Medium</span>
         </div>
         <div class="flex items-center gap-1.5">
             <span class="h-2.5 w-2.5 rounded-full bg-[#3b82f6]"></span>
-            <span class="text-zinc-100">
-                <span class="font-bold">L</span> Low
-            </span>
+            <span class="text-zinc-100">Low</span>
         </div>
     </div>
 
