@@ -290,6 +290,7 @@ test("keeps mobile event titles on one line and preserves the full edit value", 
                 titleWidth: element.clientWidth,
                 titleScrollWidth: element.scrollWidth,
                 badgeFontSize: getComputedStyle(badge).fontSize,
+                badgeBorderWidth: getComputedStyle(badge).borderWidth,
                 actionsDisplay: getComputedStyle(actions).display,
             };
         });
@@ -303,6 +304,7 @@ test("keeps mobile event titles on one line and preserves the full edit value", 
             titleLayout.titleWidth,
         );
         expect(titleLayout.badgeFontSize).toBe("0px");
+        expect(titleLayout.badgeBorderWidth).toBe("0px");
         expect(titleLayout.actionsDisplay).toBe("none");
     }
 
