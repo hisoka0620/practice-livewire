@@ -1,5 +1,9 @@
 <div
-    class="mx-auto max-w-6xl px-4"
+    @class([
+        'mx-auto',
+        'w-full px-1 sm:px-4' => $view === 'calendar',
+        'max-w-6xl px-4' => $view !== 'calendar',
+    ])
     x-data="{ headerHeight: 0 }"
     x-init="const updateHeaderHeight = () => {
         headerHeight = $refs.todoHeader.offsetHeight

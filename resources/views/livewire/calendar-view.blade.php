@@ -1,6 +1,6 @@
 <div>
     <div
-        class="mt-2 rounded-xl border border-zinc-700 bg-zinc-800/90 p-4 text-zinc-100 shadow-sm"
+        class="mt-2 rounded-xl border border-zinc-700 bg-zinc-800/90 p-2 text-zinc-100 shadow-sm sm:p-4"
         x-data="taskCalendar($wire)"
     >
 

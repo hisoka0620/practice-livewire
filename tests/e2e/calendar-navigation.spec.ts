@@ -8,9 +8,25 @@ test("keeps calendar controls usable across viewport widths", async ({
 
     const calendar = page.locator("#task-calendar .fc-daygrid");
 
-    for (const width of [320, 390, 768, 1280]) {
+    const minimumDayCellWidths = new Map([
+        [320, 40],
+        [390, 49],
+        [640, 75],
+        [768, 90],
+        [1280, 125],
+    ]);
+
+    for (const width of minimumDayCellWidths.keys()) {
         await page.setViewportSize({ width, height: 900 });
         await expect(calendar).toBeVisible();
+        await expect
+            .poll(() =>
+                page
+                    .locator("#task-calendar .fc-daygrid-day")
+                    .first()
+                    .evaluate((cell) => cell.getBoundingClientRect().width),
+            )
+            .toBeGreaterThanOrEqual(minimumDayCellWidths.get(width));
 
         const layout = await page.evaluate(() => {
             const intersects = (first, second) =>
@@ -58,6 +74,9 @@ test("keeps calendar controls usable across viewport widths", async ({
                         .slice(index + 1)
                         .some((other) => intersects(box, other)),
                 ),
+                dayCellWidth: document
+                    .querySelector("#task-calendar .fc-daygrid-day")
+                    .getBoundingClientRect().width,
             };
         });
 
@@ -68,6 +87,10 @@ test("keeps calendar controls usable across viewport widths", async ({
         expect(layout.controlsOverlap, `viewport width ${width}`).toBe(false);
         expect(layout.toolbarOverflow, `viewport width ${width}`).toBe(false);
         expect(layout.toolbarOverlap, `viewport width ${width}`).toBe(false);
+        expect(
+            layout.dayCellWidth,
+            `day cell width at ${width}px`,
+        ).toBeGreaterThanOrEqual(minimumDayCellWidths.get(width));
     }
 });
 
@@ -368,9 +391,8 @@ test("preserves event title space at intermediate widths", async ({ page }) => {
                         bounds(title),
                         bounds(actions),
                     ),
-                    badgeCount: element.querySelectorAll(
-                        ".fc-priority-badge",
-                    ).length,
+                    badgeCount:
+                        element.querySelectorAll(".fc-priority-badge").length,
                     priorityDisplay: getComputedStyle(priority).display,
                     actionsDisplay: getComputedStyle(actions).display,
                     timeDisplay: getComputedStyle(time).display,
