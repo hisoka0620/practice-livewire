@@ -99,6 +99,19 @@ export function createCalendarOptions({
                 name: "Unknown",
             };
             const time = formatEventTime(props.deadline, userTimeZone);
+            const priorityBadge =
+                (globalThis.window?.innerWidth ?? 1024) <=
+                MOBILE_CALENDAR_MAX_WIDTH
+                    ? ""
+                    : /* HTML */ `
+                          <span
+                              class="fc-priority-badge"
+                              role="img"
+                              aria-label="Priority: ${priority.name}"
+                              style="--priority-color:${priority.color};"
+                              >${priority.label}</span
+                          >
+                      `;
 
             return {
                 html: /* HTML */ `
@@ -107,13 +120,7 @@ export function createCalendarOptions({
                             class="fc-priority-dot"
                             style="background:${priority.color};"
                         ></span>
-                        <span
-                            class="fc-priority-badge"
-                            role="img"
-                            aria-label="Priority: ${priority.name}"
-                            style="--priority-color:${priority.color};"
-                            >${priority.label}</span
-                        >
+                        ${priorityBadge}
                         <div class="fc-event-content">
                             <div class="fc-event-time">${time}</div>
                             <div class="fc-event-title">${title}</div>

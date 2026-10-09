@@ -254,7 +254,7 @@ test("keeps mobile event titles on one line and preserves the full edit value", 
     await signInAndOpenCalendar(page);
 
     const title =
-        "A deliberately long mobile calendar title that should be truncated after two visible lines";
+        "A deliberately long mobile calendar title that should be truncated to one visible line";
     await page.getByRole("button", { name: "Create Task" }).click();
     const createDialog = page.getByRole("dialog");
     await createDialog.getByLabel("Title").fill(title);
@@ -275,9 +275,6 @@ test("keeps mobile event titles on one line and preserves the full edit value", 
         await page.setViewportSize({ width, height: 844 });
         const titleLayout = await eventTitle.evaluate((element) => {
             const style = getComputedStyle(element);
-            const badge = element
-                .closest(".fc-custom-event")
-                .querySelector(".fc-priority-badge");
             const actions = element
                 .closest(".fc-custom-event")
                 .querySelector(".fc-event-actions-trigger");
@@ -289,8 +286,9 @@ test("keeps mobile event titles on one line and preserves the full edit value", 
                 height: element.getBoundingClientRect().height,
                 titleWidth: element.clientWidth,
                 titleScrollWidth: element.scrollWidth,
-                badgeFontSize: getComputedStyle(badge).fontSize,
-                badgeBorderWidth: getComputedStyle(badge).borderWidth,
+                badgeCount: element
+                    .closest(".fc-custom-event")
+                    .querySelectorAll(".fc-priority-badge").length,
                 actionsDisplay: getComputedStyle(actions).display,
             };
         });
@@ -303,8 +301,7 @@ test("keeps mobile event titles on one line and preserves the full edit value", 
         expect(titleLayout.titleScrollWidth).toBeGreaterThan(
             titleLayout.titleWidth,
         );
-        expect(titleLayout.badgeFontSize).toBe("0px");
-        expect(titleLayout.badgeBorderWidth).toBe("0px");
+        expect(titleLayout.badgeCount).toBe(0);
         expect(titleLayout.actionsDisplay).toBe("none");
     }
 
@@ -371,6 +368,9 @@ test("preserves event title space at intermediate widths", async ({ page }) => {
                         bounds(title),
                         bounds(actions),
                     ),
+                    badgeCount: element.querySelectorAll(
+                        ".fc-priority-badge",
+                    ).length,
                     priorityDisplay: getComputedStyle(priority).display,
                     actionsDisplay: getComputedStyle(actions).display,
                     timeDisplay: getComputedStyle(time).display,
@@ -383,6 +383,7 @@ test("preserves event title space at intermediate widths", async ({ page }) => {
             ).toBeGreaterThanOrEqual(30);
             expect(layout.titlePriorityOverlap).toBe(false);
             expect(layout.titleActionsOverlap).toBe(false);
+            expect(layout.badgeCount).toBe(1);
             expect(layout.priorityDisplay).not.toBe("none");
             expect(layout.actionsDisplay).not.toBe("none");
             expect(layout.timeDisplay).toBe("none");
@@ -500,7 +501,7 @@ test.describe("dense mobile month calendar", () => {
             await expect(visibleEvent).toBeVisible();
             await expect(
                 visibleEvent.locator(".fc-priority-badge"),
-            ).toBeVisible();
+            ).toHaveCount(0);
             await expect(moreLink).toBeVisible();
         }
 
@@ -514,6 +515,7 @@ test.describe("dense mobile month calendar", () => {
 
         const popover = page.locator("#task-calendar .fc-popover");
         await expect(popover).toBeVisible();
+        await expect(popover.locator(".fc-priority-badge")).toHaveCount(0);
         for (const title of titles) {
             await expect(popover).toContainText(title);
         }
@@ -652,6 +654,13 @@ test("keeps mobile in month view and synchronizes after resizing", async ({
     await page.setViewportSize({ width: 1280, height: 900 });
     await expect(weekButton).toBeVisible();
     await expect(weekButton).toBeEnabled();
+    await expect(event.locator(".fc-priority-badge")).toHaveCount(1);
+
+    await page.setViewportSize({ width: 639, height: 844 });
+    await expect(event.locator(".fc-priority-badge")).toHaveCount(0);
+
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await expect(event.locator(".fc-priority-badge")).toHaveCount(1);
     await weekButton.click();
     await expect(page.locator("#task-calendar .fc-timegrid")).toBeVisible();
     await expect(datePicker).toHaveValue("October 1, 2026");
