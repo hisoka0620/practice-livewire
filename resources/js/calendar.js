@@ -11,6 +11,7 @@ import { registerCalendarCommitLoadingHook } from "./calendar/commit-hook";
 import { processEventsByView } from "./calendar/event-utils";
 import {
     createCalendarOptions,
+    getDayMaxEvents,
     MOBILE_CALENDAR_MAX_WIDTH,
 } from "./calendar/options";
 import {
@@ -302,7 +303,7 @@ export default (wire) => ({
         if (!this.calendar) return;
 
         const isMobile = window.innerWidth <= MOBILE_CALENDAR_MAX_WIDTH;
-        const dayMaxEvents = isMobile ? 2 : true;
+        const dayMaxEvents = getDayMaxEvents();
         if (this.calendar.getOption("dayMaxEvents") !== dayMaxEvents) {
             this.calendar.setOption("dayMaxEvents", dayMaxEvents);
         }

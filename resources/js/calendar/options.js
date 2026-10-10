@@ -5,6 +5,16 @@ import tippy from "tippy.js";
 import { formatEventTime, formatTooltipDeadline } from "./date-utils.js";
 
 export const MOBILE_CALENDAR_MAX_WIDTH = 639;
+const SHORT_SCREEN_MAX_HEIGHT = 640;
+
+export function getDayMaxEvents(
+    width = globalThis.window?.innerWidth ?? 1024,
+    height = globalThis.window?.innerHeight ?? 768,
+) {
+    return width <= MOBILE_CALENDAR_MAX_WIDTH || height <= SHORT_SCREEN_MAX_HEIGHT
+        ? 2
+        : true;
+}
 
 function escapeHtml(value) {
     return String(value ?? "").replace(
@@ -54,10 +64,7 @@ export function createCalendarOptions({
         eventDisplay: "block",
         height: "100%",
         fixedWeekCount: false,
-        dayMaxEvents:
-            (globalThis.window?.innerWidth ?? 1024) <= MOBILE_CALENDAR_MAX_WIDTH
-                ? 2
-                : true,
+        dayMaxEvents: getDayMaxEvents(),
         eventMaxStack: 2,
         moreLinkClick: "popover",
         moreLinkContent: (args) => `+${args.num} more`,

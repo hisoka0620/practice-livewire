@@ -1,6 +1,38 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createCalendarOptions } from "../../../resources/js/calendar/options.js";
+import {
+    createCalendarOptions,
+    getDayMaxEvents,
+} from "../../../resources/js/calendar/options.js";
+
+test("caps month events on narrow or short screens", () => {
+    assert.equal(getDayMaxEvents(639, 900), 2);
+    assert.equal(getDayMaxEvents(640, 640), 2);
+    assert.equal(getDayMaxEvents(1200, 640), 2);
+    assert.equal(getDayMaxEvents(640, 641), true);
+});
+
+test("uses the shared screen rule for initial calendar options", () => {
+    const previousWindow = globalThis.window;
+    globalThis.window = { innerWidth: 1200, innerHeight: 640 };
+
+    const options = createCalendarOptions({
+        userTimeZone: "America/Los_Angeles",
+        onEventDrop() {},
+        onDateClick() {},
+        onDatesSet() {},
+        onEventClick() {},
+        onEventContextMenu() {},
+    });
+
+    if (previousWindow === undefined) {
+        delete globalThis.window;
+    } else {
+        globalThis.window = previousWindow;
+    }
+
+    assert.equal(options.dayMaxEvents, 2);
+});
 
 test("creates calendar options with Alpine-owned interaction callbacks", () => {
     const callbacks = {
