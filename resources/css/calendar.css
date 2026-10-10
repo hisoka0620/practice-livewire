@@ -166,7 +166,7 @@
 
 @media (max-height: 640px) {
     #calendar-container {
-        height: clamp(500px, calc(100vh - 80px), 560px);
+        height: auto;
     }
 
     #task-calendar .fc-daygrid-day-frame {

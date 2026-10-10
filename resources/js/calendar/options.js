@@ -7,6 +7,12 @@ import { formatEventTime, formatTooltipDeadline } from "./date-utils.js";
 export const MOBILE_CALENDAR_MAX_WIDTH = 639;
 const SHORT_SCREEN_MAX_HEIGHT = 640;
 
+export function getCalendarHeight(
+    height = globalThis.window?.innerHeight ?? 768,
+) {
+    return height <= SHORT_SCREEN_MAX_HEIGHT ? "auto" : "100%";
+}
+
 export function getDayMaxEvents(
     width = globalThis.window?.innerWidth ?? 1024,
     height = globalThis.window?.innerHeight ?? 768,
@@ -62,7 +68,7 @@ export function createCalendarOptions({
         datesSet: onDatesSet,
         eventClick: onEventClick,
         eventDisplay: "block",
-        height: "100%",
+        height: getCalendarHeight(),
         fixedWeekCount: false,
         dayMaxEvents: getDayMaxEvents(),
         eventMaxStack: 2,

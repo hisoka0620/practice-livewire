@@ -194,19 +194,16 @@ test("adapts calendar density to short viewports without clipping the month", as
         {
             width: 844,
             height: 390,
-            expectedHeight: 500,
             expectedCellHeight: "64px",
         },
         {
             width: 1024,
             height: 600,
-            expectedHeight: 520,
             expectedCellHeight: "64px",
         },
         {
             width: 1280,
             height: 900,
-            expectedHeight: 860,
             expectedCellHeight: "120px",
         },
     ]) {
@@ -248,23 +245,81 @@ test("adapts calendar density to short viewports without clipping the month", as
                     document.documentElement.scrollWidth > window.innerWidth,
                 pageCanScroll:
                     document.documentElement.scrollHeight > window.innerHeight,
+                calendarHeight: Alpine.$data(
+                    document.querySelector('[x-data="taskCalendar($wire)"]'),
+                ).calendar.getOption("height"),
+                internalVerticalOverflow: Array.from(
+                    calendar.querySelectorAll(".fc-scroller"),
+                ).some((scroller) =>
+                    scroller.scrollHeight > scroller.clientHeight + 1,
+                ),
             };
         });
 
-        expect(
-            layout.containerHeight,
-            `${viewport.width}x${viewport.height}`,
-        ).toBe(viewport.expectedHeight);
         expect(layout.cellMinHeight).toBe(viewport.expectedCellHeight);
         expect(layout.gridFitsContainer).toBe(true);
         expect(layout.toolbarFitsCalendar).toBe(true);
         expect(layout.calendarFitsContainer).toBe(true);
         expect(layout.horizontalOverflow).toBe(false);
 
-        if (viewport.height < 640) {
+        if (viewport.height <= 640) {
+            expect(layout.calendarHeight).toBe("auto");
+            expect(layout.internalVerticalOverflow).toBe(false);
             expect(layout.pageCanScroll).toBe(true);
+            await page
+                .locator('#task-calendar [data-date="2026-08-31"]')
+                .scrollIntoViewIfNeeded();
+            await expect(
+                page.locator('#task-calendar [data-date="2026-08-31"]'),
+            ).toBeInViewport();
+        } else {
+            expect(layout.calendarHeight).toBe("100%");
+            expect(layout.containerHeight).toBe(860);
         }
     }
+
+    const getCalendarHeight = () =>
+        page.evaluate(() =>
+            Alpine.$data(
+                document.querySelector('[x-data="taskCalendar($wire)"]'),
+            ).calendar.getOption("height"),
+        );
+
+    await page.setViewportSize({ width: 1280, height: 640 });
+    await expect.poll(getCalendarHeight).toBe("auto");
+    await expect
+        .poll(() =>
+            page.locator("#task-calendar .fc-scroller").evaluateAll((elements) =>
+                elements.some(
+                    (element) =>
+                        element.scrollHeight > element.clientHeight + 1,
+                ),
+            ),
+        )
+        .toBe(false);
+
+    await page.setViewportSize({ width: 1280, height: 641 });
+    await expect.poll(getCalendarHeight).toBe("100%");
+    await expect
+        .poll(() =>
+            page.locator("#calendar-container").evaluate(
+                (element) => element.getBoundingClientRect().height,
+            ),
+        )
+        .toBe(860);
+
+    await page.setViewportSize({ width: 1280, height: 640 });
+    await expect.poll(getCalendarHeight).toBe("auto");
+    await expect
+        .poll(() =>
+            page.locator("#task-calendar .fc-scroller").evaluateAll((elements) =>
+                elements.some(
+                    (element) =>
+                        element.scrollHeight > element.clientHeight + 1,
+                ),
+            ),
+        )
+        .toBe(false);
 });
 
 test("keeps mobile event titles on one line and preserves the full edit value", async ({

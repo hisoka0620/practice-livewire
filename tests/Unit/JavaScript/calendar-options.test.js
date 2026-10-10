@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
     createCalendarOptions,
+    getCalendarHeight,
     getDayMaxEvents,
 } from "../../../resources/js/calendar/options.js";
 
@@ -10,6 +11,11 @@ test("caps month events on narrow or short screens", () => {
     assert.equal(getDayMaxEvents(640, 640), 2);
     assert.equal(getDayMaxEvents(1200, 640), 2);
     assert.equal(getDayMaxEvents(640, 641), true);
+});
+
+test("uses auto calendar height only on short screens", () => {
+    assert.equal(getCalendarHeight(640), "auto");
+    assert.equal(getCalendarHeight(641), "100%");
 });
 
 test("uses the shared screen rule for initial calendar options", () => {
@@ -32,6 +38,7 @@ test("uses the shared screen rule for initial calendar options", () => {
     }
 
     assert.equal(options.dayMaxEvents, 2);
+    assert.equal(options.height, "auto");
 });
 
 test("creates calendar options with Alpine-owned interaction callbacks", () => {
