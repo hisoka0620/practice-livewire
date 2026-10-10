@@ -3,6 +3,7 @@ import test from "node:test";
 import {
     createCalendarOptions,
     getCalendarHeight,
+    getDayHeaderFormat,
     getDayMaxEvents,
 } from "../../../resources/js/calendar/options.js";
 
@@ -16,6 +17,11 @@ test("caps month events on narrow or short screens", () => {
 test("uses auto calendar height only on short screens", () => {
     assert.equal(getCalendarHeight(640), "auto");
     assert.equal(getCalendarHeight(641), "100%");
+});
+
+test("uses narrow weekday labels at widths up to 375px", () => {
+    assert.deepEqual(getDayHeaderFormat(375), { weekday: "narrow" });
+    assert.deepEqual(getDayHeaderFormat(376), { weekday: "short" });
 });
 
 test("uses the shared screen rule for initial calendar options", () => {
@@ -39,6 +45,29 @@ test("uses the shared screen rule for initial calendar options", () => {
 
     assert.equal(options.dayMaxEvents, 2);
     assert.equal(options.height, "auto");
+    assert.deepEqual(options.dayHeaderFormat, { weekday: "short" });
+});
+
+test("uses narrow weekday labels in initial options on narrow screens", () => {
+    const previousWindow = globalThis.window;
+    globalThis.window = { innerWidth: 375, innerHeight: 768 };
+
+    const options = createCalendarOptions({
+        userTimeZone: "America/Los_Angeles",
+        onEventDrop() {},
+        onDateClick() {},
+        onDatesSet() {},
+        onEventClick() {},
+        onEventContextMenu() {},
+    });
+
+    if (previousWindow === undefined) {
+        delete globalThis.window;
+    } else {
+        globalThis.window = previousWindow;
+    }
+
+    assert.deepEqual(options.dayHeaderFormat, { weekday: "narrow" });
 });
 
 test("creates calendar options with Alpine-owned interaction callbacks", () => {

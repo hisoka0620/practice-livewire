@@ -12,6 +12,7 @@ import { processEventsByView } from "./calendar/event-utils";
 import {
     createCalendarOptions,
     getCalendarHeight,
+    getDayHeaderFormat,
     getDayMaxEvents,
     MOBILE_CALENDAR_MAX_WIDTH,
 } from "./calendar/options";
@@ -305,9 +306,16 @@ export default (wire) => ({
 
         const isMobile = window.innerWidth <= MOBILE_CALENDAR_MAX_WIDTH;
         const dayMaxEvents = getDayMaxEvents();
+        const dayHeaderFormat = getDayHeaderFormat();
         const calendarHeight = getCalendarHeight();
         if (this.calendar.getOption("dayMaxEvents") !== dayMaxEvents) {
             this.calendar.setOption("dayMaxEvents", dayMaxEvents);
+        }
+        if (
+            this.calendar.getOption("dayHeaderFormat")?.weekday !==
+            dayHeaderFormat.weekday
+        ) {
+            this.calendar.setOption("dayHeaderFormat", dayHeaderFormat);
         }
         if (this.calendar.getOption("height") !== calendarHeight) {
             this.calendar.setOption("height", calendarHeight);

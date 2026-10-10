@@ -5,6 +5,7 @@ import tippy from "tippy.js";
 import { formatEventTime, formatTooltipDeadline } from "./date-utils.js";
 
 export const MOBILE_CALENDAR_MAX_WIDTH = 639;
+export const NARROW_DAY_HEADER_MAX_WIDTH = 375;
 const SHORT_SCREEN_MAX_HEIGHT = 640;
 
 export function getCalendarHeight(
@@ -20,6 +21,14 @@ export function getDayMaxEvents(
     return width <= MOBILE_CALENDAR_MAX_WIDTH || height <= SHORT_SCREEN_MAX_HEIGHT
         ? 2
         : true;
+}
+
+export function getDayHeaderFormat(
+    width = globalThis.window?.innerWidth ?? 1024,
+) {
+    return {
+        weekday: width <= NARROW_DAY_HEADER_MAX_WIDTH ? "narrow" : "short",
+    };
 }
 
 function escapeHtml(value) {
@@ -70,6 +79,7 @@ export function createCalendarOptions({
         eventDisplay: "block",
         height: getCalendarHeight(),
         fixedWeekCount: false,
+        dayHeaderFormat: getDayHeaderFormat(),
         dayMaxEvents: getDayMaxEvents(),
         eventMaxStack: 2,
         moreLinkClick: "popover",
