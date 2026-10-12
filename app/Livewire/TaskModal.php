@@ -2,8 +2,10 @@
 
 namespace App\Livewire;
 
+use App\Application\Tasks\TaskActions;
 use App\Livewire\Forms\TaskForm;
 use App\Models\Task;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Url;
 use Livewire\Component;
@@ -57,6 +59,35 @@ class TaskModal extends Component
     public function save(): void
     {
         $this->task ? $this->updateTask() : $this->createTask();
+        $this->dispatch('task-saved');
+        $this->close();
+    }
+
+    public function toggleCompletion(): void
+    {
+        if (! $this->task) {
+            return;
+        }
+
+        $this->task = app(TaskActions::class)->toggleCompletion(
+            Auth::user(),
+            $this->task->getKey(),
+        );
+
+        $this->dispatch('task-saved');
+    }
+
+    public function deleteTask(): void
+    {
+        if (! $this->task) {
+            return;
+        }
+
+        app(TaskActions::class)->delete(
+            Auth::user(),
+            $this->task->getKey(),
+        );
+
         $this->dispatch('task-saved');
         $this->close();
     }

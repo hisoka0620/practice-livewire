@@ -48,6 +48,23 @@
                         label="Deadline"
                     />
                 </div>
+                @if ($task)
+                    <div class="flex gap-2 border-t pt-4">
+                        <flux:button
+                            type="button"
+                            wire:click="toggleCompletion"
+                        >
+                            {{ $task->is_completed ? 'Mark incomplete' : 'Mark complete' }}
+                        </flux:button>
+                        <flux:button
+                            type="button"
+                            variant="danger"
+                            wire:click="deleteTask"
+                        >
+                            Delete task
+                        </flux:button>
+                    </div>
+                @endif
                 <div class="flex space-x-2">
                     <flux:spacer />
                     <flux:button wire:click="close">Cancel

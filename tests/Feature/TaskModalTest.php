@@ -123,3 +123,90 @@ it('resets form values on close and supports reopening for create and edit', fun
 
     expect($task->refresh()->title)->toBe('Updated task');
 });
+
+it('shows quick actions only while editing an existing task', function () {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+    $task = Task::factory()->for($user)->create([
+        'is_completed' => false,
+    ]);
+
+    Livewire::test(TaskModal::class)
+        ->call('open', $task->id)
+        ->assertSee('Mark complete')
+        ->assertSee('Delete task')
+        ->call('open')
+        ->assertDontSee('Mark complete')
+        ->assertDontSee('Mark incomplete')
+        ->assertDontSee('Delete task');
+});
+
+it('toggles completion without discarding unsaved form edits', function () {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+    $task = Task::factory()->for($user)->create([
+        'is_completed' => false,
+    ]);
+
+    $component = Livewire::test(TaskModal::class)
+        ->call('open', $task->id)
+        ->set('form.title', 'Unsaved title')
+        ->call('toggleCompletion')
+        ->assertSet('task.is_completed', true)
+        ->assertSet('form.title', 'Unsaved title')
+        ->assertSee('Mark incomplete')
+        ->assertDispatched('task-saved');
+
+    expect($task->refresh()->is_completed)->toBeTrue();
+
+    $component->call('toggleCompletion')
+        ->assertSet('task.is_completed', false)
+        ->assertSee('Mark complete');
+
+    expect($task->refresh()->is_completed)->toBeFalse();
+});
+
+it('deletes an edited task immediately and closes the modal', function () {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+    $task = Task::factory()->for($user)->create();
+
+    Livewire::test(TaskModal::class)
+        ->call('open', $task->id)
+        ->call('deleteTask')
+        ->assertDispatched('task-saved')
+        ->assertSet('show', false)
+        ->assertSet('task', null)
+        ->assertSet('form.title', null);
+
+    $this->assertDatabaseMissing('tasks', ['id' => $task->id]);
+});
+
+it('does not allow opening another users task for quick actions', function () {
+    $user = User::factory()->create();
+    $otherUser = User::factory()->create();
+    $this->actingAs($user);
+    $task = Task::factory()->for($otherUser)->create();
+
+    Livewire::test(TaskModal::class)
+        ->call('open', $task->id)
+        ->assertForbidden();
+});
+
+it('keeps the modal open and reports validation errors when saving an invalid edit', function () {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+    $task = Task::factory()->for($user)->create([
+        'is_completed' => false,
+    ]);
+
+    Livewire::test(TaskModal::class)
+        ->call('open', $task->id)
+        ->set('form.title', '')
+        ->call('save')
+        ->assertHasErrors(['form.title' => 'required'])
+        ->assertSet('show', true)
+        ->assertSee('Mark complete');
+
+    expect($task->refresh()->title)->not->toBe('');
+});
