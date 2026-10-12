@@ -92,10 +92,6 @@
         white-space: nowrap;
     }
 
-    #task-calendar .fc-daygrid-event .fc-priority-dot {
-        display: none;
-    }
-
     #task-calendar .fc-daygrid-event .fc-event-time {
         display: none;
     }
@@ -112,9 +108,9 @@
 
     #task-calendar .fc-daygrid-event .fc-event-content {
         display: block;
-        flex: 1 1 auto;
+        flex: 1 1 0%;
         min-width: 0;
-        width: 100%;
+        width: auto;
     }
 
     #task-calendar .fc-daygrid-event .fc-event-title {
@@ -123,15 +119,6 @@
         white-space: nowrap;
         text-overflow: ellipsis;
         line-height: 1.1;
-    }
-
-    #task-calendar .fc-popover .fc-daygrid-event .fc-event-title {
-        display: block;
-        overflow: visible;
-        overflow-wrap: anywhere;
-        white-space: normal;
-        text-overflow: clip;
-        -webkit-line-clamp: unset;
     }
 
     #task-calendar .fc-popover .fc-daygrid-event .fc-custom-event {
@@ -146,11 +133,7 @@
     }
 
     #task-calendar .fc-popover .fc-daygrid-event .fc-event-actions-trigger {
-        display: flex;
-        position: static;
-        flex: 0 0 1.5rem;
-        width: 1.5rem;
-        height: 1.5rem;
+        display: none;
     }
 
     #task-calendar .fc-popover {

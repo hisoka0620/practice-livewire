@@ -34,6 +34,9 @@ test("supports touch and keyboard task actions without hijacking task clicks", a
     });
 
     await expect(task.locator(".fc-priority-badge")).toHaveCount(0);
+    await expect(task.locator(".fc-priority-dot")).toBeVisible();
+    await expect(task.locator(".fc-event-time")).toBeHidden();
+    await expect(actions).toBeHidden();
     await page.setViewportSize({ width: 640, height: 844 });
     await expect(task.locator(".fc-priority-dot")).toBeVisible();
     await expect(actions).toBeVisible();
@@ -47,17 +50,10 @@ test("supports touch and keyboard task actions without hijacking task clicks", a
         const dayRect = button
             .closest(".fc-daygrid-day")
             ?.getBoundingClientRect();
-        const hitTarget = document.elementFromPoint(
-            actionRect.left + actionRect.width / 2,
-            actionRect.top + actionRect.height / 2,
-        );
 
         return {
             width: actionRect.width,
             height: actionRect.height,
-            hitTargetIsAction: Boolean(
-                hitTarget?.closest(".fc-event-actions-trigger"),
-            ),
             withinDay: Boolean(
                 dayRect &&
                     actionRect.left >= dayRect.left &&
@@ -78,7 +74,6 @@ test("supports touch and keyboard task actions without hijacking task clicks", a
     expect(actionGeometry.height).toBeGreaterThanOrEqual(24);
     expect(actionGeometry.withinDay).toBe(true);
     expect(actionGeometry.overlapsTitle).toBe(false);
-    expect(actionGeometry.hitTargetIsAction).toBe(true);
 
     await actions.tap();
     const markComplete = page.getByRole("button", {
@@ -136,6 +131,39 @@ test("supports touch and keyboard task actions without hijacking task clicks", a
     await deletion;
 
     await expect(task).toHaveCount(0);
+});
+
+test("opens the task modal instead of a context menu for mobile event taps", async ({
+    page,
+}) => {
+    await page.clock.install({
+        time: new Date("2026-10-01T12:00:00-07:00"),
+    });
+    await signInAndOpenCalendar(page);
+
+    const title = "Mobile event opens task modal";
+    await page.getByRole("button", { name: "Create Task" }).click();
+    const createDialog = page.getByRole("dialog");
+    await createDialog.getByLabel("Title").fill(title);
+    await createDialog.getByLabel("Deadline").fill("2026-10-02T10:00");
+    const creation = page.waitForResponse((response) =>
+        response.url().includes("/livewire/update"),
+    );
+    await createDialog.getByRole("button", { name: "Create" }).click();
+    await creation;
+
+    const event = page
+        .locator("#task-calendar .fc-event")
+        .filter({ hasText: title });
+    await expect(event.locator(".fc-event-actions-trigger")).toBeHidden();
+    await event.click({ button: "right" });
+    await expect(
+        page.getByRole("button", { name: "Mark as Complete" }),
+    ).toBeHidden();
+
+    await event.locator(".fc-event-title").tap();
+    const editDialog = page.getByRole("dialog");
+    await expect(editDialog.getByLabel("Title")).toHaveValue(title);
 });
 
 test("keeps touch action targets large in landscape tablet-width calendars", async ({

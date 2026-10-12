@@ -275,7 +275,10 @@ export default (wire) => ({
                     const actionTrigger = info.jsEvent.target.closest(
                         ".fc-event-actions-trigger",
                     );
-                    if (actionTrigger) {
+                    if (
+                        actionTrigger &&
+                        window.innerWidth > MOBILE_CALENDAR_MAX_WIDTH
+                    ) {
                         this.openContextMenu(
                             info.jsEvent,
                             info.event,
@@ -290,8 +293,10 @@ export default (wire) => ({
                         taskId: Number(taskId),
                     });
                 },
-                onEventContextMenu: (jsEvent, event) =>
-                    this.openContextMenu(jsEvent, event),
+                onEventContextMenu: (jsEvent, event) => {
+                    if (window.innerWidth <= MOBILE_CALENDAR_MAX_WIDTH) return;
+                    this.openContextMenu(jsEvent, event);
+                },
             }),
         );
 

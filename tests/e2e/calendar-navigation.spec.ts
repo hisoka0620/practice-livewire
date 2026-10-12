@@ -353,6 +353,8 @@ test("keeps mobile event titles on one line and preserves the full edit value", 
         await page.setViewportSize({ width, height: 844 });
         const titleLayout = await eventTitle.evaluate((element) => {
             const style = getComputedStyle(element);
+            const customEvent = element.closest(".fc-custom-event");
+            const priority = customEvent?.querySelector(".fc-priority-dot");
             const actions = element
                 .closest(".fc-custom-event")
                 .querySelector(".fc-event-actions-trigger");
@@ -360,6 +362,9 @@ test("keeps mobile event titles on one line and preserves the full edit value", 
             return {
                 whiteSpace: style.whiteSpace,
                 textOverflow: style.textOverflow,
+                priorityDisplay: priority
+                    ? getComputedStyle(priority).display
+                    : "none",
                 lineHeight: Number.parseFloat(style.lineHeight),
                 height: element.getBoundingClientRect().height,
                 titleWidth: element.clientWidth,
@@ -373,6 +378,7 @@ test("keeps mobile event titles on one line and preserves the full edit value", 
 
         expect(titleLayout.whiteSpace, `title at ${width}px`).toBe("nowrap");
         expect(titleLayout.textOverflow).toBe("ellipsis");
+        expect(titleLayout.priorityDisplay).not.toBe("none");
         expect(titleLayout.height).toBeLessThanOrEqual(
             titleLayout.lineHeight + 2.5,
         );
@@ -536,7 +542,7 @@ test.describe("dense mobile month calendar", () => {
         await signInAndOpenCalendar(page);
 
         const longTitle =
-            "A deliberately long mobile calendar event title that should wrap across several visible lines";
+            "A deliberately long mobile calendar event title that should truncate on one visible line";
         const titles = [
             "Dense mobile event one",
             "Dense mobile event two",
@@ -551,6 +557,11 @@ test.describe("dense mobile month calendar", () => {
             "Dense mobile event eleven",
             "Dense mobile event twelve",
             "Dense mobile event thirteen",
+            "Dense mobile event fourteen",
+            "Dense mobile event fifteen",
+            "Dense mobile event sixteen",
+            "Dense mobile event seventeen",
+            "Dense mobile event eighteen",
             longTitle,
         ];
 
@@ -591,6 +602,16 @@ test.describe("dense mobile month calendar", () => {
         const popover = page.locator("#task-calendar .fc-popover");
         await expect(popover).toBeVisible();
         await expect(page.locator(".fc-priority-badge")).toHaveCount(0);
+        const popoverEvents = popover.locator(".fc-daygrid-event");
+        expect(await popoverEvents.count()).toBeGreaterThanOrEqual(
+            titles.length,
+        );
+        for (const event of await popoverEvents.all()) {
+            await expect(event.locator(".fc-priority-dot")).toBeVisible();
+            await expect(
+                event.locator(".fc-event-actions-trigger"),
+            ).toBeHidden();
+        }
         for (const title of titles) {
             await expect(popover).toContainText(title);
         }
@@ -612,23 +633,25 @@ test.describe("dense mobile month calendar", () => {
 
         const longTitleLayout = await popover
             .getByText(longTitle, { exact: true })
-            .evaluate((element) => ({
-                clientHeight: element.clientHeight,
-                scrollHeight: element.scrollHeight,
-            }));
+            .evaluate((element) => {
+                const style = getComputedStyle(element);
+                return {
+                    clientHeight: element.clientHeight,
+                    scrollHeight: element.scrollHeight,
+                    clientWidth: element.clientWidth,
+                    scrollWidth: element.scrollWidth,
+                    whiteSpace: style.whiteSpace,
+                    textOverflow: style.textOverflow,
+                };
+            });
         expect(longTitleLayout.scrollHeight).toBeLessThanOrEqual(
             longTitleLayout.clientHeight + 1,
         );
-
-        await popoverBody
-            .getByRole("button", { name: `Actions for ${longTitle}` })
-            .tap();
-        await expect(
-            page.getByRole("button", { name: "Mark as Complete" }),
-        ).toBeVisible();
-        await expect(
-            page.getByRole("button", { name: "Delete" }),
-        ).toBeVisible();
+        expect(longTitleLayout.whiteSpace).toBe("nowrap");
+        expect(longTitleLayout.textOverflow).toBe("ellipsis");
+        expect(longTitleLayout.scrollWidth).toBeGreaterThan(
+            longTitleLayout.clientWidth,
+        );
 
         const bounds = await popover.evaluate((element) => {
             const { left, right } = element.getBoundingClientRect();
@@ -641,6 +664,10 @@ test.describe("dense mobile month calendar", () => {
                 () => document.documentElement.scrollWidth <= window.innerWidth,
             ),
         ).toBe(true);
+
+        await popover.getByText(longTitle, { exact: true }).tap();
+        const taskDialog = page.getByRole("dialog");
+        await expect(taskDialog.getByLabel("Title")).toHaveValue(longTitle);
     });
 });
 
