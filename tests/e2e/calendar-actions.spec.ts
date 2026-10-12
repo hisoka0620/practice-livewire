@@ -136,6 +136,7 @@ test("supports touch and keyboard task actions without hijacking task clicks", a
 test("opens the task modal instead of a context menu for mobile event taps", async ({
     page,
 }) => {
+    await page.setViewportSize({ width: 639, height: 844 });
     await page.clock.install({
         time: new Date("2026-10-01T12:00:00-07:00"),
     });
@@ -151,6 +152,23 @@ test("opens the task modal instead of a context menu for mobile event taps", asy
     );
     await createDialog.getByRole("button", { name: "Create" }).click();
     await creation;
+    await expect(createDialog).toBeHidden();
+
+    for (const [additionalTitle, hour] of [
+        ["Popover event two", "11:00"],
+        ["Popover event three", "12:00"],
+    ]) {
+        await page.getByRole("button", { name: "Create Task" }).click();
+        const dialog = page.getByRole("dialog");
+        await dialog.getByLabel("Title").fill(additionalTitle);
+        await dialog.getByLabel("Deadline").fill(`2026-10-02T${hour}`);
+        const creation = page.waitForResponse((response) =>
+            response.url().includes("/livewire/update"),
+        );
+        await dialog.getByRole("button", { name: "Create" }).click();
+        await creation;
+        await expect(dialog).toBeHidden();
+    }
 
     const event = page
         .locator("#task-calendar .fc-event")
@@ -164,6 +182,26 @@ test("opens the task modal instead of a context menu for mobile event taps", asy
     await event.locator(".fc-event-title").tap();
     const editDialog = page.getByRole("dialog");
     await expect(editDialog.getByLabel("Title")).toHaveValue(title);
+    await editDialog.getByRole("button", { name: "Close modal" }).click();
+    await expect(editDialog).toBeHidden();
+
+    const day = page.locator(
+        '#task-calendar .fc-daygrid-day[data-date="2026-10-02"]',
+    );
+    await day.locator(".fc-daygrid-more-link").click();
+    const popover = page.locator("#task-calendar .fc-popover");
+    await expect(popover).toBeVisible();
+    const popoverEvent = popover
+        .locator(".fc-event")
+        .filter({ hasText: "Popover event three" });
+    await expect(
+        popoverEvent.locator(".fc-event-actions-trigger"),
+    ).toBeHidden();
+    await popoverEvent.locator(".fc-event-title").tap();
+    const popoverDialog = page.getByRole("dialog");
+    await expect(popoverDialog.getByLabel("Title")).toHaveValue(
+        "Popover event three",
+    );
 });
 
 test("keeps touch action targets large in landscape tablet-width calendars", async ({
