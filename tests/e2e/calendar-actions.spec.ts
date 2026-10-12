@@ -35,8 +35,39 @@ test("supports touch and keyboard task actions without hijacking task clicks", a
 
     await expect(task.locator(".fc-priority-badge")).toHaveCount(0);
     await expect(task.locator(".fc-priority-dot")).toBeVisible();
+    await expect(task.locator(".fc-event-title")).toHaveText(
+        "Touch action test task",
+    );
     await expect(task.locator(".fc-event-time")).toBeHidden();
-    await expect(actions).toBeHidden();
+
+    await task.tap();
+    const mobileEditDialog = page.getByRole("dialog");
+    await expect(mobileEditDialog.getByLabel("Title")).toHaveValue(
+        "Touch action test task",
+    );
+    const mobileCompletion = page.waitForResponse((response) =>
+        response.url().includes("/livewire/update"),
+    );
+    await mobileEditDialog.getByRole("button", { name: "Mark complete" }).click();
+    await mobileCompletion;
+    await expect(
+        mobileEditDialog.getByRole("button", { name: "Mark incomplete" }),
+    ).toBeVisible();
+    await expect(task).toHaveCSS("background-color", "rgb(156, 163, 175)");
+
+    const mobileIncompletion = page.waitForResponse((response) =>
+        response.url().includes("/livewire/update"),
+    );
+    await mobileEditDialog
+        .getByRole("button", { name: "Mark incomplete" })
+        .click();
+    await mobileIncompletion;
+    await expect(
+        mobileEditDialog.getByRole("button", { name: "Mark complete" }),
+    ).toBeVisible();
+    await expect(task).not.toHaveCSS("background-color", "rgb(156, 163, 175)");
+    await mobileEditDialog.getByRole("button", { name: "Close modal" }).click();
+
     await page.setViewportSize({ width: 640, height: 844 });
     await expect(task.locator(".fc-priority-dot")).toBeVisible();
     await expect(actions).toBeVisible();
@@ -121,13 +152,16 @@ test("supports touch and keyboard task actions without hijacking task clicks", a
     await markComplete.tap();
     await touchCompletion;
 
-    await actions.tap();
-    await page.getByRole("button", { name: "Delete", exact: true }).tap();
-    await expect(page.getByRole("heading", { name: "Delete Task" })).toBeVisible();
+    await page.setViewportSize({ width: 390, height: 844 });
+    await task.tap();
+    const deleteDialog = page.getByRole("dialog");
+    await expect(deleteDialog.getByLabel("Title")).toHaveValue(
+        "Touch action test task",
+    );
     const deletion = page.waitForResponse((response) =>
         response.url().includes("/livewire/update"),
     );
-    await page.getByRole("button", { name: "Delete", exact: true }).last().click();
+    await deleteDialog.getByRole("button", { name: "Delete task" }).click();
     await deletion;
 
     await expect(task).toHaveCount(0);
@@ -173,13 +207,10 @@ test("opens the task modal instead of a context menu for mobile event taps", asy
     const event = page
         .locator("#task-calendar .fc-event")
         .filter({ hasText: title });
-    await expect(event.locator(".fc-event-actions-trigger")).toBeHidden();
-    await event.click({ button: "right" });
-    await expect(
-        page.getByRole("button", { name: "Mark as Complete" }),
-    ).toBeHidden();
+    await expect(event.locator(".fc-priority-dot")).toBeVisible();
+    await expect(event.locator(".fc-event-title")).toHaveText(title);
 
-    await event.locator(".fc-event-title").tap();
+    await event.tap();
     const editDialog = page.getByRole("dialog");
     await expect(editDialog.getByLabel("Title")).toHaveValue(title);
     await editDialog.getByRole("button", { name: "Close modal" }).click();
@@ -194,10 +225,7 @@ test("opens the task modal instead of a context menu for mobile event taps", asy
     const popoverEvent = popover
         .locator(".fc-event")
         .filter({ hasText: "Popover event three" });
-    await expect(
-        popoverEvent.locator(".fc-event-actions-trigger"),
-    ).toBeHidden();
-    await popoverEvent.locator(".fc-event-title").tap();
+    await popoverEvent.tap();
     const popoverDialog = page.getByRole("dialog");
     await expect(popoverDialog.getByLabel("Title")).toHaveValue(
         "Popover event three",
