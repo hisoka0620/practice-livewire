@@ -5,6 +5,7 @@ import {
     getCalendarHeight,
     getDayHeaderFormat,
     getDayMaxEvents,
+    shouldShowEventTooltip,
 } from "../../../resources/js/calendar/options.js";
 
 test("caps month events on narrow or short screens", () => {
@@ -22,6 +23,23 @@ test("uses auto calendar height only on short screens", () => {
 test("uses narrow weekday labels at widths up to 375px", () => {
     assert.deepEqual(getDayHeaderFormat(375), { weekday: "narrow" });
     assert.deepEqual(getDayHeaderFormat(376), { weekday: "short" });
+});
+
+test("disables event tooltips for touch-first input and preserves hover input", () => {
+    const queries = [];
+    const matchMedia = (query) => {
+        queries.push(query);
+        return { matches: query === "(hover: none) and (pointer: coarse)" };
+    };
+
+    assert.equal(shouldShowEventTooltip({ matchMedia }), false);
+    assert.equal(shouldShowEventTooltip({ matchMedia: () => ({ matches: false }) }), true);
+    assert.deepEqual(queries, ["(hover: none) and (pointer: coarse)"]);
+});
+
+test("preserves event tooltips when matchMedia is unavailable", () => {
+    assert.equal(shouldShowEventTooltip({}), true);
+    assert.equal(shouldShowEventTooltip(undefined), true);
 });
 
 test("uses the shared screen rule for initial calendar options", () => {

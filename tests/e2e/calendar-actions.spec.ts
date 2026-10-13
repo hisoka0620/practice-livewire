@@ -29,6 +29,9 @@ test("supports touch and keyboard task actions without hijacking task clicks", a
     const task = page
         .locator("#task-calendar .fc-event")
         .filter({ hasText: "Touch action test task" });
+    await expect
+        .poll(() => task.evaluate((event) => Boolean(event._tippy)))
+        .toBe(false);
     const actions = task.getByRole("button", {
         name: "Actions for Touch action test task",
     });

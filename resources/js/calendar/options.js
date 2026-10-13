@@ -31,6 +31,14 @@ export function getDayHeaderFormat(
     };
 }
 
+export function shouldShowEventTooltip(windowRef = globalThis.window) {
+    if (typeof windowRef?.matchMedia !== "function") {
+        return true;
+    }
+
+    return !windowRef.matchMedia("(hover: none) and (pointer: coarse)").matches;
+}
+
 function escapeHtml(value) {
     return String(value ?? "").replace(
         /[&<>"']/g,
@@ -151,6 +159,15 @@ export function createCalendarOptions({
                 info.el._tippy.destroy();
             }
 
+            info.el.addEventListener("contextmenu", (jsEvent) => {
+                jsEvent.preventDefault();
+                onEventContextMenu(jsEvent, info.event);
+            });
+
+            if (!shouldShowEventTooltip()) {
+                return;
+            }
+
             const tooltipContent = /* HTML */ `
                 <div style="text-align: left; padding: 4px;">
                     <strong>${title}</strong><br />
@@ -187,11 +204,6 @@ export function createCalendarOptions({
             };
 
             info.el._tippy = tippy(info.el, tooltipOptions);
-
-            info.el.addEventListener("contextmenu", (jsEvent) => {
-                jsEvent.preventDefault();
-                onEventContextMenu(jsEvent, info.event);
-            });
         },
         eventWillUnmount: (info) => {
             info.el._tippy?.destroy();
