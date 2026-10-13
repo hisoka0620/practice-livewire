@@ -2,10 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
     createCalendarOptions,
+    createEventTooltipController,
     getCalendarHeight,
     getDayHeaderFormat,
     getDayMaxEvents,
-    shouldShowEventTooltip,
 } from "../../../resources/js/calendar/options.js";
 
 test("caps month events on narrow or short screens", () => {
@@ -25,21 +25,121 @@ test("uses narrow weekday labels at widths up to 375px", () => {
     assert.deepEqual(getDayHeaderFormat(376), { weekday: "short" });
 });
 
-test("disables event tooltips for touch-first input and preserves hover input", () => {
-    const queries = [];
-    const matchMedia = (query) => {
-        queries.push(query);
-        return { matches: query === "(hover: none) and (pointer: coarse)" };
-    };
+function createMediaQuery(matches) {
+    const listeners = new Set();
 
-    assert.equal(shouldShowEventTooltip({ matchMedia }), false);
-    assert.equal(shouldShowEventTooltip({ matchMedia: () => ({ matches: false }) }), true);
-    assert.deepEqual(queries, ["(hover: none) and (pointer: coarse)"]);
+    return {
+        matches,
+        addEventListener(_type, listener) {
+            listeners.add(listener);
+        },
+        removeEventListener(_type, listener) {
+            listeners.delete(listener);
+        },
+        setMatches(value) {
+            this.matches = value;
+            listeners.forEach((listener) => listener({ matches: value }));
+        },
+        get listenerCount() {
+            return listeners.size;
+        },
+    };
+}
+
+function createTooltipEvent() {
+    return {
+        el: {},
+        event: {
+            title: "Tooltip test task",
+            extendedProps: {
+                deadline: "2026-10-01T15:30:00.000Z",
+                priority: "high",
+                status: "incomplete",
+            },
+        },
+    };
+}
+
+test("syncs mounted event tooltips as the input environment changes", () => {
+    const mediaQuery = createMediaQuery(false);
+    const tooltipCalls = [];
+    const controller = createEventTooltipController({
+        userTimeZone: "America/Los_Angeles",
+        windowRef: {
+            matchMedia(query) {
+                assert.equal(query, "(hover: none) and (pointer: coarse)");
+                return mediaQuery;
+            },
+        },
+        createTippy(element) {
+            const instance = {
+                destroyCount: 0,
+                destroy() {
+                    this.destroyCount++;
+                },
+            };
+            tooltipCalls.push({ element, instance });
+            return instance;
+        },
+    });
+    const eventInfo = createTooltipEvent();
+
+    controller.mount(eventInfo);
+    controller.mount(eventInfo);
+    assert.equal(tooltipCalls.length, 1);
+    assert.ok(eventInfo.el._tippy);
+
+    mediaQuery.setMatches(true);
+    assert.equal(tooltipCalls[0].instance.destroyCount, 1);
+    assert.equal(eventInfo.el._tippy, undefined);
+
+    const eventAddedOnTouch = createTooltipEvent();
+    controller.mount(eventAddedOnTouch);
+    assert.equal(tooltipCalls.length, 1);
+    assert.equal(eventAddedOnTouch.el._tippy, undefined);
+
+    mediaQuery.setMatches(false);
+    assert.equal(tooltipCalls.length, 3);
+    assert.ok(eventInfo.el._tippy);
+    assert.ok(eventAddedOnTouch.el._tippy);
+
+    controller.unmount(eventInfo);
+    assert.equal(tooltipCalls[1].instance.destroyCount, 1);
+    assert.equal(eventInfo.el._tippy, undefined);
+
+    controller.destroy();
+    assert.equal(tooltipCalls[2].instance.destroyCount, 1);
+    assert.equal(eventAddedOnTouch.el._tippy, undefined);
+    assert.equal(mediaQuery.listenerCount, 0);
 });
 
-test("preserves event tooltips when matchMedia is unavailable", () => {
-    assert.equal(shouldShowEventTooltip({}), true);
-    assert.equal(shouldShowEventTooltip(undefined), true);
+test("removes input listeners on destroy and falls back without matchMedia", () => {
+    const mediaQuery = createMediaQuery(true);
+    const controller = createEventTooltipController({
+        userTimeZone: "America/Los_Angeles",
+        windowRef: { matchMedia: () => mediaQuery },
+        createTippy() {
+            assert.fail("touch-first input should not create a tooltip");
+        },
+    });
+
+    assert.equal(mediaQuery.listenerCount, 1);
+    controller.destroy();
+    assert.equal(mediaQuery.listenerCount, 0);
+
+    let fallbackCreated = false;
+    const fallbackController = createEventTooltipController({
+        userTimeZone: "America/Los_Angeles",
+        windowRef: {},
+        createTippy(element) {
+            fallbackCreated = true;
+            return { destroy() { delete element._tippy; } };
+        },
+    });
+    const eventInfo = createTooltipEvent();
+    fallbackController.mount(eventInfo);
+    assert.equal(fallbackCreated, true);
+    fallbackController.destroy();
 });
 
 test("uses the shared screen rule for initial calendar options", () => {

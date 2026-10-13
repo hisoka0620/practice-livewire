@@ -11,6 +11,7 @@ import { registerCalendarCommitLoadingHook } from "./calendar/commit-hook";
 import { processEventsByView } from "./calendar/event-utils";
 import {
     createCalendarOptions,
+    createEventTooltipController,
     getCalendarHeight,
     getDayHeaderFormat,
     getDayMaxEvents,
@@ -44,6 +45,7 @@ export default (wire) => ({
     _calendarEl: null,
     _onCalendarMouseDown: null,
     _layoutResizeObserver: null, // ツールバー要素の高さ監視用ResizeObserver（--fc-header-height反映用）
+    _eventTooltipController: null,
     contextMenu: {
         visible: false,
         x: 0,
@@ -113,6 +115,9 @@ export default (wire) => ({
         this._layoutResizeObserver?.disconnect();
         this.flatPickr?.destroy();
         this.calendar?.destroy();
+        this._eventTooltipController?.destroy();
+        this._eventTooltipController = null;
+        this.calendar = null;
     },
     /**
      * 月ジャンプ用のflatpickr（monthSelectプラグイン）を初期化する。
@@ -179,9 +184,9 @@ export default (wire) => ({
             return;
         }
 
-        if (this.calendar) {
-            this.calendar.destroy();
-        }
+        this.calendar?.destroy();
+        this._eventTooltipController?.destroy();
+        this._eventTooltipController = null;
         this.removeCalendarMouseDownListener();
 
         // コンテキストメニューが開いている間、それを閉じるためのクリックが
@@ -201,10 +206,14 @@ export default (wire) => ({
             true,
         );
 
+        this._eventTooltipController = createEventTooltipController({
+            userTimeZone: this.userTimeZone,
+        });
         this.calendar = new Calendar(
             calendarEl,
             createCalendarOptions({
                 userTimeZone: this.userTimeZone,
+                eventTooltipController: this._eventTooltipController,
                 onEventDrop: (info) => {
                     const taskId = info.event.id;
                     const newDeadline = resolveNewDeadline(info); // ドロップ後の新しい日時（Dateオブジェクト）

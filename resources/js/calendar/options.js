@@ -31,12 +31,111 @@ export function getDayHeaderFormat(
     };
 }
 
-export function shouldShowEventTooltip(windowRef = globalThis.window) {
-    if (typeof windowRef?.matchMedia !== "function") {
-        return true;
+const EVENT_TOOLTIP_MEDIA_QUERY = "(hover: none) and (pointer: coarse)";
+
+export function createEventTooltipController({
+    userTimeZone,
+    windowRef = globalThis.window,
+    createTippy = tippy,
+}) {
+    const mediaQuery =
+        typeof windowRef?.matchMedia === "function"
+            ? windowRef.matchMedia(EVENT_TOOLTIP_MEDIA_QUERY)
+            : null;
+    const mountedEvents = new Set();
+    let destroyed = false;
+
+    const destroyTooltip = (info) => {
+        const instance = info.el._tippy;
+        if (!instance) return;
+
+        instance.destroy();
+        if (info.el._tippy === instance) {
+            delete info.el._tippy;
+        }
+    };
+
+    const createTooltip = (info) => {
+        const props = info.event.extendedProps;
+        const title = escapeHtml(info.event.title || "");
+        const priority = escapeHtml(props.priority || "none");
+        const status = escapeHtml(props.status || "none");
+        const content = /* HTML */ `
+            <div style="text-align: left; padding: 4px;">
+                <strong>${title}</strong><br />
+                <hr style="border-color: #555; margin: 4px 0;" />
+                ⏰ Deadline:
+                ${formatTooltipDeadline(props.deadline, userTimeZone)}<br />
+                🔥 Priority: ${priority}<br />
+                📌 Status:
+                <span style="color: #fff;">${status}</span>
+            </div>
+        `;
+
+        info.el._tippy = createTippy(info.el, {
+            content,
+            allowHTML: true,
+            placement: "right-start",
+            theme: "dark",
+            animation: "scale",
+            trigger: "mouseenter focus",
+            popperOptions: {
+                modifiers: [
+                    {
+                        name: "flip",
+                        options: {
+                            fallbackPlacements: ["left-start", "top", "bottom"],
+                        },
+                    },
+                ],
+            },
+        });
+    };
+
+    const syncEvent = (info) => {
+        if (destroyed) return;
+
+        if (mediaQuery?.matches) {
+            destroyTooltip(info);
+        } else if (!info.el._tippy) {
+            createTooltip(info);
+        }
+    };
+
+    const handleMediaQueryChange = () => {
+        mountedEvents.forEach(syncEvent);
+    };
+
+    if (mediaQuery?.addEventListener) {
+        mediaQuery.addEventListener("change", handleMediaQueryChange);
+    } else if (mediaQuery?.addListener) {
+        mediaQuery.addListener(handleMediaQueryChange);
     }
 
-    return !windowRef.matchMedia("(hover: none) and (pointer: coarse)").matches;
+    return {
+        mount(info) {
+            if (destroyed) return;
+            mountedEvents.add(info);
+            syncEvent(info);
+        },
+        unmount(info) {
+            mountedEvents.delete(info);
+            destroyTooltip(info);
+        },
+        destroy() {
+            if (destroyed) return;
+            destroyed = true;
+
+            if (mediaQuery?.removeEventListener) {
+                mediaQuery.removeEventListener("change", handleMediaQueryChange);
+            } else if (mediaQuery?.removeListener) {
+                mediaQuery.removeListener(handleMediaQueryChange);
+            }
+
+            mountedEvents.forEach(destroyTooltip);
+            mountedEvents.clear();
+        },
+    };
 }
 
 function escapeHtml(value) {
@@ -60,6 +159,7 @@ export function createCalendarOptions({
     onDatesSet,
     onEventClick,
     onEventContextMenu,
+    eventTooltipController,
 }) {
     return {
         plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
@@ -150,63 +250,14 @@ export function createCalendarOptions({
             };
         },
         eventDidMount: (info) => {
-            const props = info.event.extendedProps;
-            const title = escapeHtml(info.event.title || "");
-            const priority = escapeHtml(props.priority || "none");
-            const status = escapeHtml(props.status || "none");
-
-            if (info.el._tippy) {
-                info.el._tippy.destroy();
-            }
-
             info.el.addEventListener("contextmenu", (jsEvent) => {
                 jsEvent.preventDefault();
                 onEventContextMenu(jsEvent, info.event);
             });
-
-            if (!shouldShowEventTooltip()) {
-                return;
-            }
-
-            const tooltipContent = /* HTML */ `
-                <div style="text-align: left; padding: 4px;">
-                    <strong>${title}</strong><br />
-                    <hr style="border-color: #555; margin: 4px 0;" />
-                    ⏰ Deadline:
-                    ${formatTooltipDeadline(props.deadline, userTimeZone)}<br />
-                    🔥 Priority: ${priority}<br />
-                    📌 Status:
-                    <span style="color: #fff;">${status}</span>
-                </div>
-            `;
-
-            const tooltipOptions = {
-                content: tooltipContent,
-                allowHTML: true,
-                placement: "right-start",
-                theme: "dark",
-                animation: "scale",
-                trigger: "mouseenter focus",
-                popperOptions: {
-                    modifiers: [
-                        {
-                            name: "flip",
-                            options: {
-                                fallbackPlacements: [
-                                    "left-start",
-                                    "top",
-                                    "bottom",
-                                ],
-                            },
-                        },
-                    ],
-                },
-            };
-
-            info.el._tippy = tippy(info.el, tooltipOptions);
+            eventTooltipController?.mount(info);
         },
         eventWillUnmount: (info) => {
-            info.el._tippy?.destroy();
+            eventTooltipController?.unmount(info);
         },
     };
 }

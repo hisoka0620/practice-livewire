@@ -1,6 +1,74 @@
 import { expect, test } from "@playwright/test";
 import { signInAndOpenCalendar } from "./support/calendar";
 
+test("syncs event tooltips with input changes and releases the listener", async ({
+    page,
+}) => {
+    await page.addInitScript(() => {
+        const media = "(hover: none) and (pointer: coarse)";
+        const listeners = new Set<(event: MediaQueryListEvent) => void>();
+        let isTouch = false;
+        const controlledQuery = {
+            media,
+            get matches() {
+                return isTouch;
+            },
+            addEventListener(_type: string, listener: EventListener) {
+                if (typeof listener === "function") {
+                    listeners.add(listener as (event: MediaQueryListEvent) => void);
+                }
+            },
+            removeEventListener(_type: string, listener: EventListener) {
+                listeners.delete(listener as (event: MediaQueryListEvent) => void);
+            },
+        } as unknown as MediaQueryList;
+        const nativeMatchMedia = window.matchMedia.bind(window);
+
+        window.matchMedia = ((query: string) =>
+            query === media ? controlledQuery : nativeMatchMedia(query)) as typeof window.matchMedia;
+        (window as any).__tooltipMedia = {
+            setMatches(value: boolean) {
+                isTouch = value;
+                const event = { matches: value, media } as MediaQueryListEvent;
+                listeners.forEach((listener) => listener(event));
+            },
+            get listenerCount() {
+                return listeners.size;
+            },
+        };
+    });
+
+    await signInAndOpenCalendar(page);
+    const event = page.locator("#task-calendar .fc-event").first();
+    await expect(event).toBeVisible();
+    await expect
+        .poll(() => event.evaluate((element) => Boolean(element._tippy)))
+        .toBe(true);
+    await expect
+        .poll(() =>
+            page.evaluate(() => (window as any).__tooltipMedia.listenerCount),
+        )
+        .toBe(1);
+
+    await page.evaluate(() => (window as any).__tooltipMedia.setMatches(true));
+    await expect
+        .poll(() => event.evaluate((element) => Boolean(element._tippy)))
+        .toBe(false);
+
+    await page.evaluate(() => (window as any).__tooltipMedia.setMatches(false));
+    await expect
+        .poll(() => event.evaluate((element) => Boolean(element._tippy)))
+        .toBe(true);
+
+    await page.getByRole("button", { name: "List", exact: true }).click();
+    await expect(page.locator("#task-calendar")).toHaveCount(0);
+    await expect
+        .poll(() =>
+            page.evaluate(() => (window as any).__tooltipMedia.listenerCount),
+        )
+        .toBe(0);
+});
+
 test("releases calendar listeners when its view is destroyed and recreated", async ({
     page,
 }) => {
