@@ -1,38 +1,38 @@
-# Project: Practice Livewire（常時適用）
+# Project: Practice Livewire (always applied)
 
-Laravel 12 の TODO / タスク管理アプリ。Livewire 3.7 + Volt、Flux UI、FullCalendar、Flatpickr、Laravel WebPush。
+A TODO / task management application on Laravel 12. Livewire 3.7 + Volt, Flux UI, FullCalendar, Flatpickr, Laravel WebPush.
 
-## 層の役割（コードを書く場所）
-| 場所 | 役割 |
+## Layer Responsibilities (where to write code)
+| Location | Responsibility |
 |---|---|
-| `app/Models` | Eloquent モデル。リレーションとローカルスコープのみ |
-| `app/Application/Tasks` | UI に依存しないクエリ組み立て・フィルタ（`TaskQuery`、`TaskFilters`）。入力の正規化もここ |
-| `app/Livewire` | リクエスト状態・イベント処理・描画（`TaskList`、`TaskModal` など） |
-| `app/Livewire/Forms` | タスク操作の検証と永続化（Form Object） |
-| `app/Presenters` | モデルを UI 向けの形に変換（例: カレンダーイベント） |
-| `app/Enums` | 有限状態（`TaskPriority`、`TaskStatusFilter`、`TaskView`） |
-| `app/Policies` | 認可（`TaskPolicy`） |
-| `resources/views` | Flux を使った Blade |
-| `resources/js` | カスタム Alpine コンポーネントと初期化処理 |
-| `public/sw.js` | Web Push 用の Service Worker |
+| `app/Models` | Eloquent models. Relationships and local scopes only |
+| `app/Application/Tasks` | UI-independent query building and filtering (`TaskQuery`, `TaskFilters`). Input normalization also lives here |
+| `app/Livewire` | Request state, event handling, and rendering (e.g., `TaskList`, `TaskModal`) |
+| `app/Livewire/Forms` | Validation and persistence for task operations (Form Objects) |
+| `app/Presenters` | Transform models into UI-ready shapes (e.g., calendar events) |
+| `app/Enums` | Finite states (`TaskPriority`, `TaskStatusFilter`, `TaskView`) |
+| `app/Policies` | Authorization (`TaskPolicy`) |
+| `resources/views` | Blade views using Flux |
+| `resources/js` | Custom Alpine components and initialization |
+| `public/sw.js` | Service Worker for Web Push |
 
-## 守ること
-- クエリ組み立てを Livewire コンポーネントの中に書かない。`app/Application/Tasks` に置く。
-- 検証・保存のロジックを Livewire コンポーネントに直接書かない。Form Object に置く。
-- 表示用の整形をモデルや Blade に書かない。Presenter に置く。
-- タスクの取得は、必ず `$user->tasks()` などユーザー経由のスコープで行い、`TaskPolicy` で認可する。
-- 新しい状態種別・優先度は enum に追加し、文字列リテラルで済ませない。
-- Livewire イベントは `->to(Component::class)` で宛先を絞り、受け側は `#[On]` を使う。
-- マイグレーションは前進のみ。適用済みのファイルは編集しない。
-- 日付範囲は終端排他（FullCalendar の `end` に合わせる）。
+## Rules to Follow
+- Never build queries inside Livewire components. Put them in `app/Application/Tasks`.
+- Never write validation or persistence logic directly in Livewire components. Put them in Form Objects.
+- Never write presentation formatting in models or Blade. Put it in Presenters.
+- Always load tasks through a user-scoped relation such as `$user->tasks()`, and authorize them with `TaskPolicy`.
+- Add new status kinds and priorities to the enums instead of using string literals.
+- Narrow Livewire event destinations with `->to(Component::class)`, and receive them with `#[On]`.
+- Migrations are forward-only. Never edit an already-applied migration.
+- Date ranges are end-exclusive (aligned with FullCalendar's `end`).
 
-## コマンド
-- 整形: `vendor/bin/pint --dirty`
-- PHP テスト: `./vendor/bin/pest`（`--filter=` で絞る）
+## Commands
+- Format: `vendor/bin/pint --dirty`
+- PHP tests: `./vendor/bin/pest` (narrow with `--filter=`)
 - E2E: `npm run test:e2e`
-- ビルド: `npm run build`
+- Build: `npm run build`
 
-## 変更のたびに確認する
-- Policy / スコープを経由していて、他ユーザーのデータが見えない。
-- 新規・変更した振る舞いに Pest のテストがある。
-- UI を変えた場合、`npm run build` が通る。
+## Check on Every Change
+- Data goes through a Policy / scope, and other users' data is never visible.
+- New or changed behavior has a Pest test.
+- When the UI is changed, `npm run build` passes.

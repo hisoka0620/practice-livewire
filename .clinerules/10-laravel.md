@@ -8,27 +8,27 @@ paths:
 
 # Laravel Rules
 
-> 前提: PHP 8.2+ / Laravel 12。8.3 以降の構文（型付きクラス定数、`#[\Override]` など）は使わない。
+> Prerequisites: PHP 8.2+ / Laravel 12. Do not use syntax introduced in PHP 8.3 or later (typed class constants, `#[\Override]`, etc.).
 
 ## PHP
-- 引数・戻り値・プロパティに型を付ける。比較は `===` を使う。
-- コンストラクタのプロパティ昇格と Named Arguments を適宜使う。
-- 新規ファイルは周辺ファイルの書き方（`declare(strict_types=1)` の有無など）に合わせる。
-- 有限の状態・種別は文字列定数ではなく、`app/Enums` の backed enum で表す。
+- Add types to arguments, return values, and properties. Use `===` for comparisons.
+- Use constructor property promotion and named arguments where appropriate.
+- Follow the style of surrounding files for new files (e.g., whether `declare(strict_types=1)` is present).
+- Represent finite states and types with backed enums in `app/Enums` instead of string constants.
 
-## 構成
-- Controller は薄く保つ。検証は Form Request（Livewire では Form Object）、業務ロジックは専用クラスに置く。
-- 認可は Policy を使い、アクション内で必ず呼ぶ。ユーザーのデータは `$user->tasks()` のようにユーザー経由のスコープで取得する。
-- ルートには名前を付け、URL のハードコードを避ける。
-- `env()` は `config/` 内でのみ使う。アプリ側は `config()` を使う。
-- 時間のかかる処理（メール・通知・外部API）は Queue に流す。`ShouldQueue` と backoff を指定する。
+## Structure
+- Keep controllers thin. Put validation in Form Requests (Form Objects in Livewire) and business logic in dedicated classes.
+- Use Policies for authorization and always call them inside actions. Load user data through a user-scoped relation such as `$user->tasks()`.
+- Name routes and avoid hardcoding URLs.
+- Use `env()` only inside `config/`. Use `config()` elsewhere in the application.
+- Dispatch slow work (mail, notifications, external APIs) to the Queue. Specify `ShouldQueue` and a backoff.
 
 ## Eloquent / DB
-- N+1 を避ける（`with()` / `load()`）。大量処理は `chunkById()` / `lazy()` を使う。
-- `$fillable` を明示する。`$guarded = []` は使わない。
-- スコープは `#[Scope]` 属性、アクセサ/ミューテータは `Attribute::make()`、キャストは `casts()` メソッドを使う。
-- 生SQLは必ずバインディング（prepared statement）を使い、文字列連結で値を埋め込まない。
-- 日付範囲の絞り込みは、終端を排他的に扱う（`>= start` かつ `< end`）。`whereBetween` で終端を含めない。
-- マイグレーション（前進のみ）:
-  - 適用済みのマイグレーションは編集せず、新規で追加する。
-  - 外部キー制約とインデックスを付ける。`down()` は既存の流儀に合わせる。
+- Avoid N+1 queries (use `with()` / `load()`). Use `chunkById()` / `lazy()` for bulk processing.
+- Declare `$fillable` explicitly. Never use `$guarded = []`.
+- Use the `#[Scope]` attribute for scopes, `Attribute::make()` for accessors/mutators, and the `casts()` method for casts.
+- Always bind raw SQL parameters (prepared statements); never embed values via string concatenation.
+- Treat date range boundaries as exclusive (`>= start` and `< end`). Do not include the end boundary with `whereBetween`.
+- Migrations (forward-only):
+  - Never edit an already-applied migration; add a new one instead.
+  - Add foreign key constraints and indexes. Follow the existing conventions for `down()`.
