@@ -213,6 +213,20 @@ test("opens the task modal instead of a context menu for mobile event taps", asy
     await expect(event.locator(".fc-priority-dot")).toBeVisible();
     await expect(event.locator(".fc-event-title")).toHaveText(title);
 
+    // 480〜639px帯: セル内に⋮が表示され、タップでコンテキストメニューを開く
+    const actions = event.getByRole("button", {
+        name: `Actions for ${title}`,
+    });
+    await expect(actions).toBeVisible();
+    await actions.tap();
+    await expect(
+        page.getByRole("button", { name: "Mark as Complete" }),
+    ).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(
+        page.getByRole("button", { name: "Mark as Complete" }),
+    ).toBeHidden();
+
     await event.tap();
     const editDialog = page.getByRole("dialog");
     await expect(editDialog.getByLabel("Title")).toHaveValue(title);

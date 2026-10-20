@@ -386,7 +386,12 @@ test("keeps mobile event titles on one line and preserves the full edit value", 
             titleLayout.titleWidth,
         );
         expect(titleLayout.badgeCount).toBe(0);
-        expect(titleLayout.actionsDisplay).toBe("none");
+        // セル内の⋮は、最小幅画面(<480px)では非表示、480〜639pxでは常時表示
+        if (width <= 479) {
+            expect(titleLayout.actionsDisplay).toBe("none");
+        } else {
+            expect(titleLayout.actionsDisplay).not.toBe("none");
+        }
     }
 
     await eventTitle.click();
@@ -607,10 +612,11 @@ test.describe("dense mobile month calendar", () => {
             titles.length,
         );
         for (const event of await popoverEvents.all()) {
+            // 下端シート化した popover は行幅に余裕があるためドットと⋮の両方を出す
             await expect(event.locator(".fc-priority-dot")).toBeVisible();
             await expect(
                 event.locator(".fc-event-actions-trigger"),
-            ).toBeHidden();
+            ).toBeVisible();
         }
         for (const title of titles) {
             await expect(popover).toContainText(title);

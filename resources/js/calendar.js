@@ -284,10 +284,8 @@ export default (wire) => ({
                     const actionTrigger = info.jsEvent.target.closest(
                         ".fc-event-actions-trigger",
                     );
-                    if (
-                        actionTrigger &&
-                        window.innerWidth > MOBILE_CALENDAR_MAX_WIDTH
-                    ) {
+                    if (actionTrigger) {
+                        // ビュー幅によらず、⋮はコンテキストメニュー、イベント本体はモーダルに統一
                         this.openContextMenu(
                             info.jsEvent,
                             info.event,
@@ -303,7 +301,6 @@ export default (wire) => ({
                     });
                 },
                 onEventContextMenu: (jsEvent, event) => {
-                    if (window.innerWidth <= MOBILE_CALENDAR_MAX_WIDTH) return;
                     this.openContextMenu(jsEvent, event);
                 },
             }),

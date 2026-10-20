@@ -59,25 +59,38 @@
         min-height: 64px;
     }
 
+    /* ツールバー1行化: prev/next/today | タイトル。
+       ビュー切替チャンクはモバイルでは月表示固定のため非表示 */
     #task-calendar .fc-toolbar {
-        flex-wrap: wrap;
-        justify-content: center;
+        flex-wrap: nowrap;
+        align-items: center;
+        gap: 0.25rem;
     }
 
     #task-calendar .fc-toolbar-chunk {
+        flex-shrink: 0;
         min-width: 0;
-        max-width: 100%;
-        justify-content: center;
     }
 
     #task-calendar .fc-toolbar-chunk:nth-child(2) {
-        flex: 1 0 100%;
-        order: -1;
+        flex: 1 1 auto;
+        justify-content: center;
         text-align: center;
     }
 
+    #task-calendar .fc-toolbar-chunk:nth-child(2) .fc-toolbar-title {
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    #task-calendar .fc-toolbar-chunk:nth-child(3) {
+        display: none;
+    }
+
     #task-calendar .fc-toolbar-title {
-        font-size: 1.25rem;
+        font-size: 1.05rem;
     }
 
     #task-calendar .fc-toolbar .fc-button {
@@ -93,16 +106,6 @@
     }
 
     #task-calendar .fc-daygrid-event .fc-event-time {
-        display: none;
-    }
-
-    #task-calendar .fc-daygrid-event .fc-event-actions-trigger {
-        display: none;
-    }
-
-    #task-calendar
-        .fc-daygrid-day:has(.fc-daygrid-more-link)
-        .fc-event-actions-trigger {
         display: none;
     }
 
@@ -132,18 +135,45 @@
         width: auto;
     }
 
-    #task-calendar .fc-popover .fc-daygrid-event .fc-event-actions-trigger {
-        display: none;
+    /* "+N more" ポップオーバーはセル位置に依存しない下端シートにする。
+       inline style(direction/top/left)より !important を優先させる */
+    #task-calendar .fc-popover {
+        position: fixed !important;
+        top: auto !important;
+        left: 0.5rem !important;
+        right: 0.5rem;
+        bottom: 0.5rem;
+        box-sizing: border-box;
+        max-width: none;
     }
 
-    #task-calendar .fc-popover {
-        box-sizing: border-box;
-        max-width: calc(100vw - 1rem);
+    #task-calendar .fc-popover .fc-popover-arrow {
+        display: none;
     }
 
     #task-calendar .fc-popover-body {
         max-height: min(60vh, 360px);
         overflow-y: auto;
+    }
+}
+
+/* 最小幅画面: セル幅(約40~50px)では優先度ドット+24pxアクションボタンの
+   併置がタイトル領域をほぼ消し、さらにブラウザのタップ補正で隣接ボタンに
+   タップが吸われるため、従来の「ドット+タイトル / タップ→モーダル」に戻す。
+   popover(下端シート)は行幅に余裕があるためドットと⋮を表示し続ける */
+@media (max-width: 479px) {
+    #task-calendar
+        .fc-daygrid-day
+        .fc-daygrid-event
+        .fc-event-actions-trigger {
+        display: none;
+    }
+
+    #task-calendar
+        .fc-popover
+        .fc-daygrid-event
+        .fc-event-actions-trigger {
+        display: flex;
     }
 }
 
@@ -173,9 +203,21 @@
     background: rgba(148, 163, 184, 0.14);
 }
 
+/* 週末列は薄い背景で区別（todayセルは次の規則が後に続き上書きされる） */
+#task-calendar .fc-daygrid-day.fc-day-sat,
+#task-calendar .fc-daygrid-day.fc-day-sun {
+    background: rgba(148, 163, 184, 0.05);
+}
+
 #task-calendar .fc-daygrid-day.fc-day-today,
 #task-calendar .fc-timegrid-col .fc-col-header-cell.fc-day-today {
-    background: rgba(56, 189, 248, 0.12);
+    background: rgba(56, 189, 248, 0.16);
+}
+
+/* 今日の日付数字を強調 */
+#task-calendar .fc-daygrid-day.fc-day-today .fc-daygrid-day-number {
+    color: #7dd3fc;
+    font-weight: 700;
 }
 
 /* イベント要素全体のマウスカーソルをデフォルトに変更 */
