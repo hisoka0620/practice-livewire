@@ -16,11 +16,12 @@ final class TaskActions
         Gate::forUser($user)->authorize('update', $task);
 
         $task->update([
-            'is_completed' => !$task->is_completed,
+            'is_completed' => ! $task->is_completed,
         ]);
 
         return $task->refresh();
     }
+
     public function delete(User $user, int $taskId): void
     {
         $task = $user->tasks()->findOrFail($taskId);
@@ -29,15 +30,20 @@ final class TaskActions
 
         $task->delete();
     }
+
     public function updateDeadline(User $user, int $taskId, Carbon $deadline): Task
     {
         $task = $user->tasks()->findOrFail($taskId);
 
         Gate::forUser($user)->authorize('update', $task);
 
-        $task->update([
-            'deadline' => $deadline,
-        ]);
+        $task->fill(['deadline' => $deadline]);
+
+        if ($task->isDirty('deadline')) {
+            $task->deadline_notified_at = null;
+        }
+
+        $task->save();
 
         return $task->refresh();
     }
