@@ -43,6 +43,7 @@ Personal Todo application with calendar view & web push notifications.
 
 - **Full Dev Stack:** `composer run dev` (starts Artisan serve, queue listener, Pail, and Vite)
 - **Code Formatting:** `vendor/bin/pint --dirty` (run before finalizing changes)
+- **Command Discipline:** Prefer one command per shell invocation. Chained commands (`&&`, `;`) are permission-checked segment by segment, so routine allowlisted commands prompt for approval when combined with others. Prefer dedicated tools (`read`, `grep`, `glob`) over `cat`/`grep`/`find` in the shell.
 
 ### Testing & Build
 
