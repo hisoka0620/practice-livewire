@@ -10,8 +10,7 @@ final class TaskPresenter
     public function __construct(
         public readonly Task $task,
         public readonly string $search = '',
-    ) {
-    }
+    ) {}
 
     public function title(): string
     {

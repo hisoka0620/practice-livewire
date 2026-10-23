@@ -15,12 +15,12 @@ final class SearchHighlighter
         $escapedText = e($text);
 
         $keyword = implode('|', array_map(
-            fn(string $word): string => preg_quote($word, '/'),
+            fn (string $word): string => preg_quote($word, '/'),
             $words,
         ));
 
         return preg_replace(
-            '/' . $keyword . '/iu',
+            '/'.$keyword.'/iu',
             '<mark class="bg-yellow-200 text-yellow-900 rounded-sm px-0.5">$0</mark>',
             $escapedText,
         ) ?? $escapedText;

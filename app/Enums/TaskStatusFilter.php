@@ -22,7 +22,7 @@ enum TaskStatusFilter: string
     public static function options(): array
     {
         return collect(self::cases())
-            ->mapWithKeys(fn(self $status) => [
+            ->mapWithKeys(fn (self $status) => [
                 $status->value => $status->label(),
             ])
             ->all();

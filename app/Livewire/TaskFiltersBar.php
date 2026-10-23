@@ -2,10 +2,10 @@
 
 namespace App\Livewire;
 
-use Livewire\Component;
 use App\Enums\TaskPriority;
 use App\Enums\TaskStatusFilter;
 use Livewire\Attributes\Modelable;
+use Livewire\Component;
 
 class TaskFiltersBar extends Component
 {

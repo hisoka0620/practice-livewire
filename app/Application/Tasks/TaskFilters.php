@@ -13,8 +13,7 @@ final readonly class TaskFilters
         public TaskPriority $priority = TaskPriority::All,
         public TaskStatusFilter $status = TaskStatusFilter::All,
         public TaskSort $sort = TaskSort::None,
-    ) {
-    }
+    ) {}
 
     public static function fromLivewire(
         string $search,
