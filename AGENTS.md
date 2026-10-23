@@ -52,6 +52,13 @@ Personal Todo application with calendar view & web push notifications.
 - **JS Unit Tests (Calendar):** `npm run test:unit:calendar` (_Forces `TZ=America/Los_Angeles`_)
 - **E2E Tests:** `npm run test:e2e -- tests/e2e/<spec>.spec.ts` (Playwright runs server on port 8017 using `database/e2e.sqlite`)
 
+### Commits
+
+- After completing each implementation unit, review the working tree diff and create commits grouped by logical change (one unit = one commit). Do not mix unrelated changes into a single commit.
+- Use Conventional Commits in English (`fix`, `feat`, `docs`, `test`, `style`, `chore`). Scope the message to the change, not the file list.
+- Run the required checks before committing: `./vendor/bin/pest`, `npm run build` (after Blade/JS/CSS edits), and `vendor/bin/pint --dirty`.
+- Never commit `.env` files, credentials, or secret keys. Verify `git status` before staging.
+
 ---
 
 ## Setup Gotchas & Important Rules
