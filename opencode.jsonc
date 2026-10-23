@@ -32,8 +32,15 @@
     { "action": "shell", "resource": "composer test *", "effect": "allow" },
     { "action": "shell", "resource": "./vendor/bin/pest *", "effect": "allow" },
     { "action": "shell", "resource": "vendor/bin/pint *", "effect": "allow" },
-    { "action": "shell", "resource": "npm run build", "effect": "allow" },
+    { "action": "shell", "resource": "npm run build *", "effect": "allow" },
     { "action": "shell", "resource": "npm run test:unit:calendar *", "effect": "allow" },
+    { "action": "shell", "resource": "node -v*", "effect": "allow" },
+
+    // Git staging/inspection/commit: needed for the per-unit commit workflow.
+    { "action": "shell", "resource": "git add *", "effect": "allow" },
+    { "action": "shell", "resource": "git commit *", "effect": "allow" },
+    { "action": "shell", "resource": "git show *", "effect": "allow" },
+    { "action": "shell", "resource": "git branch *", "effect": "allow" },
 
     // Destructive / heavy operations require explicit approval (per AGENTS.md).
     { "action": "shell", "resource": "php artisan migrate:fresh *", "effect": "ask" },
