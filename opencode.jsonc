@@ -51,6 +51,10 @@
   ],
 
   "commands": {
+    "commit": {
+      "description": "Commit changes grouped by implementation unit",
+      "template": "Create commits for the current changes. Run `./vendor/bin/pest` (and `npm run build` if Blade/JS/CSS changed) and `vendor/bin/pint --dirty` first, fix any failure you introduced before continuing. Then review `git status` and `git diff`, split the working tree into logical implementation units, and create one Conventional Commit per unit in English (fix/feat/docs/test/style/chore). Verify AGENTS.md compliance for each unit. Never stage .env files, credentials, or secrets. Report the resulting commit list.",
+    },
     "test": {
       "description": "Run PHP tests with Pest",
       "template": "Run the PHP tests: `./vendor/bin/pest $ARGUMENTS`. Report the results. If there are failures, explain each cause and the smallest fix, but wait for my approval before editing code.",
