@@ -188,9 +188,10 @@ it('does not allow opening another users task for quick actions', function () {
     $this->actingAs($user);
     $task = Task::factory()->for($otherUser)->create();
 
-    Livewire::test(TaskModal::class)
+    expect(fn () => Livewire::test(TaskModal::class)
         ->call('open', $task->id)
-        ->assertForbidden();
+        ->assertSet('task.id', $task->id)
+    )->toThrow(Illuminate\Database\Eloquent\ModelNotFoundException::class);
 });
 
 it('keeps the modal open and reports validation errors when saving an invalid edit', function () {

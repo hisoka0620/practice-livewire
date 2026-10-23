@@ -41,7 +41,9 @@ class TaskModal extends Component
         $this->reset(['task', 'editTaskId', 'createTask']);
 
         if ($taskId) {
-            $task = Task::findOrFail($taskId);
+            /** @var \App\Models\User $user */
+            $user = Auth::user();
+            $task = $user->tasks()->findOrFail($taskId);
             $this->authorize('view', $task);
             $this->task = $task;
             $this->form->setTask($this->task);
