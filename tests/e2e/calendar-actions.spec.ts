@@ -213,7 +213,7 @@ test("opens the task modal instead of a context menu for mobile event taps", asy
     await expect(event.locator(".fc-priority-dot")).toBeVisible();
     await expect(event.locator(".fc-event-title")).toHaveText(title);
 
-    // 480〜639px帯: セル内に⋮が表示され、タップでコンテキストメニューを開く
+    // 480-639px band: the in-cell ⋮ is shown, tapping opens the context menu
     const actions = event.getByRole("button", {
         name: `Actions for ${title}`,
     });

@@ -32,19 +32,19 @@ const LOADING_DELAY_MS = 200;
 export default (wire) => ({
     calendar: null,
     userTimeZone: getUserTimeZone(),
-    flatPickr: null, // flatpickr（月選択）インスタンス
+    flatPickr: null, // flatpickr (month select) instance
     isLoading: false,
     _loadingState: null,
     errorMessage: "",
     datePickerViewType: "dayGridMonth",
-    _skipDatePickerSync: false, // flatpickr自身の選択操作によるgotoDateの場合、選んだ日付表示を上書きしないためのフラグ
-    _destroyed: false, // Livewire.hookがこのコンポーネントの破棄後に実行されるのを防ぐガード
+    _skipDatePickerSync: false, // Skips overwriting the displayed date when gotoDate was triggered by flatpickr's own selection
+    _destroyed: false, // Guards against Livewire.hook running after this component is destroyed
     _offCommitHook: null,
-    _onScroll: null, // document.addEventListener("scroll", ...)に渡した関数参照（removeEventListenerで同一参照が必要なため保持）
+    _onScroll: null, // Function reference passed to document.addEventListener("scroll", ...) (kept so removeEventListener gets the same reference)
     _onWindowResize: null,
     _calendarEl: null,
     _onCalendarMouseDown: null,
-    _layoutResizeObserver: null, // ツールバー要素の高さ監視用ResizeObserver（--fc-header-height反映用）
+    _layoutResizeObserver: null, // ResizeObserver watching the toolbar height (reflects --fc-header-height)
     _eventTooltipController: null,
     contextMenu: {
         visible: false,
@@ -52,7 +52,7 @@ export default (wire) => ({
         y: 0,
         taskId: null,
         isCompleted: false,
-    }, //　右クリック時に表示されるコンテキストメニューの状態管理
+    }, // State of the context menu shown on right click
     init() {
         this._destroyed = false;
         this._loadingState = createLoadingState(
@@ -61,11 +61,11 @@ export default (wire) => ({
                 this.isLoading = isLoading;
             },
         );
-        // calendarEventsプロパティが更新されるたびに発火
+        // Fires every time the calendarEvents property is updated
         wire.on("calendarEventsUpdated", (payload) => {
             if (!this.calendar) return;
             const rawEvents = payload?.events ?? payload ?? [];
-            // 現在のビューに応じてイベントを加工
+            // Process events according to the current view
             const events = processEventsByView(
                 rawEvents,
                 this.calendar.view.type,
@@ -75,9 +75,9 @@ export default (wire) => ({
             this.toggleNoEventsMessage(events.length === 0);
         });
 
-        // このコンポーネントの通信（プロパティ更新・メソッド呼び出し）を検知し、
-        // フィルター関連の操作だけ isLoading に反映する（月移動・週移動は
-        // datesSet → runWireAction 側が引き続き担当）
+        // Detect this component's communication (property updates, method calls)
+        // and reflect only filter-related operations in isLoading (month/week
+        // navigation remains handled by datesSet → runWireAction)
         this._offCommitHook = registerCalendarCommitLoadingHook({
             hook: Livewire.hook.bind(Livewire),
             componentId: wire.$id,
@@ -86,7 +86,7 @@ export default (wire) => ({
             notifyError: (message) => this.notifyError(message),
         });
 
-        // スクロール時にメニューを閉じる
+        // Close the menu on scroll
         this._onScroll = () => this.closeContextMenu();
         document.addEventListener("scroll", this._onScroll, true);
 
@@ -102,7 +102,7 @@ export default (wire) => ({
     },
     destroy() {
         this._destroyed = true;
-        // Livewireフックの登録解除（安全に呼び出し）
+        // Unregister the Livewire hook (safe to call)
         if (typeof this._offCommitHook === "function") {
             this._offCommitHook();
         }
@@ -120,9 +120,9 @@ export default (wire) => ({
         this.calendar = null;
     },
     /**
-     * 月ジャンプ用のflatpickr（monthSelectプラグイン）を初期化する。
-     * allowInput を有効化しないことで、キーボード直接入力によるブラウザネイティブ
-     * 月入力ウィジェット特有のバグ（年桁の自動補完・0000/1901化）を構造的に回避する。
+     * Initialize flatpickr (monthSelect plugin) for month jumping.
+     * Enabling allowInput structurally avoids bugs specific to the browser's
+     * native month input widget when typing directly (auto year completion, 0000/1901, etc).
      */
     initFlatPickr(viewType = "dayGridMonth") {
         const inputEl =
@@ -130,7 +130,7 @@ export default (wire) => ({
             this.$el.querySelector('[x-ref="datePicker"]');
         if (!inputEl) return;
 
-        // 二重初期化防止（Livewireの再レンダリングやAlpineの再初期化に備えたガード）
+        // Prevent double initialization (guards against Livewire re-renders and Alpine re-init)
         if (this.flatPickr) {
             this.flatPickr.destroy();
             this.flatPickr = null;
@@ -166,7 +166,7 @@ export default (wire) => ({
         });
     },
     /**
-     * flatpickrの表示値のみをFullCalendarの表示期間に同期する。
+     * Sync only flatpickr's displayed value to the FullCalendar display period.
      * @param {Date} currentStart - info.view.currentStart
      */
     syncDatePicker(currentStart) {
@@ -189,9 +189,9 @@ export default (wire) => ({
         this._eventTooltipController = null;
         this.removeCalendarMouseDownListener();
 
-        // コンテキストメニューが開いている間、それを閉じるためのクリックが
-        // FullCalendar自身のクリック検出（mousedown起点）に渡らないよう、
-        // mousedownの段階でキャプチャフェーズで先に握りつぶす
+        // While the context menu is open, swallow the click that closes it
+        // during the capture phase of mousedown, so it never reaches
+        // FullCalendar's own click detection (which starts from mousedown)
         this._calendarEl = calendarEl;
         this._onCalendarMouseDown = (jsEvent) => {
             if (this.contextMenu.visible) {
@@ -216,7 +216,7 @@ export default (wire) => ({
                 eventTooltipController: this._eventTooltipController,
                 onEventDrop: (info) => {
                     const taskId = info.event.id;
-                    const newDeadline = resolveNewDeadline(info); // ドロップ後の新しい日時（Dateオブジェクト）
+                    const newDeadline = resolveNewDeadline(info); // New deadline after the drop (Date object)
 
                     this.runWireAction(
                         wire.updateTaskDeadline(
@@ -240,36 +240,35 @@ export default (wire) => ({
                             today.getDate(),
                         );
                         const isPast = clicked < todayDateOnly;
-                        // 過去日: 0:00固定 / 今日以降: 現在時刻を合成
+                        // Past dates: fixed to 0:00 / today or later: combine with the current time
                         deadline = combineDateAndTime(
                             clicked,
                             isPast ? null : new Date(),
                         );
                     } else {
-                        // 週表示: クリックした時間スロットをそのまま使う（合成不要）
+                        // Week view: use the clicked time slot as-is (no combining needed)
                         deadline = clicked;
                     }
 
                     wire.$dispatchTo("task-modal", "open-task-modal", {
-                        taskId: null, // nullの場合は新規作成モードとしてtask-modal側で判定
+                        taskId: null, // When null, task-modal treats it as create mode
                         prefillDeadline: formatForServer(deadline),
                     });
                 },
                 onDatesSet: (info) => {
                     const viewType = info.view.type;
                     if (this.datePickerViewType !== viewType) {
-                        // dayGridMonth ⇔ timeGridWeek の切り替え：flatpickrを作り直す
+                        // Switching between dayGridMonth ⇔ timeGridWeek: rebuild flatpickr
                         this.initFlatPickr(viewType);
                     } else if (this._skipDatePickerSync) {
-                        // flatpickr自身の選択操作によるgotoDateなので、
-                        // 選んだ日付の表示を週の開始日で上書きしないようスキップする
-                        this._skipDatePickerSync = false;
+                        // gotoDate was triggered by flatpickr's own selection,
+                        // so skip to avoid overwriting the picked date with the week start
                     } else {
-                        // prev/next/todayボタン等による移動：表示値を同期する
+                        // Navigation via prev/next/today buttons: sync the displayed value
                         this.syncDatePicker(info.view.currentStart);
                     }
-                    // ビュー切替時はFullCalendarが該当DOMを作り直すため、
-                    // 監視対象・オーバーレイの付け替え先を張り直して最新の状態を反映する
+                    // On view switch FullCalendar rebuilds its DOM, so rewire
+                    // observers and the overlay attach point to the latest state
                     this.observeCalendarLayout();
                     this.attachOverlayToHarness();
                     this.runWireAction(
@@ -285,7 +284,7 @@ export default (wire) => ({
                         ".fc-event-actions-trigger",
                     );
                     if (actionTrigger) {
-                        // ビュー幅によらず、⋮はコンテキストメニュー、イベント本体はモーダルに統一
+                        // Regardless of view width, ⋮ opens the context menu and the event body opens the modal
                         this.openContextMenu(
                             info.jsEvent,
                             info.event,
@@ -307,7 +306,7 @@ export default (wire) => ({
         );
 
         this.calendar.render();
-        // 初回描画直後にヘッダー高さの監視を開始し、オーバーレイをharnessへ付け替える
+        // Right after the first render, start watching the header height and attach the overlay to the harness
         this.observeCalendarLayout();
         this.attachOverlayToHarness();
     },
@@ -360,15 +359,15 @@ export default (wire) => ({
     },
 
     /**
-     * ローディングオーバーレイ(x-ref="tableOverlay")を .fc-view-harness
-     * （FullCalendarのツールバーを除いたテーブル本体部分。FullCalendar自身が
-     * position:relativeを当てている）の子要素として付け替える。
-     * これにより、オーバーレイ側はCSSの absolute inset-0 だけで
-     * ツールバー（prev/next・タイトル・ビュー切替）を除いた範囲にぴったり重なり、
-     * getBoundingClientRectによるピクセル計算やResizeObserverでの追従が不要になる。
-     * FullCalendarはビュー切替時に.fc-view-harnessを作り直すことがあるため、
-     * renderCalendar()後・datesSet時など、harnessが（再）生成されうるタイミングで
-     * 都度呼び出す（既に付け替え済みなら何もしない）。
+     * Re-attach the loading overlay (x-ref="tableOverlay") as a child of .fc-view-harness
+     * (the table body part excluding FullCalendar's toolbar, on which FullCalendar
+     * itself applies position:relative).
+     * This lets the overlay align precisely with the area excluding the toolbar
+     * (prev/next, title, view switch) using only CSS absolute inset-0, without
+     * pixel calculations via getBoundingClientRect or ResizeObserver following.
+     * FullCalendar may rebuild .fc-view-harness on view switch, so call this
+     * at every timing where the harness is (re)generated (after renderCalendar(),
+     * at datesSet, etc.). Does nothing if already attached.
      */
     attachOverlayToHarness() {
         const calendarEl = this.$el?.querySelector("#task-calendar");
@@ -376,12 +375,12 @@ export default (wire) => ({
         attachCalendarOverlay(calendarEl, overlayEl);
     },
     /**
-     * ツールバーの高さ変化、およびカレンダー自体の幅の変化を監視し、
-     * 変化のたびにlayoutモジュールでヘッダー高さを更新する。
-     * FullCalendarはビュー切替時に該当DOMを作り直すため、呼ばれるたびに
-     * 監視対象を張り直す（disconnect→observe）。
-     * ローディングオーバーレイの位置は attachOverlayToHarness() が別途担当するため
-     * （CSSの absolute inset-0 のみで追従する）、ここでは扱わない。
+     * Watch for toolbar height changes and calendar width changes, and
+     * update the header height via the layout module on every change.
+     * FullCalendar rebuilds the relevant DOM on view switch, so rewire
+     * the observed targets on every call (disconnect → observe).
+     * The loading overlay position is handled separately by attachOverlayToHarness()
+     * (it follows via CSS absolute inset-0 only), so it is not handled here.
      */
     observeCalendarLayout() {
         const calendarEl = this.$el?.querySelector("#task-calendar");
@@ -391,17 +390,17 @@ export default (wire) => ({
         this._layoutResizeObserver = createCalendarLayoutObserver(calendarEl);
     },
     /**
-     * 一定時間(LOADING_DELAY_MS)経過してもまだ処理中の場合のみisLoadingを表示する
+     * Show isLoading only when still processing after LOADING_DELAY_MS has elapsed
      */
     startLoading() {
         return this._loadingState.start();
     },
 
     /**
-     * wireメソッド呼び出しを共通処理でラップする。
-     * @param {Promise<boolean>} promise - wire.xxx() の戻り値
+     * Wraps wire method calls with common handling.
+     * @param {Promise<boolean>} promise - Return value of wire.xxx()
      * @param {object} [options]
-     * @param {() => void} [options.onFailure] - 失敗時（false or 例外）に呼ぶ追加処理（例: info.revert()）
+     * @param {() => void} [options.onFailure] - Extra handling on failure (false or exception), e.g. info.revert()
      */
     async runWireAction(promise, { onFailure } = {}) {
         const stopLoading = this.startLoading();
@@ -424,14 +423,14 @@ export default (wire) => ({
     },
 
     /**
-     * エラー通知
+     * Error notification
      */
     notifyError(message) {
         this.errorMessage = message;
         this.$flux.modal("error-notification").show();
     },
     /**
-     * 右クリックメニューを開く
+     * Open the right-click context menu
      */
     openContextMenu(jsEvent, event, trigger = null) {
         const props = event.extendedProps || {};
@@ -458,7 +457,7 @@ export default (wire) => ({
         this.contextMenu.visible = false;
     },
     /**
-     * 完了/未完了をトグルする
+     * Toggle completion
      */
     toggleTaskCompletion() {
         const taskId = this.contextMenu.taskId;
@@ -467,7 +466,7 @@ export default (wire) => ({
         this.runWireAction(wire.toggleTaskCompletion(taskId));
     },
     /**
-     * タスクを削除する
+     * Delete the task
      */
     deleteTaskFromMenu() {
         const taskId = this.contextMenu.taskId;
@@ -476,8 +475,8 @@ export default (wire) => ({
         this.runWireAction(wire.deleteTask(taskId));
     },
     /**
-     * イベントがない場合に、その旨のメッセージを表示します
-     * @param {boolean} show イベントがある場合はfalse、ない場合はtrue
+     * Show a message when there are no events
+     * @param {boolean} show false when events exist, true when none
      * @returns {void}
      */
     toggleNoEventsMessage(show) {
@@ -526,11 +525,11 @@ export default (wire) => ({
         }
     },
     jumpToDate(value) {
-        // value は "2026-06" 形式
+        // value is in "2026-06" format
         if (!this.calendar || !value) return;
         const target = value.length === 7 ? value + "-01" : value;
-        // このgotoDateによって発火するdatesSetでは、flatpickrが今表示している
-        // 選択日付をcurrentStart（週の開始日）で上書きしないようにする
+        // In the datesSet fired by this gotoDate, avoid overwriting the date
+        // currently shown by flatpickr with currentStart (week start date)
         this._skipDatePickerSync = true;
         this.calendar.gotoDate(target);
     },

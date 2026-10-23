@@ -386,7 +386,7 @@ test("keeps mobile event titles on one line and preserves the full edit value", 
             titleLayout.titleWidth,
         );
         expect(titleLayout.badgeCount).toBe(0);
-        // セル内の⋮は、最小幅画面(<480px)では非表示、480〜639pxでは常時表示
+        // The in-cell ⋮ is hidden below 480px and always shown in the 480-639px band
         if (width <= 479) {
             expect(titleLayout.actionsDisplay).toBe("none");
         } else {
@@ -612,7 +612,7 @@ test.describe("dense mobile month calendar", () => {
             titles.length,
         );
         for (const event of await popoverEvents.all()) {
-            // 下端シート化した popover は行幅に余裕があるためドットと⋮の両方を出す
+            // The bottom-sheet popover has enough row width to show both the dot and the ⋮
             await expect(event.locator(".fc-priority-dot")).toBeVisible();
             await expect(
                 event.locator(".fc-event-actions-trigger"),

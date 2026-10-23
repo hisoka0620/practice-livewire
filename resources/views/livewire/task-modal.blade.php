@@ -1,5 +1,5 @@
 <div>
-    {{-- モーダル表示 --}}
+    {{-- Modal display --}}
     <flux:modal
         wire:model="show"
         name="task-modal"

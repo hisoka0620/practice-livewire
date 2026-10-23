@@ -2,15 +2,15 @@
 @import "flatpickr/dist/plugins/monthSelect/style.css";
 
 /*
- * flatpickrの月選択カレンダー（dayGridMonth用・monthSelectプラグイン）と
- * 日付選択カレンダー（timeGridWeek用・通常のflatpickr）の両方をアプリの
- * zincテーマに統一する。
+ * Unify both flatpickr instances with the app's zinc theme:
+ * the month selection calendar (dayGridMonth, monthSelect plugin) and
+ * the date selection calendar (timeGridWeek, regular flatpickr).
  *
- * 週表示側は theme: "dark" オプションを渡していない（そもそもmonthSelect
- * プラグイン専用のオプションでコアのflatpickrには効かない）ため、
- * `.flatpickr-monthSelect-theme-dark` は付与されない。
- * よってセレクタを `.flatpickr-calendar` ベースに一般化し、両インスタンスに
- * 共通で当たるようにする。
+ * The week view side does not pass the theme: "dark" option (it is only
+ * dedicated to the monthSelect plugin and has no effect on core flatpickr),
+ * so `.flatpickr-monthSelect-theme-dark` is never applied.
+ * Therefore generalize the selectors on a `.flatpickr-calendar` basis
+ * so they hit both instances in common.
  */
 .flatpickr-calendar {
     background: rgba(38, 38, 38, 0.9); /* bg-zinc-800/90 */
@@ -45,7 +45,7 @@
     color: var(--color-zinc-100);
 }
 
-/* --- monthSelectプラグイン（dayGridMonth用の月選択）--- */
+/* --- monthSelect plugin (month selection for dayGridMonth) --- */
 .flatpickr-calendar .flatpickr-monthSelect-month {
     color: rgba(245, 245, 245, 0.9);
 }
@@ -57,12 +57,12 @@
 }
 
 .flatpickr-calendar .flatpickr-monthSelect-month.selected {
-    background: rgb(2, 132, 199); /* sky-600系。フォーカスリングと合わせる場合はsky-500 rgb(14,165,233) */
+    background: rgb(2, 132, 199); /* sky-600-ish. Use sky-500 rgb(14,165,233) to match the focus ring */
     border-color: rgb(2, 132, 199);
     color: var(--color-zinc-100);
 }
 
-/* --- コアflatpickr（timeGridWeek用の日付選択）--- */
+/* --- Core flatpickr (date selection for timeGridWeek) --- */
 .flatpickr-calendar .flatpickr-weekdays {
     background: rgba(38, 38, 38, 0.9);
 }
@@ -88,7 +88,7 @@
 
 .flatpickr-calendar .flatpickr-day.selected,
 .flatpickr-calendar .flatpickr-day.selected:hover {
-    background: rgb(2, 132, 199); /* sky-600系。monthSelectの選択色と統一 */
+    background: rgb(2, 132, 199); /* sky-600-ish. Matches the monthSelect selection color */
     border-color: rgb(2, 132, 199);
     color: var(--color-zinc-100);
 }

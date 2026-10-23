@@ -1,5 +1,5 @@
 /**
- * deadline（UTC offset付きISO 8601文字列）から表示用文字列を生成する。
+ * Build a display string from a deadline (an ISO 8601 string with UTC offset).
  */
 export function formatEventTime(isoString, timeZone) {
     if (!isoString) return "";
@@ -15,7 +15,7 @@ export function formatEventTime(isoString, timeZone) {
 
 export function formatTooltipDeadline(isoString, timeZone) {
     if (!isoString) return "none";
-    // toDayDateTimeString() と同等の見た目（例: "Sun, Jun 1, 2025 3:00 PM"）を再現
+    // Replicates the look of toDayDateTimeString() (e.g. "Sun, Jun 1, 2025 3:00 PM")
     return new Intl.DateTimeFormat("en-US", {
         weekday: "short",
         year: "numeric",
@@ -33,7 +33,7 @@ export function formatForServer(date) {
 }
 
 /**
- * datePartの日付とtimePartの時刻を合成する。timePartがない場合は0時を使う。
+ * Combine the date of datePart with the time of timePart. Uses midnight when timePart is missing.
  */
 export function combineDateAndTime(datePart, timePart) {
     return new Date(
@@ -47,7 +47,7 @@ export function combineDateAndTime(datePart, timePart) {
 }
 
 /**
- * FullCalendarのdrop infoから新しいdeadlineを解決する。
+ * Resolve the new deadline from FullCalendar's drop info.
  */
 export function resolveNewDeadline(info) {
     if (info.view.type !== "dayGridMonth") {

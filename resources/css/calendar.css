@@ -3,11 +3,11 @@
 }
 
 #task-calendar {
-    position: relative; /* オーバーレイの基準点 */
+    position: relative; /* Reference point for overlays */
     background: rgba(38, 38, 38, 0.9);
     color: #e2e8f0;
     width: 100%;
-    --fc-header-height: 63px; /* ツールバー+曜日行の高さのフォールバック値。JSで実測して上書き可能 */
+    --fc-header-height: 63px; /* Fallback for toolbar + weekday row height. Can be measured and overridden from JS */
 }
 
 #task-calendar .fc-daygrid-day-frame {
@@ -59,8 +59,8 @@
         min-height: 64px;
     }
 
-    /* ツールバー1行化: prev/next/today | タイトル。
-       ビュー切替チャンクはモバイルでは月表示固定のため非表示 */
+    /* Single-row toolbar: prev/next/today | title.
+       The view-switch chunk is hidden on mobile since the view is fixed to month view */
     #task-calendar .fc-toolbar {
         flex-wrap: nowrap;
         align-items: center;
@@ -135,8 +135,8 @@
         width: auto;
     }
 
-    /* "+N more" ポップオーバーはセル位置に依存しない下端シートにする。
-       inline style(direction/top/left)より !important を優先させる */
+    /* The "+N more" popover becomes a bottom sheet independent of cell position.
+       Using !important takes precedence over inline styles (direction/top/left) */
     #task-calendar .fc-popover {
         position: fixed !important;
         top: auto !important;
@@ -157,10 +157,11 @@
     }
 }
 
-/* 最小幅画面: セル幅(約40~50px)では優先度ドット+24pxアクションボタンの
-   併置がタイトル領域をほぼ消し、さらにブラウザのタップ補正で隣接ボタンに
-   タップが吸われるため、従来の「ドット+タイトル / タップ→モーダル」に戻す。
-   popover(下端シート)は行幅に余裕があるためドットと⋮を表示し続ける */
+/* Narrowest screens: with a cell width of about 40-50px, showing the priority dot
+   and a 24px action button side by side nearly erases the title area, and browser
+   tap correction absorbs taps onto the adjacent button, so restore the usual
+   "dot + title / tap → modal" behavior. The popover (bottom sheet) keeps enough
+   row width to keep showing the dot and ⋮ */
 @media (max-width: 479px) {
     #task-calendar
         .fc-daygrid-day
@@ -203,7 +204,7 @@
     background: rgba(148, 163, 184, 0.14);
 }
 
-/* 週末列は薄い背景で区別（todayセルは次の規則が後に続き上書きされる） */
+/* Distinguish weekend columns with a subtle background (the today rule below comes later and overrides it) */
 #task-calendar .fc-daygrid-day.fc-day-sat,
 #task-calendar .fc-daygrid-day.fc-day-sun {
     background: rgba(148, 163, 184, 0.05);
@@ -214,18 +215,18 @@
     background: rgba(56, 189, 248, 0.16);
 }
 
-/* 今日の日付数字を強調 */
+/* Emphasize today's date number */
 #task-calendar .fc-daygrid-day.fc-day-today .fc-daygrid-day-number {
     color: #7dd3fc;
     font-weight: 700;
 }
 
-/* イベント要素全体のマウスカーソルをデフォルトに変更 */
+/* Use the default mouse cursor over the whole event element */
 #task-calendar .fc-event {
     cursor: default;
 }
 
-/* イベント内レイアウト */
+/* Layout inside an event */
 #task-calendar .fc-custom-event {
     position: relative;
     display: flex;
@@ -361,12 +362,12 @@
 }
 
 /* ============================================================
-   timeGridWeek 専用: ドットを中心配置 + 時間(上)/タイトル(下)の縦積み
-   dayGridMonthの見た目には一切影響しないよう .fc-timeGridWeek-view でスコープ
+   timeGridWeek only: center the dot + stack time (top) / title (bottom)
+   Scoped to .fc-timeGridWeek-view so it has no effect on dayGridMonth
    ============================================================ */
 #task-calendar .fc-timeGridWeek-view .fc-custom-event {
-    align-items: center; /* ドットをコンテンツ全体の縦中央に */
-    white-space: normal; /* 縦積みにするためnowrap解除 */
+    align-items: center; /* Center the dot vertically within the content */
+    white-space: normal; /* Disable nowrap for vertical stacking */
     width: 100%;
 }
 
@@ -406,29 +407,29 @@
 }
 
 /* ============================================================
-   timeGridWeek: イベント内部を縦方向中央に配置
+   timeGridWeek: vertically center the event internals
    ============================================================ */
 #task-calendar .fc-timeGridWeek-view .fc-timegrid-event:hover {
     opacity: 0.9;
 }
 
 /* ============================================================
-   timeGridWeek: "+N more" の箱の高さをFullCalendarの
-   inline style(top/bottom)から解放し、コンパクトに固定する
+   timeGridWeek: free the "+N more" box height from FullCalendar's
+   inline styles (top/bottom) and fix it to a compact size
    ============================================================ */
 #task-calendar .fc-timeGridWeek-view .fc-timegrid-more-link.fc-more-link {
-    height: 1.6rem; /* 好みの高さに調整 */
+    height: 1.6rem; /* Adjusted preferred height */
     margin: 0;
     padding: 0;
 }
 
-/* sticky指定も高さ固定後は不要になるため解除しておく */
+/* Sticky is no longer needed once the height is fixed, so unset it */
 #task-calendar .fc-timeGridWeek-view .fc-timegrid-more-link-inner.fc-sticky {
     position: static;
 }
 
 /* ============================================================
-   ポップオーバーの見た目を調整
+   Adjust the popover appearance
    ============================================================ */
 #task-calendar .fc-popover {
     background: rgba(38, 38, 38, 0.9);
@@ -437,7 +438,7 @@
 }
 
 /* ============================================================
-   イベントがない場合のオーバーレイ表示
+   Overlay shown when there are no events
    ============================================================ */
 #task-calendar .fc-no-events-overlay {
     position: absolute;
@@ -447,12 +448,12 @@
     align-items: center;
     justify-content: center;
     gap: 8px;
-    /* カレンダーヘッダー・曜日行の高さ分だけ下にずらして視覚的中心を合わせる */
+    /* Offset down by the calendar header / weekday row height to align to the visual center */
     padding-top: var(--fc-header-height, 63px);
     padding-bottom: 0;
-    /* グリッド部分だけをうっすら暗幕で覆う */
+    /* Cover only the grid part with a faint shutter */
     background: rgba(9, 9, 11, 0.6);
-    background-clip: content-box; /* 背景色をコンテンツ領域だけに制限 */
+    background-clip: content-box; /* Restrict the background to the content box only */
     pointer-events: none;
     z-index: 10;
     border-radius: 0 0 0.75rem 0.75rem;

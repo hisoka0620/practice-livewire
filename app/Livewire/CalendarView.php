@@ -34,7 +34,7 @@ class CalendarView extends Component
 
     public array $calendarEvents = [];
 
-    // 表示中の期間を保持する
+    // Keep the period currently displayed on the calendar
     public string $rangeStart = '';
 
     public string $rangeEnd = '';
@@ -72,7 +72,7 @@ class CalendarView extends Component
     }
 
     /**
-     * カレンダーの表示期間に応じてイベントを動的に取得する
+     * Load events dynamically according to the calendar display period
      */
     public function loadEvents(
         mixed $start,
@@ -86,7 +86,7 @@ class CalendarView extends Component
             'end' => ['bail', 'required', 'string', 'date_format:'.self::UTC_ISO_DATETIME_FORMAT],
         ])->validate();
 
-        // FullCalendarから送られてくるISO 8601文字列をパース
+        // Parse the ISO 8601 strings sent from FullCalendar
         $startDate = Carbon::parse($validated['start'])->setTimezone(config('app.timezone'));
         $endDate = Carbon::parse($validated['end'])->setTimezone(config('app.timezone'));
 
@@ -98,7 +98,7 @@ class CalendarView extends Component
             }
         })->validate();
 
-        // 期間を保存しておく
+        // Keep the period for later reloads
         $this->rangeStart = $validated['start'];
         $this->rangeEnd = $validated['end'];
 
@@ -118,7 +118,7 @@ class CalendarView extends Component
                 $filters,
             );
 
-        // 指定された月（表示範囲内）のイベントだけをクエリで絞り込む
+        // Filter the query to only the tasks within the displayed period
         $this->calendarEvents = $taskQuery
             ->withinPeriod($tasks, $startDate, $endDate)
             ->get()
@@ -126,14 +126,14 @@ class CalendarView extends Component
             ->values()
             ->toArray();
 
-        // JSへ通知
+        // Notify the JS side
         $this->dispatch('calendarEventsUpdated', events: $this->calendarEvents)->self();
 
         return true;
     }
 
     /**
-     * ドラッグ&ドロップによる締切日時の変更を保存する
+     * Persist a deadline change made by drag & drop
      */
     public function updateTaskDeadline(
         int $taskId,
@@ -163,7 +163,7 @@ class CalendarView extends Component
     }
 
     /**
-     * 右クリックメニューからの完了/未完了トグル
+     * Toggle completion from the context menu
      */
     public function toggleTaskCompletion(int $taskId): bool
     {
@@ -178,7 +178,7 @@ class CalendarView extends Component
     }
 
     /**
-     * 右クリックメニューからのタスク削除
+     * Delete a task from the context menu
      */
     public function deleteTask(int $taskId): bool
     {

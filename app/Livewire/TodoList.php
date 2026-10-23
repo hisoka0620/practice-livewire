@@ -35,7 +35,7 @@ class TodoList extends Component
     public string $sort = '';
 
     /**
-     * コンポーネントの初期化時にタスクを読み込みます
+     * Load tasks when the component is initialized
      */
     public function mount(): void
     {
@@ -80,8 +80,8 @@ class TodoList extends Component
     }
 
     /**
-     * filters.priority、filters.taskStatus、
-     * filters.search のいずれかが変更されたときに実行されます。
+     * Runs when filters.priority, filters.taskStatus,
+     * or filters.search changes.
      */
     public function updatedFilters(mixed $value, ?string $key = null): void
     {
@@ -89,7 +89,7 @@ class TodoList extends Component
     }
 
     /**
-     * URLパラメータが外部操作などで変更された場合
+     * When the URL parameter is changed by external operations
      */
     public function updatedSearch(): void
     {
@@ -114,7 +114,7 @@ class TodoList extends Component
     private function normalizeView(string $view): string
     {
         return TaskView::tryFrom($view)?->value
-            ?? TaskView::List ->value;
+            ?? TaskView::List->value;
     }
 
     public function changeView(string $view): void
@@ -124,7 +124,7 @@ class TodoList extends Component
     }
 
     /**
-     * タスク保存後の更新処理
+     * Refresh after a task is saved
      */
     #[On('task-saved')]
     public function refresh(): void

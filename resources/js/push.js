@@ -51,9 +51,9 @@ async function deleteSubscriptionFromBackend(endpoint) {
 // =============================
 
 /**
- * Service Worker を登録し、プッシュ通知を購読する。
- * 設定画面のボタンから明示的に呼ぶ想定。
- * ブラウザの許可ダイアログもここで出る。
+ * Register the Service Worker and subscribe to push notifications.
+ * Called explicitly from a settings screen button.
+ * The browser permission dialog is also shown here.
  */
 export async function subscribePush() {
     if (!("serviceWorker" in navigator)) return;
@@ -73,7 +73,7 @@ export async function subscribePush() {
             if (permission !== "granted") return;
         }
 
-        // 既存サブスクリプションがあればそのまま使う（重複登録防止）
+        // Reuse the existing subscription if present (prevents duplicate registration)
         const existingSubscription =
             await registration.pushManager.getSubscription();
         if (existingSubscription) {
@@ -94,7 +94,7 @@ export async function subscribePush() {
 }
 
 // =============================
-// Unsubscribe（設定画面・ログアウト時に呼ぶ）
+// Unsubscribe (called from the settings screen and on logout)
 // =============================
 
 export async function unsubscribePush() {
@@ -113,7 +113,7 @@ export async function unsubscribePush() {
 }
 
 // =============================
-// Auto-run（ログイン済みページで既存購読をバックエンドと同期するだけ）
+// Auto-run (only syncs the existing subscription with the backend on logged-in pages)
 // =============================
 
 async function syncExistingSubscription() {
@@ -125,7 +125,7 @@ async function syncExistingSubscription() {
 
         const subscription = await registration.pushManager.getSubscription();
         if (subscription) {
-            // サーバー側でレコードが消えていた場合の再登録
+            // Re-register if the server-side record has been deleted
             await sendSubscriptionToBackend(subscription);
         }
     } catch (err) {

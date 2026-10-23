@@ -22,7 +22,7 @@
             id="calendar-controls"
             class="flex w-full min-w-0 flex-wrap items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-800/90 px-3 py-2.5 text-zinc-100 shadow-sm"
         >
-            {{-- 日付ジャンプ --}}
+            {{-- Date picker --}}
             <x-calendar.date-picker />
 
             <x-calendar.filters />
@@ -43,13 +43,13 @@
             ></div>
         </div>
 
-        {{-- 右クリックコンテキストメニュー --}}
+        {{-- Right-click context menu --}}
         <x-calendar.context-menu />
 
         {{-- Modal for confirming the deletion of a calendar event --}}
         <x-calendar.delete-modal />
 
-        {{-- エラー通知用モーダル --}}
+        {{-- Modal for error notifications --}}
         <x-calendar.error-modal />
     </div>
 </div>

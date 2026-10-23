@@ -1,8 +1,8 @@
 <flux:modal name="confirm">
     <div class="flex w-full max-w-md flex-col gap-y-5 p-6">
-        <!-- ヘッダーエリア：アイコンとタイトル -->
+        <!-- Header area: icon and title -->
         <div class="flex items-start gap-x-4">
-            <!-- 警告アイコン（赤い背景の円） -->
+            <!-- Warning icon (red circular background) -->
             <div
                 class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-50 text-red-600 dark:bg-red-950/30 dark:text-red-400">
                 <svg xmlns="http://w3.org" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round"
@@ -11,7 +11,7 @@
                 </svg>
             </div>
 
-            <!-- テキストコンテンツ -->
+            <!-- Text content -->
             <div class="flex flex-1 flex-col gap-y-1">
                 <flux:heading level="2" size="lg" class="font-semibold text-slate-900 dark:text-white">
                     Delete Task
@@ -22,7 +22,7 @@
             </div>
         </div>
 
-        <!-- フッターエリア：ボタン配置（横並び・右寄せ） -->
+        <!-- Footer area: buttons (horizontally aligned, right aligned) -->
         <div class="flex flex-row justify-end gap-x-3 border-t border-slate-100 pt-2 dark:border-slate-800">
             <flux:button size="sm" variant="subtle" class="px-4" x-on:click="$flux.modal('confirm').close()">
                 Cancel
