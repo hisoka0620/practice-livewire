@@ -1,6 +1,6 @@
 <div
     wire:ignore
-    class="flex min-w-0 w-full items-center gap-2 rounded-lg border border-zinc-700/70 bg-zinc-900/90 px-2.5 py-2 sm:w-fit"
+    class="flex min-w-0 w-full items-center gap-2 rounded-lg border border-zinc-700/70 bg-zinc-900/90 px-2.5 py-2 md:w-fit"
 >
     <flux:icon
         name="calendar-days"
