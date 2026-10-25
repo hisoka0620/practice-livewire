@@ -31,8 +31,12 @@
     >
         <div class="space-y-2 py-2">
 
-            {{-- Title + Primary Action --}}
-            <div class="flex items-center justify-between">
+            {{-- Give the title row breathing room: the calendar-view wrapper only
+                 carries px-1, which leaves the heading flush against the panel edge --}}
+            <div @class([
+                'flex items-center justify-between',
+                'px-2 sm:px-0' => $view === 'calendar',
+            ])>
                 <flux:heading
                     size="xl"
                     level="1"
