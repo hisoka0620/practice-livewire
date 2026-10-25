@@ -1,5 +1,6 @@
 <div x-ref="contextMenu" x-show="contextMenu.visible" x-cloak x-on:click.outside="closeContextMenu()"
     x-on:keydown.escape.stop.prevent="closeContextMenu()"
+    x-on:keydown.escape.window="contextMenu.visible && closeContextMenu()"
     class="fixed z-50 w-44 rounded-lg border border-zinc-700 bg-zinc-800 py-1 text-sm text-zinc-100 shadow-lg"
     x-bind:style="`left: ${contextMenu.x}px; top: ${contextMenu.y}px;`">
     <button x-ref="contextMenuFirstAction" type="button" x-on:click="toggleTaskCompletion()"
