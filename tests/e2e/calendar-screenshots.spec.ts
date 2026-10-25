@@ -16,7 +16,7 @@ test("renders a stable month calendar at common mobile widths", async ({
     await page.clock.install({
         time: new Date("2026-10-01T12:00:00-07:00"),
     });
-    await signInAndOpenCalendar(page);
+    await signInAndOpenCalendar(page, "calendar-screenshot@example.test");
 
     const seededEvent = page
         .locator('#task-calendar [data-date="2026-10-01"] .fc-event')

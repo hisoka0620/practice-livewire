@@ -37,6 +37,12 @@ export default defineConfig({
         command: "php artisan serve --host=127.0.0.1 --port=8017",
         url: baseURL,
         reuseExistingServer: !process.env.CI,
-        env: testEnvironment,
+        env: {
+            ...testEnvironment,
+            // The built-in server is single-threaded by default; without
+            // extra workers, two Playwright workers can pile up requests
+            // on one endpoint and time out waiting for a redirect.
+            PHP_CLI_SERVER_WORKERS: "4",
+        },
     },
 });
