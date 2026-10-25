@@ -8,6 +8,9 @@
     color: #e2e8f0;
     width: 100%;
     --fc-header-height: 63px; /* Fallback for toolbar + weekday row height. Can be measured and overridden from JS */
+    /* Neutralize FullCalendar's default light "today" tint (it leaks onto the
+       weekday header of today's column); today is styled explicitly below */
+    --fc-today-bg-color: transparent;
 }
 
 #task-calendar .fc-daygrid-day-frame {
@@ -212,7 +215,8 @@
 
 #task-calendar .fc-daygrid-day.fc-day-today,
 #task-calendar .fc-timegrid-col .fc-col-header-cell.fc-day-today {
-    background: rgba(56, 189, 248, 0.16);
+    /* Subtle sky wash that ties into the sky-300 date number below */
+    background: rgba(56, 189, 248, 0.08);
 }
 
 /* Emphasize today's date number */
