@@ -250,3 +250,24 @@ test("preserves event ordering and escaped event markup", () => {
     assert.match(content.html, /&lt;Task&gt;/);
     assert.match(content.html, /background:#ef4444/);
 });
+
+// FullCalendar renders string content as escaped text, so any markup must be
+// returned via the { html: ... } object form for the media query to apply.
+test("returns more link content as an HTML object, not escaped text", () => {
+    const options = createCalendarOptions({
+        userTimeZone: "America/Los_Angeles",
+        onEventDrop() {},
+        onDateClick() {},
+        onDatesSet() {},
+        onEventClick() {},
+        onEventContextMenu() {},
+    });
+
+    const content = options.moreLinkContent({ num: 5 });
+
+    assert.equal(typeof content, "object");
+    assert.equal(
+        content.html,
+        '+5<span class="fc-more-link-label"> more</span>',
+    );
+});
