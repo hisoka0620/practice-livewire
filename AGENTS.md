@@ -35,6 +35,29 @@ Personal Todo application with calendar view & web push notifications.
     - **`app/Enums/`**: Backed enums for status, priority, filter, and view states.
     - **`resources/js/`**: Alpine components registered in `app.js` during `livewire:init` and FullCalendar modules.
 
+Detailed per-language coding rules live in nested `AGENTS.md` files — see
+[Language & Coding Rules by Directory](#language--coding-rules-by-directory).
+
+---
+
+## Language & Coding Rules by Directory
+
+Language-specific rules (constraints) are split into nested `AGENTS.md`
+files and are injected automatically when working inside that directory:
+
+| Directory | Rules |
+| --- | --- |
+| `app/` | PHP 8.2 constraint, layer responsibilities, scoping/authorization, Livewire 3 conventions, deadline semantics |
+| `resources/views/` | Blade & Flux UI 2 usage, no business logic in views |
+| `resources/css/` | Tailwind CSS 4 conventions, FullCalendar skin scoping, `!important` policy (avoid; report the reason to the user when forced to use it) |
+| `resources/js/` | ES modules & Alpine registration, testability/timezone, code style, breakpoint sync |
+| `tests/` | Pest layout, pinned test environment & timezone, E2E (port 8017 / `e2e.sqlite`) |
+| `database/` | Additive migrations, MySQL/SQLite portability, factory & seeder rules |
+
+- Nested `AGENTS.md` files load when their area is first explored in a
+  session. After editing a nested file, start a new session so the updated
+  text applies immediately.
+
 ---
 
 ## Commands & Workflow
@@ -65,13 +88,9 @@ Personal Todo application with calendar view & web push notifications.
 
 - **Flux UI Dependency:** Paid package via `composer.fluxui.dev`. Do not attempt to modify auth/installation configs manually if it fails.
 - **Web Push / VAPID:** Managed via `php artisan webpush:vapid`. Never print, read, or commit `.env` or VAPID private keys.
-- **Timezone Pinning:** Calendar unit tests and E2E tests pin timezone to `America/Los_Angeles`. Do not change test expectations to local timezones.
-- **Database Scope in Tests:** Pest uses SQLite `:memory:` (`QUEUE_CONNECTION=sync`).
-- **Livewire 3 Specifics:**
-    - `wire:model` is deferred by default; use `.live` + debounce only when immediate server sync is required.
-    - Target Livewire events using `->to(Component::class)`.
-    - Always authorize actions inside action methods, not just `mount()`.
-- **Deadline Semantics:** Changing a task deadline must reset `deadline_notified_at` to prevent missing/duplicate notifications.
+
+Livewire 3 conventions and deadline semantics moved to `app/AGENTS.md`;
+timezone pinning and the test database scope moved to `tests/AGENTS.md`.
 
 ---
 
