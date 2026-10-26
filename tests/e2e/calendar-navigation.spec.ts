@@ -358,6 +358,9 @@ test("keeps mobile event titles on one line and preserves the full edit value", 
             const actions = element
                 .closest(".fc-custom-event")
                 .querySelector(".fc-event-actions-trigger");
+            const chip = element.closest(".fc-daygrid-event");
+            const chipLeft = chip?.getBoundingClientRect().left;
+            const strap = priority?.getBoundingClientRect();
 
             return {
                 whiteSpace: style.whiteSpace,
@@ -373,6 +376,10 @@ test("keeps mobile event titles on one line and preserves the full edit value", 
                     .closest(".fc-custom-event")
                     .querySelectorAll(".fc-priority-badge").length,
                 actionsDisplay: getComputedStyle(actions).display,
+                chipLeft,
+                strapLeft: strap?.left,
+                strapRight: strap?.right,
+                titleLeft: element.getBoundingClientRect().left,
             };
         });
 
@@ -389,6 +396,16 @@ test("keeps mobile event titles on one line and preserves the full edit value", 
         // The in-cell ⋮ is hidden below 480px and always shown in the 480-639px band
         if (width <= 479) {
             expect(titleLayout.actionsDisplay).toBe("none");
+            // The strap hugs the chip's left edge (chip border aside) ...
+            expect(
+                titleLayout.chipLeft - titleLayout.strapLeft,
+                `strap offset at ${width}px`,
+            ).toBeLessThan(1.5);
+            // ... and the title starts right after it with no blank column
+            expect(
+                titleLayout.titleLeft - titleLayout.strapRight,
+                `title gap after strap at ${width}px`,
+            ).toBeLessThan(2.5);
         } else {
             expect(titleLayout.actionsDisplay).not.toBe("none");
         }
