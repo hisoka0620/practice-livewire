@@ -35,6 +35,17 @@ Match the existing style; it is enforced by convention, not by a linter:
 - Named `export` per module; default `export` only for the Alpine
   component objects.
 
+## FullCalendar Content Injection
+
+- Callbacks that inject content (`moreLinkContent`, `eventContent`, ...) must
+  return markup as an object of `{ html: ... }`. A plain string is rendered as
+  **escaped text**: the tag characters appear literally and any CSS targeting
+  the inner nodes never applies.
+- Cover each content callback with a contract unit test in
+  `tests/Unit/JavaScript/calendar-options.test.js` (object form + exact
+  markup), so a regression to the string form fails
+  `npm run test:unit:calendar` instead of shipping silently.
+
 ## Constraints
 
 - Keep the CSS/JS breakpoint split in sync with
