@@ -193,9 +193,11 @@ export function createCalendarOptions({
         moreLinkClick: "popover",
         // The <span> keeps " more" in the DOM so a CSS media query can hide it on
         // narrow screens without relying on FullCalendar rebuilding the content
-        // after a resize.
-        moreLinkContent: (args) =>
-            `+${args.num}<span class="fc-more-link-label"> more</span>`,
+        // after a resize. An object of { html: ... } is required because string
+        // content from the callback is rendered as escaped text, not HTML.
+        moreLinkContent: (args) => ({
+            html: `+${args.num}<span class="fc-more-link-label"> more</span>`,
+        }),
         eventOrder: (firstEvent, secondEvent) => {
             const priorityRank = {
                 high: 3,

@@ -612,6 +612,19 @@ test.describe("dense mobile month calendar", () => {
             await expect(page.locator(".fc-priority-badge")).toHaveCount(0);
             await expect(moreLink).toBeVisible();
 
+            // The " more" label must be a real <span> (string content is escaped
+            // text for FullCalendar, so the HTML form is required), and a media
+            // query hides it below 425px to keep "+N" inside the cell
+            const moreLinkHtml = await moreLink.evaluate(
+                (link) => link.innerHTML,
+            );
+            expect(moreLinkHtml).toContain("<span");
+            expect(moreLinkHtml).not.toContain("&lt;");
+            const labelDisplay = await moreLink
+                .locator(".fc-more-link-label")
+                .evaluate((label) => getComputedStyle(label).display);
+            expect(labelDisplay, `label at ${width}px`).toBe("none");
+
             // The "+N more" link must stay inside its day cell (a ~40-44px cell
             // cannot fit the full label, which would bleed over the next cell)
             const dayRect = await day.boundingBox();
