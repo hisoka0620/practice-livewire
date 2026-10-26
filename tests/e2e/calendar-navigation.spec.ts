@@ -611,6 +611,15 @@ test.describe("dense mobile month calendar", () => {
             await expect(visibleEvent).toBeVisible();
             await expect(page.locator(".fc-priority-badge")).toHaveCount(0);
             await expect(moreLink).toBeVisible();
+
+            // The "+N more" link must stay inside its day cell (a ~40-44px cell
+            // cannot fit the full label, which would bleed over the next cell)
+            const dayRect = await day.boundingBox();
+            const moreRect = await moreLink.boundingBox();
+            expect(
+                moreRect.x + moreRect.width,
+                `more-link right edge at ${width}px`,
+            ).toBeLessThanOrEqual(dayRect.x + dayRect.width + 1);
         }
 
         const visibleEvent = day.locator(".fc-event:visible").first();

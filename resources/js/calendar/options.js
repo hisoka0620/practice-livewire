@@ -191,7 +191,11 @@ export function createCalendarOptions({
         dayMaxEvents: getDayMaxEvents(),
         eventMaxStack: 2,
         moreLinkClick: "popover",
-        moreLinkContent: (args) => `+${args.num} more`,
+        // The <span> keeps " more" in the DOM so a CSS media query can hide it on
+        // narrow screens without relying on FullCalendar rebuilding the content
+        // after a resize.
+        moreLinkContent: (args) =>
+            `+${args.num}<span class="fc-more-link-label"> more</span>`,
         eventOrder: (firstEvent, secondEvent) => {
             const priorityRank = {
                 high: 3,

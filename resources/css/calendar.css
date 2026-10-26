@@ -388,6 +388,16 @@
     opacity: 0.9;
 }
 
+/* Below 425px a ~40-44px month cell cannot fit the full "+N more" label (its
+   default 0.85em text plus padding is ~50-56px wide) and it bleeds over the
+   adjacent cell, so show only "+N". FullCalendar writes no inline styles on
+   this link, so a plain rule is enough (no !important). */
+@media (max-width: 424px) {
+    #task-calendar .fc-daygrid-more-link .fc-more-link-label {
+        display: none;
+    }
+}
+
 #task-calendar .fc-daygrid-event:hover {
     opacity: 0.9;
 }
