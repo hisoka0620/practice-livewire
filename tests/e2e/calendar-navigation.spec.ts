@@ -605,7 +605,7 @@ test.describe("dense mobile month calendar", () => {
         );
         const moreLink = day.locator(".fc-daygrid-more-link");
 
-        for (const width of [320, 390]) {
+        for (const width of [320, 390, 479]) {
             await page.setViewportSize({ width, height: 844 });
             const visibleEvent = day.locator(".fc-event:visible").first();
             await expect(visibleEvent).toBeVisible();
@@ -623,7 +623,13 @@ test.describe("dense mobile month calendar", () => {
             const labelDisplay = await moreLink
                 .locator(".fc-more-link-label")
                 .evaluate((label) => getComputedStyle(label).display);
-            expect(labelDisplay, `label at ${width}px`).toBe("none");
+            // At 479px the ~68px cell fits the full label, so it must stay visible
+            expect(labelDisplay, `label at ${width}px`).toBe(
+                width <= 424 ? "none" : "inline",
+            );
+            // The visible text must be the clean "+N more" label — an escaped
+            // markup regression would surface "<span ...>" characters here
+            await expect(moreLink).toHaveText(/^\+\d+ more$/);
 
             // The "+N more" link must stay inside its day cell (a ~40-44px cell
             // cannot fit the full label, which would bleed over the next cell)
