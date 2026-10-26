@@ -138,28 +138,23 @@
         width: auto;
     }
 
-    /* The "+N more" popover becomes a bottom sheet anchored to .fc-view-harness.
-       position: absolute (not fixed) is required: FullCalendar's Popover.updateSize()
-       reads rootEl.offsetParent.getBoundingClientRect(), and a fixed element returns
-       null offsetParent, so the thrown TypeError breaks FullCalendar's synchronous
-       render pipeline — after which the popover can never be closed.
-       Using !important takes precedence over inline styles (direction/top/left)
-       written by FullCalendar. */
     #task-calendar .fc-popover {
-        position: absolute !important;
-        top: auto !important;
-        left: 0.5rem !important;
-        right: 0.5rem;
-        bottom: 0.5rem;
-        box-sizing: border-box;
-        max-width: none;
+        /* Placement follows FullCalendar's default (cell-anchored via its inline
+           top/left — never override those, a fixed/own value breaks Popover.updateSize()).
+           Only the width needs a fit guard on narrow screens: nowrap event rows give
+           the popover a shrink-to-fit width that exceeds the viewport, so without a
+           cap it overflows horizontally and leaves the header close button unreachable. */
+        max-width: calc(100% - 1rem);
     }
 
     #task-calendar .fc-popover .fc-popover-arrow {
+        /* Skin choice: hide FullCalendar's cell-pointing arrow on mobile */
         display: none;
     }
 
     #task-calendar .fc-popover-body {
+        /* Keep the event list scrollable within the viewport while the popover
+           is placed at its FullCalendar default (cell-anchored) position */
         max-height: min(60vh, 360px);
         overflow-y: auto;
     }
@@ -168,7 +163,7 @@
 /* Narrowest screens: with a cell width of about 40-50px, showing the priority dot
    and a 24px action button side by side nearly erases the title area, and browser
    tap correction absorbs taps onto the adjacent button, so restore the usual
-   "priority stripe + title / tap → modal" behavior. The popover (bottom sheet) keeps
+   "priority stripe + title / tap → modal" behavior. The (+N more) popover keeps
    enough row width to keep showing the dot and ⋮ */
 @media (max-width: 479px) {
     #task-calendar
