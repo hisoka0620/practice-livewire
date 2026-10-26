@@ -675,6 +675,67 @@ test.describe("dense mobile month calendar", () => {
         const taskDialog = page.getByRole("dialog");
         await expect(taskDialog.getByLabel("Title")).toHaveValue(longTitle);
     });
+
+    test("closes the more popover with the close button and outside taps", async ({
+        page,
+    }) => {
+        await page.clock.install({
+            time: new Date("2026-10-01T12:00:00-07:00"),
+        });
+        await signInAndOpenCalendar(page);
+
+        const titles = [
+            "Dense close event one",
+            "Dense close event two",
+            "Dense close event three",
+            "Dense close event four",
+        ];
+
+        for (const title of titles) {
+            await page.getByRole("button", { name: "Create Task" }).click();
+            const dialog = page.getByRole("dialog");
+            await dialog.getByLabel("Title").fill(title);
+            await dialog.getByLabel("Deadline").fill("2026-10-01T10:00");
+            const creation = page.waitForResponse((response) =>
+                response.url().includes("/livewire/update"),
+            );
+            await dialog.getByRole("button", { name: "Create" }).click();
+            await creation;
+            await expect(dialog).toBeHidden();
+        }
+
+        const day = page.locator(
+            '#task-calendar .fc-daygrid-day[data-date="2026-10-01"]',
+        );
+        const moreLink = day.locator(".fc-daygrid-more-link");
+        await expect(moreLink).toBeVisible();
+
+        const popover = page.locator("#task-calendar .fc-popover");
+
+        await moreLink.tap();
+        await expect(popover).toBeVisible();
+        for (const title of titles) {
+            await expect(popover).toContainText(title);
+        }
+
+        // The ✕ button in the popover header closes it
+        await popover.locator(".fc-popover-close").tap();
+        await expect(popover).toBeHidden();
+
+        // The popover can be reopened and closed again
+        await moreLink.tap();
+        await expect(popover).toBeVisible();
+
+        // A tap anywhere outside the popover closes it
+        await page.locator(".fc-toolbar-title").tap();
+        await expect(popover).toBeHidden();
+
+        // FullCalendar's render pipeline must still work after the popover closed
+        await page.locator(".fc-next-button").click();
+        await expect(page.locator(".fc-toolbar-title")).toContainText(
+            "November 2026",
+        );
+    });
 });
 
 test("keeps the date picker synchronized across calendar views and jumps", async ({

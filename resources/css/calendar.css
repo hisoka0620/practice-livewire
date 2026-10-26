@@ -138,10 +138,15 @@
         width: auto;
     }
 
-    /* The "+N more" popover becomes a bottom sheet independent of cell position.
-       Using !important takes precedence over inline styles (direction/top/left) */
+    /* The "+N more" popover becomes a bottom sheet anchored to .fc-view-harness.
+       position: absolute (not fixed) is required: FullCalendar's Popover.updateSize()
+       reads rootEl.offsetParent.getBoundingClientRect(), and a fixed element returns
+       null offsetParent, so the thrown TypeError breaks FullCalendar's synchronous
+       render pipeline — after which the popover can never be closed.
+       Using !important takes precedence over inline styles (direction/top/left)
+       written by FullCalendar. */
     #task-calendar .fc-popover {
-        position: fixed !important;
+        position: absolute !important;
         top: auto !important;
         left: 0.5rem !important;
         right: 0.5rem;
