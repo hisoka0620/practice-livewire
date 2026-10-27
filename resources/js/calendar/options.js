@@ -173,7 +173,25 @@ export function createCalendarOptions({
         views: {
             timeGridWeek: {
                 allDaySlot: false,
-                eventMinHeight: 30,
+                // Deadlines are instants, so chips keep FullCalendar's default
+                // 30-minute visual duration. The old 30px eventMinHeight made
+                // every chip stretch to ~50 minutes of grid space (the grid is
+                // ~0.6px/min), which made deadlines within about an hour
+                // collide. 16px leaves room for the single-row chip content.
+                eventMinHeight: 16,
+                // Overlapping 30-minute windows (deadlines < 30 min apart) are
+                // laid out side by side, keeping every chip readable instead of
+                // the default broad cards that cover half of each other.
+                slotEventOverlap: false,
+                // Unlike the month grid (which shows date numbers inside cells),
+                // the week view headers are the only place carrying the date.
+                dayHeaderFormat: {
+                    weekday: "short",
+                    month: "short",
+                    day: "numeric",
+                },
+                // Vertical line at the current time (timeGrid views only).
+                nowIndicator: true,
             },
         },
         events: [],

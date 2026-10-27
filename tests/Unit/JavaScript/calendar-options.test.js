@@ -188,6 +188,33 @@ test("uses narrow weekday labels in initial options on narrow screens", () => {
     assert.deepEqual(options.dayHeaderFormat, { weekday: "narrow" });
 });
 
+test("tailors the week view for compact, readable deadline chips", () => {
+    const options = createCalendarOptions({
+        userTimeZone: "America/Los_Angeles",
+        onEventDrop() {},
+        onDateClick() {},
+        onDatesSet() {},
+        onEventClick() {},
+        onEventContextMenu() {},
+    });
+    const week = options.views?.timeGridWeek;
+
+    assert.equal(week.allDaySlot, false);
+    // Low min height keeps the 30-minute visual duration from stretching to
+    // ~50 minutes of grid space and colliding with neighboring deadlines.
+    assert.equal(week.eventMinHeight, 16);
+    // Near-simultaneous deadlines split into columns instead of covering
+    // each other's halves.
+    assert.equal(week.slotEventOverlap, false);
+    // Week headers carry the date that the month grid shows inside cells.
+    assert.deepEqual(week.dayHeaderFormat, {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+    });
+    assert.equal(week.nowIndicator, true);
+});
+
 test("creates calendar options with Alpine-owned interaction callbacks", () => {
     const callbacks = {
         onEventDrop() {},

@@ -11,6 +11,9 @@
     /* Neutralize FullCalendar's default light "today" tint (it leaks onto the
        weekday header of today's column); today is styled explicitly below */
     --fc-today-bg-color: transparent;
+    /* Sky tone for the current-time indicator in the week view, matching the
+       today column wash below (FullCalendar's default is fire-engine red) */
+    --fc-now-indicator-color: rgba(56, 189, 248, 0.8);
 }
 
 #task-calendar .fc-daygrid-day-frame {
@@ -403,35 +406,27 @@
 }
 
 /* ============================================================
-   timeGridWeek only: center the dot + stack time (top) / title (bottom)
-   Scoped to .fc-timeGridWeek-view so it has no effect on dayGridMonth
+   timeGridWeek only: compact single-row chips (dot | time | title | ⋮)
+   that inherit the shared month-view event layout above. The old
+   week-only stacked time/title layout needed ~28px of content, which
+   forced a 30px eventMinHeight (~50 minutes of grid space at the
+   view's ~0.6px/min scale) and made deadlines within about an hour
+   pixel-collide with each other.
    ============================================================ */
-#task-calendar .fc-timeGridWeek-view .fc-custom-event {
-    align-items: center; /* Center the dot vertically within the content */
-    white-space: normal; /* Disable nowrap for vertical stacking */
-    width: 100%;
-}
-
 #task-calendar .fc-timeGridWeek-view .fc-event-content {
-    flex-direction: column;
-    align-items: flex-start;
-    justify-content: center;
-    gap: 0.05rem;
     min-width: 0;
 }
 
-#task-calendar .fc-timeGridWeek-view .fc-event-time {
-    font-size: 0.7rem;
-    line-height: 1.1;
-    opacity: 0.85;
-    flex-shrink: initial;
+#task-calendar .fc-timeGridWeek-view .fc-event-title {
+    flex: 1 1 auto;
+    min-width: 0;
 }
 
-#task-calendar .fc-timeGridWeek-view .fc-event-title {
-    font-size: 0.8rem;
-    line-height: 1.15;
-    overflow: hidden;
-    text-overflow: ellipsis;
+#task-calendar .fc-timeGridWeek-view .fc-event-actions-trigger {
+    /* Vertical room is scarce at ~0.6px per grid minute; keep the glyph's own
+       line box so the chip stays at eventMinHeight instead of growing taller */
+    height: auto;
+    align-self: center;
 }
 
 #task-calendar .fc-timegrid-more-link.fc-more-link {
@@ -467,6 +462,38 @@
 /* Sticky is no longer needed once the height is fixed, so unset it */
 #task-calendar .fc-timeGridWeek-view .fc-timegrid-more-link-inner.fc-sticky {
     position: static;
+}
+
+/* ============================================================
+   timeGridWeek only: finish the dark skin for the grid interior.
+   FullCalendar injects light defaults that calendar.css does not cover
+   (--fc-border-color #ddd, --fc-page-bg-color #fff); the month grid
+   predates this section and keeps its current look.
+   ============================================================ */
+#task-calendar .fc-timeGridWeek-view {
+    --fc-border-color: rgba(148, 163, 184, 0.16);
+    /* FullCalendar draws a 1px "separation" ring around timed events (and
+       drag mirrors) via box-shadow: 0 0 0 1px var(--fc-page-bg-color, #fff);
+       pointing the variable at the panel color removes the light-theme ring */
+    --fc-page-bg-color: rgba(38, 38, 38, 0.9);
+}
+
+#task-calendar .fc-timeGridWeek-view .fc-timegrid-slot-label {
+    color: #94a3b8; /* Tone down the hour labels to the header-row text tone */
+}
+
+/* Weekend tint for the week view columns (the daygrid weekend rule above only
+   covers the month grid). Today stays explicit below because the shared
+   --fc-today-bg-color is intentionally transparent at the component root. */
+#task-calendar .fc-timeGridWeek-view .fc-timegrid-col.fc-day-sat,
+#task-calendar .fc-timeGridWeek-view .fc-timegrid-col.fc-day-sun {
+    background: rgba(148, 163, 184, 0.05);
+}
+
+#task-calendar .fc-timeGridWeek-view .fc-timegrid-col.fc-day-today {
+    /* Same sky wash as the today weekday header rule below (must come after
+       the weekend rule so a Saturday/Sunday today keeps the today tint) */
+    background: rgba(56, 189, 248, 0.08);
 }
 
 /* ============================================================
