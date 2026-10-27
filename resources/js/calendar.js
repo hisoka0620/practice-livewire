@@ -484,45 +484,62 @@ export default (wire) => ({
         if (!calendarEl) return;
 
         const existing = calendarEl.querySelector(".fc-no-events-overlay");
+        // Match the copy to the period the calendar is currently showing
+        const isWeek = this.calendar?.view.type === "timeGridWeek";
+        const period = isWeek ? "week" : "month";
 
-        if (show && !existing) {
-            const overlay = document.createElement("div");
-            overlay.className = "fc-no-events-overlay";
-            overlay.innerHTML = /* HTML */ `
-                <div class="fc-no-events-overlay__icon">
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="28"
-                        height="28"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="#71717a"
-                        stroke-width="1.5"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                    >
-                        <rect x="3" y="4" width="18" height="18" rx="2" />
-                        <path d="M16 2v4M8 2v4M3 10h18" />
-                        <line
-                            x1="8"
-                            y1="15"
-                            x2="16"
-                            y2="15"
-                            stroke-dasharray="2 2"
-                        />
-                    </svg>
-                </div>
-                <p class="fc-no-events-overlay__title">
-                    No deadline tasks this month.
-                </p>
-                <p class="fc-no-events-overlay__sub">
-                    Try a different month or adjust your filters.
-                </p>
-            `;
-            calendarEl.appendChild(overlay);
-        } else if (!show && existing) {
-            existing.remove();
+        if (!show) {
+            existing?.remove();
+            return;
         }
+
+        if (existing) {
+            // Refresh the copy when the visible period changed (e.g. week ⇔ month)
+            if (existing.dataset.period !== period) {
+                existing.dataset.period = period;
+                existing.querySelector(".fc-no-events-overlay__title").textContent =
+                    `No deadline tasks this ${period}.`;
+                existing.querySelector(".fc-no-events-overlay__sub").textContent =
+                    `Try a different ${period} or adjust your filters.`;
+            }
+            return;
+        }
+
+        const overlay = document.createElement("div");
+        overlay.className = "fc-no-events-overlay";
+        overlay.dataset.period = period;
+        overlay.innerHTML = /* HTML */ `
+            <div class="fc-no-events-overlay__icon">
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="28"
+                    height="28"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#71717a"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                >
+                    <rect x="3" y="4" width="18" height="18" rx="2" />
+                    <path d="M16 2v4M8 2v4M3 10h18" />
+                    <line
+                        x1="8"
+                        y1="15"
+                        x2="16"
+                        y2="15"
+                        stroke-dasharray="2 2"
+                    />
+                </svg>
+            </div>
+            <p class="fc-no-events-overlay__title">
+                No deadline tasks this ${period}.
+            </p>
+            <p class="fc-no-events-overlay__sub">
+                Try a different ${period} or adjust your filters.
+            </p>
+        `;
+        calendarEl.appendChild(overlay);
     },
     jumpToDate(value) {
         // value is in "2026-06" format
