@@ -21,6 +21,7 @@ import {
     combineDateAndTime,
     formatForServer,
     resolveNewDeadline,
+    resolveWeekScrollTime,
 } from "./calendar/date-utils";
 
 //
@@ -271,6 +272,17 @@ export default (wire) => ({
                     // observers and the overlay attach point to the latest state
                     this.observeCalendarLayout();
                     this.attachOverlayToHarness();
+                    if (viewType === "timeGridWeek") {
+                        // Keep some schedule above the now indicator when
+                        // entering (or navigating) a week
+                        this.calendar.scrollToTime(
+                            resolveWeekScrollTime(
+                                info.start,
+                                info.end,
+                                new Date(),
+                            ),
+                        );
+                    }
                     this.runWireAction(
                         wire.loadEvents(
                             info.start.toISOString(),

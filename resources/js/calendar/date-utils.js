@@ -59,3 +59,47 @@ export function resolveNewDeadline(info) {
 
     return combineDateAndTime(info.event.start, oldTime);
 }
+
+const WEEK_SCROLL_CONTEXT_MINUTES = 90; // Keep ~1.5h of schedule above the now indicator
+const WEEK_DEFAULT_SCROLL_TIME = { hours: 6, minutes: 0, seconds: 0 };
+
+/**
+ * Decide the week view scroll position for the displayed range as a
+ * DurationInput for calendar.scrollToTime(). Weeks containing "now" scroll so
+ * that some schedule above the current-time indicator stays visible; any other
+ * week falls back to FullCalendar's 6:00 default. Crossing midnight backwards
+ * clamps to 0:00 (a duration counts from midnight, not from the previous
+ * evening). Crossing DST inside the context window shifts the hint by one
+ * hour, an acceptable drift for a scroll position.
+ */
+export function resolveWeekScrollTime(viewStart, viewEnd, now) {
+    if (!(viewStart <= now && now < viewEnd)) {
+        return { ...WEEK_DEFAULT_SCROLL_TIME };
+    }
+
+    const target = new Date(
+        now.getTime() - WEEK_SCROLL_CONTEXT_MINUTES * 60 * 1000,
+    );
+    const targetMidnight = new Date(
+        target.getFullYear(),
+        target.getMonth(),
+        target.getDate(),
+    );
+    const nowMidnight = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
+    );
+
+    if (target < nowMidnight) {
+        return { hours: 0, minutes: 0, seconds: 0 };
+    }
+
+    const minutes = Math.floor((target - targetMidnight) / 60000);
+
+    return {
+        hours: Math.floor(minutes / 60),
+        minutes: minutes % 60,
+        seconds: 0,
+    };
+}

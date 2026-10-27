@@ -6,6 +6,7 @@ import {
     formatForServer,
     formatTooltipDeadline,
     resolveNewDeadline,
+    resolveWeekScrollTime,
 } from "../../../resources/js/calendar/date-utils.js";
 
 assert.equal(
@@ -85,5 +86,58 @@ test("resolves timed drops to the FullCalendar event start", () => {
             event: { start },
         }),
         start,
+    );
+});
+
+test("scrolls the displayed week to just above the now indicator", () => {
+    // Week of Oct 11 2026 (00:00 PDT) through Oct 17
+    const weekStart = new Date("2026-10-11T07:00:00.000Z");
+    const weekEnd = new Date("2026-10-18T07:00:00.000Z");
+
+    // Wednesday 15:00 PDT minus 90 minutes of context above "now"
+    assert.deepEqual(
+        resolveWeekScrollTime(
+            weekStart,
+            weekEnd,
+            new Date("2026-10-14T22:00:00.000Z"),
+        ),
+        { hours: 13, minutes: 30, seconds: 0 },
+    );
+});
+
+test("pins the scroll target at midnight when the context crosses it", () => {
+    const weekStart = new Date("2026-10-11T07:00:00.000Z");
+    const weekEnd = new Date("2026-10-18T07:00:00.000Z");
+
+    // Sunday 00:30 PDT: 90 minutes back lands on Saturday late evening
+    assert.deepEqual(
+        resolveWeekScrollTime(
+            weekStart,
+            weekEnd,
+            new Date("2026-10-11T07:30:00.000Z"),
+        ),
+        { hours: 0, minutes: 0, seconds: 0 },
+    );
+});
+
+test("falls back to the default slot time when today is outside the week", () => {
+    const now = new Date("2026-10-14T22:00:00.000Z");
+    const defaultScroll = { hours: 6, minutes: 0, seconds: 0 };
+
+    assert.deepEqual(
+        resolveWeekScrollTime(
+            new Date("2026-11-08T08:00:00.000Z"), // next week (00:00 PST)
+            new Date("2026-11-15T08:00:00.000Z"),
+            now,
+        ),
+        defaultScroll,
+    );
+    assert.deepEqual(
+        resolveWeekScrollTime(
+            new Date("2026-10-04T07:00:00.000Z"), // previous week (00:00 PDT)
+            new Date("2026-10-11T07:00:00.000Z"),
+            now,
+        ),
+        defaultScroll,
     );
 });
