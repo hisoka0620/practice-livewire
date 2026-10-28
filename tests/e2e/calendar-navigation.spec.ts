@@ -1,3 +1,4 @@
+import type { Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 import { signInAndOpenCalendar } from "./support/calendar";
 
@@ -895,3 +896,42 @@ test("keeps mobile in month view and synchronizes after resizing", async ({
     await expect(datePicker).toHaveValue("October 2026");
     await expect(event).toBeVisible();
 });
+
+// A reload reboots the Livewire page ($view resets to the task list), so the
+// calendar is re-opened via the Calendar button; Alpine then restores the
+// last selected FullCalendar view from localStorage ("calendarView").
+test("reopens the last selected calendar view after a reload", async ({
+    page,
+}) => {
+    await page.clock.install({
+        time: new Date("2026-10-01T12:00:00-07:00"),
+    });
+    await signInAndOpenCalendar(page);
+
+    // Switching to the week view persists the choice
+    await page.locator(".fc-timeGridWeek-button").click();
+    await expect(page.locator(".fc-timegrid")).toBeVisible();
+    expect(await localStorageView(page)).toBe("timeGridWeek");
+
+    // After the reload the calendar must come back in the week view
+    await reloadAndOpenCalendar(page);
+    await expect(page.locator(".fc-timegrid")).toBeVisible();
+
+    // Switching back to month persists that choice the same way
+    await page.locator(".fc-dayGridMonth-button").click();
+    await expect(page.locator(".fc-daygrid")).toBeVisible();
+    expect(await localStorageView(page)).toBe("dayGridMonth");
+
+    await reloadAndOpenCalendar(page);
+    await expect(page.locator(".fc-daygrid")).toBeVisible();
+    await expect(page.locator(".fc-timegrid")).not.toBeVisible();
+});
+
+async function localStorageView(page: Page) {
+    return page.evaluate(() => localStorage.getItem("calendarView"));
+}
+
+async function reloadAndOpenCalendar(page: Page) {
+    await page.reload();
+    await page.getByRole("button", { name: "Calendar", exact: true }).click();
+}

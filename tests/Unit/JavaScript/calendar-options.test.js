@@ -237,6 +237,29 @@ test("creates calendar options with Alpine-owned interaction callbacks", () => {
     assert.equal(options.eventDurationEditable, false);
 });
 
+// A hardcoded initialView: "dayGridMonth" in createCalendarOptions once
+// ignored the caller's persisted preference, so every reload reset the
+// calendar back to the month grid. This guards that wiring.
+test("honors the provided initial view over the month default", () => {
+    const base = {
+        userTimeZone: "America/Los_Angeles",
+        onEventDrop() {},
+        onDateClick() {},
+        onDatesSet() {},
+        onEventClick() {},
+        onEventContextMenu() {},
+    };
+
+    const week = createCalendarOptions({
+        ...base,
+        initialView: "timeGridWeek",
+    });
+    assert.equal(week.initialView, "timeGridWeek");
+
+    const month = createCalendarOptions(base);
+    assert.equal(month.initialView, "dayGridMonth");
+});
+
 test("preserves event ordering and escaped event markup", () => {
     const options = createCalendarOptions({
         userTimeZone: "America/Los_Angeles",

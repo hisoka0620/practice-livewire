@@ -39,6 +39,7 @@ export default (wire) => ({
     errorMessage: "",
     datePickerViewType: "dayGridMonth",
     _skipDatePickerSync: false, // Skips overwriting the displayed date when gotoDate was triggered by flatpickr's own selection
+    _preferredView: "dayGridMonth", // The view restored/persisted across reloads (localStorage "calendarView")
     _destroyed: false, // Guards against Livewire.hook running after this component is destroyed
     _offCommitHook: null,
     _onScroll: null, // Function reference passed to document.addEventListener("scroll", ...) (kept so removeEventListener gets the same reference)
@@ -62,6 +63,12 @@ export default (wire) => ({
                 this.isLoading = isLoading;
             },
         );
+        // Restore the last selected view (week/month) so a reload reopens the
+        // same view instead of always starting on the month grid
+        this._preferredView =
+            localStorage.getItem("calendarView") === "timeGridWeek"
+                ? "timeGridWeek"
+                : "dayGridMonth";
         // Fires every time the calendarEvents property is updated
         wire.on("calendarEventsUpdated", (payload) => {
             if (!this.calendar) return;
@@ -215,6 +222,7 @@ export default (wire) => ({
             createCalendarOptions({
                 userTimeZone: this.userTimeZone,
                 eventTooltipController: this._eventTooltipController,
+                initialView: this._preferredView,
                 onEventDrop: (info) => {
                     const taskId = info.event.id;
                     const newDeadline = resolveNewDeadline(info); // New deadline after the drop (Date object)
@@ -283,6 +291,9 @@ export default (wire) => ({
                             ),
                         );
                     }
+                    // Persist the view so reloads reopen it. The two shipped
+                    // view types are exactly these values, so store as-is.
+                    localStorage.setItem("calendarView", viewType);
                     this.runWireAction(
                         wire.loadEvents(
                             info.start.toISOString(),

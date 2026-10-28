@@ -160,11 +160,15 @@ export function createCalendarOptions({
     onEventClick,
     onEventContextMenu,
     eventTooltipController,
+    // Comes from the persisted view preference in calendar.js. Must be a
+    // destructured parameter returned below — a hardcoded "dayGridMonth" here
+    // silently ignored the caller's value and reset reloads back to month.
+    initialView = "dayGridMonth",
 }) {
     return {
         plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
         timeZone: "local",
-        initialView: "dayGridMonth",
+        initialView,
         headerToolbar: {
             left: "prev,next today",
             center: "title",
