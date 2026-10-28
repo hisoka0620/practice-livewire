@@ -302,9 +302,24 @@ test("preserves event ordering and escaped event markup", () => {
         },
     });
 
-    assert.match(content.html, /8:30 am/);
+    assert.match(
+        content.html,
+        /<div class="fc-event-time"><span class="fc-event-time-value">8:30<\/span><span class="fc-event-time-meridiem"> am<\/span><\/div>/,
+    );
     assert.match(content.html, /&lt;Task&gt;/);
     assert.match(content.html, /background:#ef4444/);
+
+    // A missing deadline renders an empty time node instead of "Invalid Date"
+    const noDeadlineContent = options.eventContent({
+        event: {
+            title: "No deadline",
+            extendedProps: { deadline: null, priority: "low" },
+        },
+    });
+    assert.match(
+        noDeadlineContent.html,
+        /<div class="fc-event-time"><\/div>/,
+    );
 });
 
 // FullCalendar renders string content as escaped text, so any markup must be

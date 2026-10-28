@@ -2,7 +2,7 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import tippy from "tippy.js";
-import { formatEventTime, formatTooltipDeadline } from "./date-utils.js";
+import { formatEventTimeParts, formatTooltipDeadline } from "./date-utils.js";
 
 export const MOBILE_CALENDAR_MAX_WIDTH = 639;
 export const NARROW_DAY_HEADER_MAX_WIDTH = 375;
@@ -269,7 +269,16 @@ export function createCalendarOptions({
             };
 
             const priority = priorityMap[rawPriority] || { color: "#94a3b8" };
-            const time = formatEventTime(props.deadline, userTimeZone);
+            const timeParts = formatEventTimeParts(props.deadline, userTimeZone);
+            // The meridiem is a separate node so the week view can drop it
+            // (then the whole time) via container queries as the lane narrows.
+            // It keeps the leading space: hiding the span removes both at once.
+            const timeHtml = timeParts.value
+                ? `<span class="fc-event-time-value">${timeParts.value}</span>` +
+                  (timeParts.meridiem
+                      ? `<span class="fc-event-time-meridiem"> ${timeParts.meridiem}</span>`
+                      : "")
+                : "";
 
             return {
                 html: /* HTML */ `
@@ -279,7 +288,7 @@ export function createCalendarOptions({
                             style="background:${priority.color};"
                         ></span>
                         <div class="fc-event-content">
-                            <div class="fc-event-time">${time}</div>
+                            <div class="fc-event-time">${timeHtml}</div>
                             <div class="fc-event-title">${title}</div>
                         </div>
                         <button
