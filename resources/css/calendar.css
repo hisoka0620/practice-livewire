@@ -427,6 +427,12 @@
        line box so the chip stays at eventMinHeight instead of growing taller */
     height: auto;
     align-self: center;
+    /* The coarse-pointer rule below sizes this trigger to a 24px tap target,
+       which is taller than the 16px eventMinHeight chip here. Cap the box so
+       the chip keeps its collision-free height; the 1rem glyph (line-height 1,
+       ~16px) still renders fully. The chip itself remains the row-wide tap
+       surface for opening the modal. */
+    max-height: 16px;
 }
 
 #task-calendar .fc-timegrid-more-link.fc-more-link {
