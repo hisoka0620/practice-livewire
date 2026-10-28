@@ -1,0 +1,629 @@
+#calendar-container {
+    height: clamp(860px, 84vh, 960px);
+}
+
+#task-calendar {
+    position: relative; /* Reference point for overlays */
+    background: rgba(38, 38, 38, 0.9);
+    color: #e2e8f0;
+    width: 100%;
+    --fc-header-height: 63px; /* Fallback for toolbar + weekday row height. Can be measured and overridden from JS */
+    /* Neutralize FullCalendar's default light "today" tint (it leaks onto the
+       weekday header of today's column); today is styled explicitly below */
+    --fc-today-bg-color: transparent;
+    /* Sky tone for the current-time indicator in the week view, matching the
+       today column wash below (FullCalendar's default is fire-engine red) */
+    --fc-now-indicator-color: rgba(56, 189, 248, 0.8);
+}
+
+#task-calendar .fc-daygrid-day-frame {
+    min-height: 120px;
+}
+
+#task-calendar .fc-toolbar-title,
+#task-calendar .fc-col-header-cell-cushion,
+#task-calendar .fc-daygrid-day-number,
+#task-calendar .fc-daygrid-event-title,
+#task-calendar .fc-timegrid-event-title {
+    color: #e2e8f0;
+}
+
+#task-calendar .fc-col-header-cell,
+#task-calendar .fc-col-header-cell-cushion,
+#task-calendar .fc-timegrid-col .fc-col-header-cell,
+#task-calendar .fc-col-header {
+    background: rgba(38, 38, 38, 0.9);
+    color: #cbd5e1;
+}
+
+#task-calendar .fc-toolbar-chunk,
+#task-calendar .fc-toolbar-chunk > * {
+    color: #cbd5e1;
+}
+
+#task-calendar .fc-toolbar {
+    gap: 0.5rem;
+}
+
+#task-calendar .fc-toolbar-title {
+    font-size: 1.6rem;
+    line-height: 1.2;
+}
+
+#task-calendar .fc-toolbar .fc-button {
+    padding: 0.35rem 0.6rem;
+    font-size: 1rem;
+    min-height: 2rem;
+}
+
+@media (max-width: 639px) {
+    #calendar-container {
+        height: clamp(520px, 68vh, 640px);
+    }
+
+    #task-calendar .fc-daygrid-day-frame {
+        min-height: 64px;
+    }
+
+    /* Single-row toolbar: prev/next/today | title.
+       The view-switch chunk is hidden on mobile since the view is fixed to month view */
+    #task-calendar .fc-toolbar {
+        flex-wrap: nowrap;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    #task-calendar .fc-toolbar-chunk {
+        flex-shrink: 0;
+        min-width: 0;
+    }
+
+    #task-calendar .fc-toolbar-chunk:nth-child(2) {
+        flex: 1 1 auto;
+        justify-content: center;
+        text-align: center;
+    }
+
+    #task-calendar .fc-toolbar-chunk:nth-child(2) .fc-toolbar-title {
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    #task-calendar .fc-toolbar-chunk:nth-child(3) {
+        display: none;
+    }
+
+    #task-calendar .fc-toolbar-title {
+        font-size: 1.05rem;
+    }
+
+    #task-calendar .fc-toolbar .fc-button {
+        padding: 0.3rem 0.45rem;
+        font-size: 0.875rem;
+    }
+
+    #task-calendar .fc-daygrid-event .fc-custom-event {
+        align-items: center;
+        display: flex;
+        gap: 0.125rem;
+        white-space: nowrap;
+    }
+
+    #task-calendar .fc-daygrid-event .fc-event-time {
+        display: none;
+    }
+
+    #task-calendar .fc-daygrid-event .fc-event-content {
+        display: block;
+        flex: 1 1 0%;
+        min-width: 0;
+        width: auto;
+    }
+
+    #task-calendar .fc-daygrid-event .fc-event-title {
+        display: block;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        line-height: 1.1;
+    }
+
+    #task-calendar .fc-popover .fc-daygrid-event .fc-custom-event {
+        display: flex;
+        align-items: center;
+    }
+
+    #task-calendar .fc-popover .fc-daygrid-event .fc-event-content {
+        flex: 1;
+        min-width: 0;
+        width: auto;
+    }
+
+    #task-calendar .fc-popover {
+        /* Placement follows FullCalendar's default (cell-anchored via its inline
+           top/left — never override those, a fixed/own value breaks Popover.updateSize()).
+           Only the width needs a fit guard on narrow screens: nowrap event rows give
+           the popover a shrink-to-fit width that exceeds the viewport, so without a
+           cap it overflows horizontally and leaves the header close button unreachable. */
+        max-width: calc(100% - 1rem);
+    }
+
+    #task-calendar .fc-popover .fc-popover-arrow {
+        /* Skin choice: hide FullCalendar's cell-pointing arrow on mobile */
+        display: none;
+    }
+
+    #task-calendar .fc-popover-body {
+        /* Keep the event list scrollable within the viewport while the popover
+           is placed at its FullCalendar default (cell-anchored) position */
+        max-height: min(60vh, 360px);
+        overflow-y: auto;
+    }
+}
+
+/* Narrowest screens: with a cell width of about 40-50px, showing the priority dot
+   and a 24px action button side by side nearly erases the title area, and browser
+   tap correction absorbs taps onto the adjacent button, so restore the usual
+   "priority stripe + title / tap → modal" behavior. The (+N more) popover keeps
+   enough row width to keep showing the dot and ⋮ */
+@media (max-width: 479px) {
+    #task-calendar
+        .fc-daygrid-day
+        .fc-daygrid-event
+        .fc-event-actions-trigger {
+        display: none;
+    }
+
+    #task-calendar
+        .fc-popover
+        .fc-daygrid-event
+        .fc-event-actions-trigger {
+        display: flex;
+    }
+
+    /* The 0.55rem dot plus flex gap costs ~11px of a ~49px cell and squeezes the
+       title down to "● Ti…". Show the priority color as a slim vertical stripe on
+       the chip's left edge instead: out of the flex flow, so the title recovers
+       the width while the priority mapping stays visible in-cell. The popover
+       keeps the round dot on wider rows. The left padding only reserves the strap
+       width plus a 1px gap, so no blank column is left before/after the strap. */
+    #task-calendar
+        .fc-daygrid-day
+        .fc-daygrid-event
+        .fc-custom-event {
+        padding-left: 0.25rem;
+    }
+
+    #task-calendar
+        .fc-daygrid-day
+        .fc-daygrid-event
+        .fc-priority-dot {
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: 3px;
+        height: auto;
+        /* Keep the rounding below the 3px strap width so the strap's left edge
+           stays visible instead of being rounded away (looks like blank space) */
+        border-radius: 0.125rem 0 0 0.125rem;
+        box-shadow: none;
+    }
+}
+
+@media (max-height: 640px) {
+    #calendar-container {
+        height: auto;
+    }
+
+    #task-calendar .fc-daygrid-day-frame {
+        min-height: 64px;
+    }
+}
+
+#task-calendar .fc-button {
+    color: #cbd5e1;
+    border-color: rgba(148, 163, 184, 0.24);
+    background: rgba(148, 163, 184, 0.08);
+}
+
+#task-calendar .fc-button:hover,
+#task-calendar .fc-button:focus,
+#task-calendar .fc-button-active {
+    background: rgba(148, 163, 184, 0.32);
+}
+
+#task-calendar .fc-button-primary {
+    background: rgba(148, 163, 184, 0.14);
+}
+
+/* Distinguish weekend columns with a subtle background (the today rule below comes later and overrides it) */
+#task-calendar .fc-daygrid-day.fc-day-sat,
+#task-calendar .fc-daygrid-day.fc-day-sun {
+    background: rgba(148, 163, 184, 0.05);
+}
+
+#task-calendar .fc-daygrid-day.fc-day-today,
+#task-calendar .fc-timegrid-col .fc-col-header-cell.fc-day-today {
+    /* Subtle sky wash that ties into the sky-300 date number below */
+    background: rgba(56, 189, 248, 0.08);
+}
+
+/* Emphasize today's date number */
+#task-calendar .fc-daygrid-day.fc-day-today .fc-daygrid-day-number {
+    color: #7dd3fc;
+    font-weight: 700;
+}
+
+/* Use the default mouse cursor over the whole event element */
+#task-calendar .fc-event {
+    cursor: default;
+}
+
+/* Layout inside an event */
+#task-calendar .fc-custom-event {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    white-space: nowrap;
+    overflow: hidden;
+    padding: 0 0.125rem;
+}
+
+#task-calendar .fc-event-actions-trigger {
+    display: flex;
+    flex: 0 0 1.25rem;
+    align-items: center;
+    justify-content: center;
+    width: 1.25rem;
+    height: 1.25rem;
+    margin-left: auto;
+    border: 0;
+    border-radius: 0.2rem;
+    background: transparent;
+    color: inherit;
+    font-size: 1rem;
+    line-height: 1;
+    opacity: 0;
+    cursor: pointer;
+}
+
+#task-calendar .fc-event:hover .fc-event-actions-trigger,
+#task-calendar .fc-event:focus-within .fc-event-actions-trigger,
+#task-calendar .fc-event-actions-trigger:focus-visible {
+    opacity: 1;
+}
+
+#task-calendar .fc-event-actions-trigger:hover,
+#task-calendar .fc-event-actions-trigger:focus-visible {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+@media (hover: none) {
+    #task-calendar .fc-event-actions-trigger {
+        opacity: 1;
+    }
+}
+
+@media (any-pointer: coarse) {
+    #task-calendar .fc-event-actions-trigger {
+        flex: 0 0 24px;
+        width: 24px;
+        height: 24px;
+        min-width: 24px;
+        min-height: 24px;
+        opacity: 1;
+    }
+
+    #task-calendar .fc-custom-event .fc-event-content {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    #task-calendar .fc-daygrid-event .fc-event-time {
+        display: none;
+    }
+}
+
+#task-calendar .fc-custom-event .fc-priority-dot {
+    display: inline-block;
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 50%;
+    flex-shrink: 0;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+}
+
+#task-calendar .fc-custom-event .fc-event-content {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    overflow: hidden;
+}
+
+#task-calendar .fc-custom-event .fc-event-time {
+    font-size: 0.75rem;
+    color: var(--fc-event-text, #ffffff);
+    white-space: nowrap;
+    flex-shrink: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#task-calendar .fc-custom-event .fc-event-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    line-height: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--fc-event-text, #ffffff);
+}
+
+@media (min-width: 640px) and (max-width: 900px) {
+    #task-calendar .fc-daygrid-event .fc-event-main,
+    #task-calendar .fc-daygrid-event .fc-custom-event {
+        min-width: 0;
+        gap: 0.125rem;
+    }
+
+    #task-calendar .fc-daygrid-event .fc-event-time {
+        display: none;
+    }
+
+    #task-calendar .fc-daygrid-event .fc-event-content {
+        flex: 1 1 0%;
+        min-width: 0;
+    }
+
+    #task-calendar .fc-daygrid-event .fc-event-title {
+        flex: 1 1 0%;
+        min-width: 0;
+    }
+}
+
+#task-calendar .fc-daygrid-more-link {
+    color: #cbd5e1;
+}
+
+#task-calendar .fc-daygrid-more-link:hover {
+    opacity: 0.9;
+}
+
+/* Below 425px a ~40-44px month cell cannot fit the full "+N more" label (its
+   default 0.85em text plus padding is ~50-56px wide) and it bleeds over the
+   adjacent cell, so show only "+N". FullCalendar writes no inline styles on
+   this link, so a plain rule is enough (no !important). */
+@media (max-width: 424px) {
+    #task-calendar .fc-daygrid-more-link .fc-more-link-label {
+        display: none;
+    }
+}
+
+#task-calendar .fc-daygrid-event:hover {
+    opacity: 0.9;
+}
+
+/* ============================================================
+   timeGridWeek only: compact single-row chips (dot | time | title | ⋮)
+   that inherit the shared month-view event layout above and sit inside
+   a 22px eventMinHeight chip (~35 minutes of grid space at the view's
+   ~0.6px/min scale). Deadlines closer than that overlap and are laid
+   out side by side (slotEventOverlap false) instead of covering each
+   other.
+   ============================================================ */
+#task-calendar .fc-timeGridWeek-view .fc-event-content {
+    /* The content (time + title) must be able to shrink inside the narrow
+       lane; without flex-basis 0 the nowrap time text (flex-shrink: 0 by
+       default from FullCalendar) lays itself outside the chip box and
+       zero-widths the title */
+    flex: 1 1 0%;
+    min-width: 0;
+    /* The shared layout has no gap, so the fully rendered time ran flush
+       into the title ("2:00Tier p…"). The popover rule below needs the same
+       treatment for the same reason. */
+    gap: 0.25rem;
+}
+
+/* FullCalendar pads the event main box vertical by `padding: 1px 1px 0` and
+   renders the event `border: 1px solid` (the border color equals the fill, so
+   it is invisible but still eats 2px of the 16px chip). Zero them out so the
+   single-row content fills the chip edge to edge with no empty band below. */
+#task-calendar .fc-timeGridWeek-view .fc-v-event {
+    border-width: 0;
+}
+
+/* The 1px default margin shrinks the top/bottom-inset box of the absolutely
+   positioned chip by 1px and leaves the content poking out below */
+#task-calendar .fc-timeGridWeek-view .fc-timegrid-event {
+    margin-bottom: 0;
+}
+
+#task-calendar .fc-timeGridWeek-view .fc-timegrid-event .fc-event-main {
+    padding: 0;
+}
+
+/* Pin the single-row content to the chip box: if font metrics or zoom make
+   the row compute taller than the 22px chip, overflow: hidden clips inside
+   this box instead of the text painting below the pill's bottom edge. The
+   horizontal padding insets the row from the pill's rounded edges so the
+   content does not sit flush against them. The row is also the inline-size
+   query container for the progressive time notation below: its content-box
+   width tells how much of the time text fits next to the dot and trigger. */
+#task-calendar .fc-timeGridWeek-view .fc-custom-event {
+    height: 100%;
+    padding: 0 0.25rem;
+    container-type: inline-size;
+}
+
+#task-calendar .fc-timeGridWeek-view .fc-event-time {
+    /* Unlike the shared month layout nothing may partially shrink here:
+       flex-shrinking the time produces "10:0…" fragments at every lane
+       width. The container-query tiers below decide between the notations
+       (or hiding the time) as a whole; the title absorbs the difference. */
+    /* Tailwind's preflight line-height (1.5) makes this 12px text an 18px
+       line box that inflates the single-row chip; the glyphs are 1em tall */
+    line-height: 1;
+}
+
+#task-calendar .fc-timeGridWeek-view .fc-event-title {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+#task-calendar .fc-timeGridWeek-view .fc-event-actions-trigger {
+    /* Vertical room is scarce at ~0.6px per grid minute; keep the glyph's own
+       line box so the chip stays at eventMinHeight instead of growing taller */
+    height: auto;
+    align-self: center;
+    /* The coarse-pointer rule below sizes this trigger to a 24px tap target,
+       which is taller than the 1rem glyph the chip needs. Cap the box so the
+       glyph (line-height 1, ~16px) stays the trigger's height and centers
+       inside the 22px chip instead of poking out of it. The chip itself
+       remains the row-wide tap surface for opening the modal. */
+    max-height: 16px;
+}
+
+/* Progressive time notation as the lane narrows (the row above is the query
+   container). The meridiem goes first — the chip's position on the time axis
+   already disambiguates am/pm — then the whole time. The priority dot and
+   the title stay visible at every width. Measured at the 12px chip font:
+   "10:00 am" is ~51px and "10:00" ~31px, the fixed row overhead (dot, gaps,
+   trigger, time/title gap) ~41px, so the thresholds keep ~24px (2-3 glyphs)
+   of title: the full notation fits above ~116px of row content, the
+   compact one above ~96px. */
+@container (max-width: 116px) {
+    #task-calendar .fc-timeGridWeek-view .fc-event-time-meridiem {
+        display: none;
+    }
+}
+
+@container (max-width: 96px) {
+    #task-calendar .fc-timeGridWeek-view .fc-event-time {
+        display: none;
+    }
+}
+
+#task-calendar .fc-timegrid-more-link.fc-more-link {
+    background: rgba(38, 38, 38, 0.9);
+    color: #cbd5e1;
+}
+
+#task-calendar .fc-timegrid-more-link.fc-more-link:hover {
+    opacity: 0.9;
+}
+
+#task-calendar .fc-timeGridWeek-view ~ .fc-popover .fc-event-content {
+    gap: 0.25rem;
+}
+
+/* ============================================================
+   timeGridWeek: vertically center the event internals
+   ============================================================ */
+#task-calendar .fc-timeGridWeek-view .fc-timegrid-event:hover {
+    opacity: 0.9;
+}
+
+/* ============================================================
+   timeGridWeek: free the "+N more" box height from FullCalendar's
+   inline styles (top/bottom) and fix it to a compact size
+   ============================================================ */
+#task-calendar .fc-timeGridWeek-view .fc-timegrid-more-link.fc-more-link {
+    height: 1.6rem; /* Adjusted preferred height */
+    margin: 0;
+    padding: 0;
+}
+
+/* Sticky is no longer needed once the height is fixed, so unset it */
+#task-calendar .fc-timeGridWeek-view .fc-timegrid-more-link-inner.fc-sticky {
+    position: static;
+}
+
+/* ============================================================
+   timeGridWeek only: finish the dark skin for the grid interior.
+   FullCalendar injects light defaults that calendar.css does not cover
+   (--fc-border-color #ddd, --fc-page-bg-color #fff); the month grid
+   predates this section and keeps its current look.
+   ============================================================ */
+#task-calendar .fc-timeGridWeek-view {
+    --fc-border-color: rgba(148, 163, 184, 0.16);
+    /* FullCalendar draws a 1px "separation" ring around timed events (and
+       drag mirrors) via box-shadow: 0 0 0 1px var(--fc-page-bg-color, #fff);
+       pointing the variable at the panel color removes the light-theme ring */
+    --fc-page-bg-color: rgba(38, 38, 38, 0.9);
+}
+
+#task-calendar .fc-timeGridWeek-view .fc-timegrid-slot-label {
+    color: #94a3b8; /* Tone down the hour labels to the header-row text tone */
+}
+
+/* Weekend tint for the week view columns (the daygrid weekend rule above only
+   covers the month grid). Today stays explicit below because the shared
+   --fc-today-bg-color is intentionally transparent at the component root. */
+#task-calendar .fc-timeGridWeek-view .fc-timegrid-col.fc-day-sat,
+#task-calendar .fc-timeGridWeek-view .fc-timegrid-col.fc-day-sun {
+    background: rgba(148, 163, 184, 0.05);
+}
+
+#task-calendar .fc-timeGridWeek-view .fc-timegrid-col.fc-day-today {
+    /* Same sky wash as the today weekday header rule below (must come after
+       the weekend rule so a Saturday/Sunday today keeps the today tint) */
+    background: rgba(56, 189, 248, 0.08);
+}
+
+/* ============================================================
+   Adjust the popover appearance
+   ============================================================ */
+#task-calendar .fc-popover {
+    background: rgba(38, 38, 38, 0.9);
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    color: #cbd5e1;
+}
+
+/* ============================================================
+   Overlay shown when there are no events
+   ============================================================ */
+#task-calendar .fc-no-events-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    /* Offset down by the calendar header / weekday row height to align to the visual center */
+    padding-top: var(--fc-header-height, 63px);
+    padding-bottom: 0;
+    /* Cover only the grid part with a faint shutter */
+    background: rgba(9, 9, 11, 0.6);
+    background-clip: content-box; /* Restrict the background to the content box only */
+    pointer-events: none;
+    z-index: 10;
+    border-radius: 0 0 0.75rem 0.75rem;
+}
+
+#task-calendar .fc-no-events-overlay__icon {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: rgba(148, 163, 184, 0.1);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 4px;
+}
+
+#task-calendar .fc-no-events-overlay__title {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #e2e8f0;
+    margin: 0;
+}
+
+#task-calendar .fc-no-events-overlay__sub {
+    font-size: 0.75rem;
+    color: #a1a1aa;
+    margin: 0;
+}

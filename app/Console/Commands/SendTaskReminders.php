@@ -2,9 +2,9 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
 use App\Models\Task;
 use App\Notifications\TaskReminderNotification;
+use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 
@@ -46,20 +46,20 @@ class SendTaskReminders extends Command
                 foreach ($grouped as $userId => $userTasks) {
                     $user = $userTasks->first()->user;
 
-                    if (!$user || $user->pushSubscriptions->isEmpty()) {
+                    if (! $user || $user->pushSubscriptions->isEmpty()) {
                         continue;
                     }
 
                     $taskIds = $userTasks->pluck('id');
 
                     try {
-                        // 通知送信前に deadline_notified_at を更新（二重送信防止）
+                        // Stamp deadline_notified_at before sending to prevent double sends
 
                         $updated = Task::whereIn('id', $taskIds)
-                            ->whereNull('deadline_notified_at') // 念のため再チェック
+                            ->whereNull('deadline_notified_at') // Double-check as a safeguard
                             ->update(['deadline_notified_at' => $now]);
 
-                        if($updated === 0) {
+                        if ($updated === 0) {
                             continue;
                         }
 
@@ -68,18 +68,18 @@ class SendTaskReminders extends Command
                         $notifiedTaskCount += $userTasks->count();
 
                         Log::info('Task reminder notification sent', [
-                            'user_id'   => $user->id,
+                            'user_id' => $user->id,
                             'due_count' => $userTasks->count(),
                         ]);
                     } catch (\Throwable $e) {
-                        // 通知失敗時は deadline_notified_at をリセットして再試行可能にする
+                        // Reset deadline_notified_at on failure so the task can be retried
                         Task::whereIn('id', $taskIds)
                             ->update(['deadline_notified_at' => null]);
 
                         Log::error('Failed to send task reminder', [
                             'user_id' => $userId,
                             'task_ids' => $taskIds->toArray(),
-                            'error'   => $e->getMessage(),
+                            'error' => $e->getMessage(),
                         ]);
                     }
                 }

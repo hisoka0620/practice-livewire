@@ -1,0 +1,71 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+
+  // Auto-format files changed by write/edit/patch.
+  // Pint runs for .php (built-in detects laravel/pint in composer.json).
+  "formatter": true,
+
+  // Skip change detection for generated / binary files.
+  "watcher": {
+    "ignore": [
+      "vendor/**",
+      "node_modules/**",
+      "public/build/**",
+      "storage/**",
+      "*.sqlite",
+    ],
+  },
+
+  "permissions": [
+    // Secrets: never read (VAPID keys, composer.fluxui.dev token).
+    { "action": "read", "resource": "*.env", "effect": "deny" },
+    { "action": "read", "resource": "*.env.*", "effect": "deny" },
+    { "action": "read", "resource": "*.env.example", "effect": "allow" },
+    { "action": "read", "resource": "*auth.json", "effect": "deny" },
+    { "action": "read", "resource": "*.sqlite", "effect": "deny" },
+
+    // Shell: ask by default, allow safe routine commands (last match wins).
+    { "action": "shell", "resource": "*", "effect": "ask" },
+    { "action": "shell", "resource": "git status *", "effect": "allow" },
+    { "action": "shell", "resource": "git diff *", "effect": "allow" },
+    { "action": "shell", "resource": "git log *", "effect": "allow" },
+    { "action": "shell", "resource": "composer test *", "effect": "allow" },
+    { "action": "shell", "resource": "./vendor/bin/pest *", "effect": "allow" },
+    { "action": "shell", "resource": "vendor/bin/pint *", "effect": "allow" },
+    { "action": "shell", "resource": "npm run build *", "effect": "allow" },
+    { "action": "shell", "resource": "npm run test:unit:calendar *", "effect": "allow" },
+    { "action": "shell", "resource": "node -v*", "effect": "allow" },
+
+    // Git staging/inspection/commit: needed for the per-unit commit workflow.
+    { "action": "shell", "resource": "git add *", "effect": "allow" },
+    { "action": "shell", "resource": "git commit *", "effect": "allow" },
+    { "action": "shell", "resource": "git show *", "effect": "allow" },
+    { "action": "shell", "resource": "git branch *", "effect": "allow" },
+
+    // Destructive / heavy operations require explicit approval (per AGENTS.md).
+    { "action": "shell", "resource": "php artisan migrate:fresh *", "effect": "ask" },
+    { "action": "shell", "resource": "php artisan migrate:reset *", "effect": "ask" },
+    { "action": "shell", "resource": "php artisan db:wipe *", "effect": "ask" },
+    { "action": "shell", "resource": "git reset --hard *", "effect": "ask" },
+    { "action": "shell", "resource": "npm run test:e2e *", "effect": "ask" },
+  ],
+
+  "commands": {
+    "commit": {
+      "description": "Commit changes grouped by implementation unit",
+      "template": "Create commits for the current changes. Run `./vendor/bin/pest` (and `npm run build` if Blade/JS/CSS changed) and `vendor/bin/pint --dirty` first, fix any failure you introduced before continuing. Then review `git status` and `git diff`, split the working tree into logical implementation units, and create one Conventional Commit per unit in English (fix/feat/docs/test/style/chore). Verify AGENTS.md compliance for each unit. Never stage .env files, credentials, or secrets. Report the resulting commit list.",
+    },
+    "test": {
+      "description": "Run PHP tests with Pest",
+      "template": "Run the PHP tests: `./vendor/bin/pest $ARGUMENTS`. Report the results. If there are failures, explain each cause and the smallest fix, but wait for my approval before editing code.",
+    },
+    "check": {
+      "description": "Build frontend assets and run calendar unit tests",
+      "template": "Verify the frontend: run `npm run build`, then `npm run test:unit:calendar`. Report any build error or test failure with its cause.",
+    },
+    "style": {
+      "description": "Format changed PHP files with Pint",
+      "template": "Run `vendor/bin/pint --dirty` and report which files were modified.",
+    },
+  },
+}

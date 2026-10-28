@@ -2,16 +2,20 @@
 
 namespace App\Livewire;
 
+use App\Application\Tasks\TaskActions;
 use App\Livewire\Forms\TaskForm;
 use App\Models\Task;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\On;
-use Livewire\Component;
 use Livewire\Attributes\Url;
+use Livewire\Component;
 
 class TaskModal extends Component
 {
     public TaskForm $form;
+
     public ?Task $task = null;
+
     public bool $show = false;
 
     #[Url(as: 'create', except: 0)]
@@ -22,22 +26,32 @@ class TaskModal extends Component
 
     public function mount(): void
     {
-        if($this->createTask === 1) $this->open();
-        if($this->editTaskId) $this->open($this->editTaskId);
+        if ($this->editTaskId) {
+            $this->open($this->editTaskId);
+        } elseif ($this->createTask === 1) {
+            $this->open();
+        }
     }
 
     #[On('open-task-modal')]
-    public function open(?int $taskId = null): void
+    public function open(?int $taskId = null, ?string $prefillDeadline = null): void
     {
         $this->resetErrorBag();
         $this->form->reset();
+        $this->reset(['task', 'editTaskId', 'createTask']);
 
         if ($taskId) {
-            $this->task = Task::findOrFail($taskId);
+            /** @var \App\Models\User $user */
+            $user = Auth::user();
+            $task = $user->tasks()->findOrFail($taskId);
+            $this->authorize('view', $task);
+            $this->task = $task;
             $this->form->setTask($this->task);
             $this->editTaskId = $taskId;
+        } elseif ($prefillDeadline) {
+            $this->form->setDeadlineDate($prefillDeadline);
+            $this->createTask = 1;
         } else {
-            $this->task = null;
             $this->createTask = 1;
         }
 
@@ -47,6 +61,35 @@ class TaskModal extends Component
     public function save(): void
     {
         $this->task ? $this->updateTask() : $this->createTask();
+        $this->dispatch('task-saved');
+        $this->close();
+    }
+
+    public function toggleCompletion(): void
+    {
+        if (! $this->task) {
+            return;
+        }
+
+        $this->task = app(TaskActions::class)->toggleCompletion(
+            Auth::user(),
+            $this->task->getKey(),
+        );
+
+        $this->dispatch('task-saved');
+    }
+
+    public function deleteTask(): void
+    {
+        if (! $this->task) {
+            return;
+        }
+
+        app(TaskActions::class)->delete(
+            Auth::user(),
+            $this->task->getKey(),
+        );
+
         $this->dispatch('task-saved');
         $this->close();
     }
@@ -65,7 +108,8 @@ class TaskModal extends Component
 
     public function close(): void
     {
-        $this->reset();
+        $this->form->reset();
+        $this->reset(['task', 'show', 'editTaskId', 'createTask']);
     }
 
     public function render()

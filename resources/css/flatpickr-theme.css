@@ -1,0 +1,100 @@
+@import "flatpickr/dist/themes/dark.css";
+@import "flatpickr/dist/plugins/monthSelect/style.css";
+
+/*
+ * Unify both flatpickr instances with the app's zinc theme:
+ * the month selection calendar (dayGridMonth, monthSelect plugin) and
+ * the date selection calendar (timeGridWeek, regular flatpickr).
+ *
+ * The week view side does not pass the theme: "dark" option (it is only
+ * dedicated to the monthSelect plugin and has no effect on core flatpickr),
+ * so `.flatpickr-monthSelect-theme-dark` is never applied.
+ * Therefore generalize the selectors on a `.flatpickr-calendar` basis
+ * so they hit both instances in common.
+ */
+.flatpickr-calendar {
+    background: rgba(38, 38, 38, 0.9); /* bg-zinc-800/90 */
+    border: 1px solid var(--color-zinc-700);
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    border-radius: 0.75rem;
+}
+
+.flatpickr-calendar .flatpickr-month {
+    background: rgba(38, 38, 38, 0.9);
+    border: 1px solid var(--color-zinc-700);
+    border-radius: 0.75rem 0.75rem 0 0;
+}
+
+.flatpickr-calendar .flatpickr-months .flatpickr-prev-month,
+.flatpickr-calendar .flatpickr-months .flatpickr-next-month {
+    color: var(--color-zinc-100);
+    fill: var(--color-zinc-100);
+}
+
+.flatpickr-calendar .flatpickr-months .flatpickr-prev-month:hover,
+.flatpickr-calendar .flatpickr-months .flatpickr-next-month:hover {
+    color: var(--color-zinc-300);
+}
+
+.flatpickr-calendar .flatpickr-current-month input.cur-year {
+    color: var(--color-zinc-100);
+}
+
+.flatpickr-calendar .flatpickr-current-month .flatpickr-monthDropdown-months {
+    background: transparent;
+    color: var(--color-zinc-100);
+}
+
+/* --- monthSelect plugin (month selection for dayGridMonth) --- */
+.flatpickr-calendar .flatpickr-monthSelect-month {
+    color: rgba(245, 245, 245, 0.9);
+}
+
+.flatpickr-calendar .flatpickr-monthSelect-month:hover,
+.flatpickr-calendar .flatpickr-monthSelect-month:focus {
+    background: var(--color-zinc-700);
+    border-color: var(--color-zinc-700);
+}
+
+.flatpickr-calendar .flatpickr-monthSelect-month.selected {
+    background: rgb(2, 132, 199); /* sky-600-ish. Use sky-500 rgb(14,165,233) to match the focus ring */
+    border-color: rgb(2, 132, 199);
+    color: var(--color-zinc-100);
+}
+
+/* --- Core flatpickr (date selection for timeGridWeek) --- */
+.flatpickr-calendar .flatpickr-weekdays {
+    background: rgba(38, 38, 38, 0.9);
+}
+
+.flatpickr-calendar span.flatpickr-weekday {
+    background: transparent;
+    color: rgba(245, 245, 245, 0.7);
+}
+
+.flatpickr-calendar .flatpickr-day {
+    color: rgba(245, 245, 245, 0.9);
+}
+
+.flatpickr-calendar .flatpickr-day.today {
+    border-color: var(--color-zinc-500);
+}
+
+.flatpickr-calendar .flatpickr-day:hover,
+.flatpickr-calendar .flatpickr-day:focus {
+    background: var(--color-zinc-700);
+    border-color: var(--color-zinc-700);
+}
+
+.flatpickr-calendar .flatpickr-day.selected,
+.flatpickr-calendar .flatpickr-day.selected:hover {
+    background: rgb(2, 132, 199); /* sky-600-ish. Matches the monthSelect selection color */
+    border-color: rgb(2, 132, 199);
+    color: var(--color-zinc-100);
+}
+
+.flatpickr-calendar .flatpickr-day.flatpickr-disabled,
+.flatpickr-calendar .flatpickr-day.prevMonthDay,
+.flatpickr-calendar .flatpickr-day.nextMonthDay {
+    color: rgba(245, 245, 245, 0.3);
+}
