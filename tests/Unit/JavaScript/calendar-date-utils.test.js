@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
     combineDateAndTime,
-    formatEventTime,
+    formatEventTimeParts,
     formatForServer,
     formatTooltipDeadline,
     resolveNewDeadline,
@@ -18,12 +18,18 @@ assert.equal(
 test("formats a UTC ISO instant in the supplied timezone", () => {
     const instant = "2026-10-01T15:30:00.000Z";
 
-    assert.equal(formatEventTime(instant, "America/Los_Angeles"), "8:30 am");
+    assert.deepEqual(formatEventTimeParts(instant, "America/Los_Angeles"), {
+        value: "8:30",
+        meridiem: "am",
+    });
     assert.equal(
         formatTooltipDeadline(instant, "America/Los_Angeles"),
         "Thu, Oct 1, 2026, 8:30 AM",
     );
-    assert.equal(formatEventTime(null, "America/Los_Angeles"), "");
+    assert.deepEqual(formatEventTimeParts(null, "America/Los_Angeles"), {
+        value: "",
+        meridiem: "",
+    });
     assert.equal(formatTooltipDeadline(null, "America/Los_Angeles"), "none");
 });
 

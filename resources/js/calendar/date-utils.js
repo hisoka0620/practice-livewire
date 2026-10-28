@@ -1,16 +1,26 @@
 /**
- * Build a display string from a deadline (an ISO 8601 string with UTC offset).
+ * Split a deadline (an ISO 8601 string with UTC offset) into the parts
+ * rendered inside calendar chips: the clock time and the meridiem. Chips
+ * drop the meridiem first when space runs out — the event's position on the
+ * time axis already disambiguates am/pm — so it is rendered as its own node.
  */
-export function formatEventTime(isoString, timeZone) {
-    if (!isoString) return "";
-    return new Intl.DateTimeFormat("en-US", {
+export function formatEventTimeParts(isoString, timeZone) {
+    if (!isoString) return { value: "", meridiem: "" };
+
+    const parts = new Intl.DateTimeFormat("en-US", {
         hour: "numeric",
         minute: "2-digit",
         hour12: true,
         timeZone,
-    })
-        .format(new Date(isoString))
-        .toLowerCase();
+    }).formatToParts(new Date(isoString));
+
+    const part = (type) =>
+        parts.find((candidate) => candidate.type === type)?.value ?? "";
+
+    return {
+        value: `${part("hour")}:${part("minute")}`,
+        meridiem: part("dayPeriod").toLowerCase(),
+    };
 }
 
 export function formatTooltipDeadline(isoString, timeZone) {
