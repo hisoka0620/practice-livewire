@@ -200,9 +200,11 @@ test("tailors the week view for compact, readable deadline chips", () => {
     const week = options.views?.timeGridWeek;
 
     assert.equal(week.allDaySlot, false);
-    // Low min height keeps the 30-minute visual duration from stretching to
-    // ~50 minutes of grid space and colliding with neighboring deadlines.
-    assert.equal(week.eventMinHeight, 16);
+    assert.equal(week.eventMinHeight, 22);
+    // 22px tall chips must not be classified as "short" (default 30): the
+    // short treatment appends a " − " suffix to the time text, pushing the
+    // single-row content out of the chip. Zero disables the classification.
+    assert.equal(week.eventShortHeight, 0);
     // Near-simultaneous deadlines split into columns instead of covering
     // each other's halves.
     assert.equal(week.slotEventOverlap, false);
@@ -230,6 +232,10 @@ test("creates calendar options with Alpine-owned interaction callbacks", () => {
 
     assert.equal(options.timeZone, "local");
     assert.equal(options.initialView, "dayGridMonth");
+    // Instant deadlines: the smallest sane duration keeps week chips at
+    // eventMinHeight (zero is not renderable), normalized calendar-wide
+    // before any view switch, so the value must live at the top level.
+    assert.equal(options.defaultTimedEventDuration, "00:01:00");
     assert.equal(options.eventDrop, callbacks.onEventDrop);
     assert.equal(options.dateClick, callbacks.onDateClick);
     assert.equal(options.datesSet, callbacks.onDatesSet);

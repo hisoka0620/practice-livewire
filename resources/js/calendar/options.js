@@ -177,15 +177,22 @@ export function createCalendarOptions({
         views: {
             timeGridWeek: {
                 allDaySlot: false,
-                // Deadlines are instants, so chips keep FullCalendar's default
-                // 30-minute visual duration. The old 30px eventMinHeight made
-                // every chip stretch to ~50 minutes of grid space (the grid is
-                // ~0.6px/min), which made deadlines within about an hour
-                // collide. 16px leaves room for the single-row chip content.
-                eventMinHeight: 16,
-                // Overlapping 30-minute windows (deadlines < 30 min apart) are
-                // laid out side by side, keeping every chip readable instead of
-                // the default broad cards that cover half of each other.
+                // Chips are instant deadlines: the top-level
+                // defaultTimedEventDuration (the smallest renderable value)
+                // keeps chips at this height. 22px gives the single-row
+                // content (dot | time | title | ⋮) a few px of vertical
+                // breathing room instead of a flush fit at 16px. Deadlines
+                // closer than ~35 grid minutes overlap at this height and
+                // render side by side (see slotEventOverlap).
+                eventMinHeight: 22,
+                // Chips are 16px tall, which FullCalendar classifies as "short"
+                // (default eventShortHeight: 30) — that classification appends
+                // a " − " suffix to the time text and shrinks the title font,
+                // pushing the single-row content out of the chip. Disable it.
+                eventShortHeight: 0,
+                // Overlapping short windows are laid out side by side, keeping
+                // every chip readable instead of the default broad cards that
+                // cover half of each other.
                 slotEventOverlap: false,
                 // Unlike the month grid (which shows date numbers inside cells),
                 // the week view headers are the only place carrying the date.
@@ -200,6 +207,15 @@ export function createCalendarOptions({
         },
         events: [],
         editable: true,
+        // Timed deadline events are sent with `end: null` and get their duration
+        // defaulted here. It must stay above zero (zero-length ranges are dropped
+        // by range slicing) and below eventMinHeight / the slot scale so week-view
+        // chips are sized by eventMinHeight with no empty band below the
+        // single-row content. This MUST be a top-level option: the duration is
+        // baked into the event store when `end: null` events are normalized
+        // (before any view switch), so a views.timeGridWeek override is silently
+        // ignored. Month view is unaffected — its chips are content-sized rows.
+        defaultTimedEventDuration: "00:01:00",
         eventStartEditable: true,
         eventDurationEditable: false,
         eventDrop: onEventDrop,

@@ -927,6 +927,80 @@ test("reopens the last selected calendar view after a reload", async ({
     await expect(page.locator(".fc-timegrid")).not.toBeVisible();
 });
 
+// The compact week chip (16px eventMinHeight) rests on three load-bearing
+// knobs: a calendar-wide defaultTimedEventDuration, the week-scoped
+// eventShortHeight, and the zeroed chip box CSS. The unit tests only cover
+// the option values; the geometry below catches a live rendering regression
+// (a 1-hour default renders a ~50px chip with an empty band, lost CSS lets
+// the single-row content poke outside the pill).
+test("keeps week deadline chips compact and self-contained", async ({
+    page,
+}) => {
+    await page.clock.install({
+        time: new Date("2026-10-01T12:00:00-07:00"),
+    });
+    await signInAndOpenCalendar(page);
+
+    const taskTitle = "Compact chip task";
+    await page.getByRole("button", { name: "Create Task" }).click();
+    const dialog = page.getByRole("dialog");
+    await dialog.getByLabel("Title").fill(taskTitle);
+    // Inside the visible scroll window: the view keeps ~90 minutes above
+    // the pinned "now" (12:00) when entering the week
+    await dialog.getByLabel("Deadline").fill("2026-10-01T13:30");
+    const creation = page.waitForResponse((response) =>
+        response.url().includes("/livewire/update"),
+    );
+    await dialog.getByRole("button", { name: "Create" }).click();
+    await creation;
+    await expect(dialog).toBeHidden();
+
+    await page.locator(".fc-timeGridWeek-button").click();
+    await expect(page.locator("#task-calendar .fc-timegrid")).toBeVisible();
+
+    const chip = page
+        .locator("#task-calendar .fc-timegrid-event")
+        .filter({ hasText: taskTitle });
+    await expect(chip).toBeVisible();
+
+    const geometry = await chip.evaluate((chipEl) => {
+        const chipRect = chipEl.getBoundingClientRect();
+        const row = chipEl.querySelector<HTMLElement>(".fc-custom-event");
+        const rowRect = row?.getBoundingClientRect();
+        const childRects = Array.from(
+            row?.querySelectorAll<HTMLElement>(
+                ".fc-priority-dot, .fc-event-time, .fc-event-title, .fc-event-actions-trigger",
+            ) ?? [],
+        ).map((child) => child.getBoundingClientRect());
+        const within = (rect: DOMRect) =>
+            rect.top >= chipRect.top - 0.5 &&
+            rect.bottom <= chipRect.bottom + 0.5 &&
+            rect.left >= chipRect.left - 0.5 &&
+            rect.right <= chipRect.right + 0.5;
+        return {
+            chipHeight: chipRect.height,
+            rowHeight: rowRect ? rowRect.height : 0,
+            rowWithinChip: rowRect ? within(rowRect) : false,
+            childrenWithinChip:
+                childRects.length > 0 && childRects.every(within),
+        };
+    });
+
+    // eventMinHeight is 22px; allow sub-pixel rounding drift only. The
+    // 1-hour default duration produced a ~50px chip with an empty band, and
+    // the original 16px chip rendered the single-row content flush to the
+    // pill edges (cramped).
+    expect(geometry.chipHeight).toBeGreaterThanOrEqual(20);
+    expect(geometry.chipHeight).toBeLessThanOrEqual(24);
+    // The single-row content must fill the chip box and never poke outside
+    // it (the "short" treatment or lost shrink rules once pushed it out)
+    expect(geometry.rowHeight).toBeLessThanOrEqual(
+        geometry.chipHeight + 0.5,
+    );
+    expect(geometry.rowWithinChip).toBe(true);
+    expect(geometry.childrenWithinChip).toBe(true);
+});
+
 async function localStorageView(page: Page) {
     return page.evaluate(() => localStorage.getItem("calendarView"));
 }

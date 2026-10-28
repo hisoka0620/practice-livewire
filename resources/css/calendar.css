@@ -407,14 +407,57 @@
 
 /* ============================================================
    timeGridWeek only: compact single-row chips (dot | time | title | ⋮)
-   that inherit the shared month-view event layout above. The old
-   week-only stacked time/title layout needed ~28px of content, which
-   forced a 30px eventMinHeight (~50 minutes of grid space at the
-   view's ~0.6px/min scale) and made deadlines within about an hour
-   pixel-collide with each other.
+   that inherit the shared month-view event layout above and sit inside
+   a 22px eventMinHeight chip (~35 minutes of grid space at the view's
+   ~0.6px/min scale). Deadlines closer than that overlap and are laid
+   out side by side (slotEventOverlap false) instead of covering each
+   other.
    ============================================================ */
 #task-calendar .fc-timeGridWeek-view .fc-event-content {
+    /* The content (time + title) must be able to shrink inside the narrow
+       lane; without flex-basis 0 the nowrap time text (flex-shrink: 0 by
+       default from FullCalendar) lays itself outside the chip box and
+       zero-widths the title */
+    flex: 1 1 0%;
     min-width: 0;
+}
+
+/* FullCalendar pads the event main box vertical by `padding: 1px 1px 0` and
+   renders the event `border: 1px solid` (the border color equals the fill, so
+   it is invisible but still eats 2px of the 16px chip). Zero them out so the
+   single-row content fills the chip edge to edge with no empty band below. */
+#task-calendar .fc-timeGridWeek-view .fc-v-event {
+    border-width: 0;
+}
+
+/* The 1px default margin shrinks the top/bottom-inset box of the absolutely
+   positioned chip by 1px and leaves the content poking out below */
+#task-calendar .fc-timeGridWeek-view .fc-timegrid-event {
+    margin-bottom: 0;
+}
+
+#task-calendar .fc-timeGridWeek-view .fc-timegrid-event .fc-event-main {
+    padding: 0;
+}
+
+/* Pin the single-row content to the chip box: if font metrics or zoom make
+   the row compute taller than the 22px chip, overflow: hidden clips inside
+   this box instead of the text painting below the pill's bottom edge. The
+   horizontal padding insets the row from the pill's rounded edges so the
+   content does not sit flush against them. */
+#task-calendar .fc-timeGridWeek-view .fc-custom-event {
+    height: 100%;
+    padding: 0 0.25rem;
+}
+
+#task-calendar .fc-timeGridWeek-view .fc-event-time {
+    /* Ditto: allow the time text itself to ellipsize instead of keeping its
+       nowrap intrinsic width and poking out of the chip's right edge */
+    flex-shrink: 1;
+    min-width: 0;
+    /* Tailwind's preflight line-height (1.5) makes this 12px text an 18px
+       line box that inflates the single-row chip; the glyphs are 1em tall */
+    line-height: 1;
 }
 
 #task-calendar .fc-timeGridWeek-view .fc-event-title {
@@ -428,10 +471,10 @@
     height: auto;
     align-self: center;
     /* The coarse-pointer rule below sizes this trigger to a 24px tap target,
-       which is taller than the 16px eventMinHeight chip here. Cap the box so
-       the chip keeps its collision-free height; the 1rem glyph (line-height 1,
-       ~16px) still renders fully. The chip itself remains the row-wide tap
-       surface for opening the modal. */
+       which is taller than the 1rem glyph the chip needs. Cap the box so the
+       glyph (line-height 1, ~16px) stays the trigger's height and centers
+       inside the 22px chip instead of poking out of it. The chip itself
+       remains the row-wide tap surface for opening the modal. */
     max-height: 16px;
 }
 
