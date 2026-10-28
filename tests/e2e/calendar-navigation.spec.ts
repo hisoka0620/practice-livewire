@@ -999,6 +999,104 @@ test("keeps week deadline chips compact and self-contained", async ({
     );
     expect(geometry.rowWithinChip).toBe(true);
     expect(geometry.childrenWithinChip).toBe(true);
+
+    // At the default 1440px viewport the full-width lane fits the complete
+    // "1:30 pm" notation next to the dot, the title, and the trigger — the
+    // time is never partially shrunk into "1:3…" fragments (narrower lanes
+    // drop the meridiem, then the whole time, via the container queries).
+    const notation = await chip.evaluate((chipEl) => {
+        const display = (selector: string) => {
+            const element = chipEl.querySelector<HTMLElement>(selector);
+            return element ? getComputedStyle(element).display : "absent";
+        };
+        return {
+            time: display(".fc-event-time"),
+            meridiem: display(".fc-event-time-meridiem"),
+        };
+    });
+    expect(notation.time).toBe("block");
+    expect(notation.meridiem).toBe("inline");
+});
+
+// Narrow side-by-side lanes (two deadlines five minutes apart) cannot fit
+// any time notation next to the dot and the ⋮ trigger, so the whole time is
+// dropped while the dot and the title stay visible and inside the chip.
+test("drops the week chip time before the title in narrow lanes", async ({
+    page,
+}) => {
+    await page.clock.install({
+        time: new Date("2026-10-01T12:00:00-07:00"),
+    });
+    await signInAndOpenCalendar(page);
+
+    // 16:00/16:05 stay clear of the seeded 8:30 task and of the 13:30 chip
+    // test task above: three deadlines within the collision window would
+    // fold into the "+N more" popover (eventMaxStack 2) instead of rendering
+    // two side-by-side lanes.
+    const tasks = [
+        { title: "Narrow lane one", deadline: "2026-10-01T16:00" },
+        { title: "Narrow lane two", deadline: "2026-10-01T16:05" },
+    ];
+    for (const task of tasks) {
+        await page.getByRole("button", { name: "Create Task" }).click();
+        const dialog = page.getByRole("dialog");
+        await dialog.getByLabel("Title").fill(task.title);
+        await dialog.getByLabel("Deadline").fill(task.deadline);
+        const creation = page.waitForResponse((response) =>
+            response.url().includes("/livewire/update"),
+        );
+        await dialog.getByRole("button", { name: "Create" }).click();
+        await creation;
+        await expect(dialog).toBeHidden();
+    }
+
+    await page.locator(".fc-timeGridWeek-button").click();
+    await expect(page.locator("#task-calendar .fc-timegrid")).toBeVisible();
+
+    for (const task of tasks) {
+        const chip = page
+            .locator("#task-calendar .fc-timegrid-event")
+            .filter({ hasText: task.title });
+        await expect(chip).toBeVisible();
+
+        const geometry = await chip.evaluate((chipEl) => {
+            const chipRect = chipEl.getBoundingClientRect();
+            const visibleWithin = (selector: string) => {
+                const element = chipEl.querySelector<HTMLElement>(selector);
+                if (!element) return false;
+                if (getComputedStyle(element).display === "none") return false;
+                const rect = element.getBoundingClientRect();
+                return (
+                    rect.width > 0 &&
+                    rect.height > 0 &&
+                    rect.top >= chipRect.top - 0.5 &&
+                    rect.bottom <= chipRect.bottom + 0.5 &&
+                    rect.left >= chipRect.left - 0.5 &&
+                    rect.right <= chipRect.right + 0.5
+                );
+            };
+            const display = (selector: string) => {
+                const element = chipEl.querySelector<HTMLElement>(selector);
+                return element ? getComputedStyle(element).display : "absent";
+            };
+            const titleEl =
+                chipEl.querySelector<HTMLElement>(".fc-event-title");
+            return {
+                dotVisible: visibleWithin(".fc-priority-dot"),
+                titleVisible: visibleWithin(".fc-event-title"),
+                titleWidth: titleEl?.getBoundingClientRect().width ?? 0,
+                timeDisplay: display(".fc-event-time"),
+                meridiemDisplay: display(".fc-event-time-meridiem"),
+            };
+        });
+
+        expect(geometry.dotVisible).toBe(true);
+        expect(geometry.titleVisible).toBe(true);
+        expect(geometry.titleWidth).toBeGreaterThan(8);
+        // The ~59px lane fits neither notation next to the dot and trigger
+        expect(geometry.timeDisplay).toBe("none");
+        expect(geometry.meridiemDisplay).toBe("none");
+    }
 });
 
 async function localStorageView(page: Page) {
