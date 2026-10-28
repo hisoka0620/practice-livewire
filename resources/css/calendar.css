@@ -420,6 +420,10 @@
        zero-widths the title */
     flex: 1 1 0%;
     min-width: 0;
+    /* The shared layout has no gap, so the fully rendered time ran flush
+       into the title ("2:00Tier p…"). The popover rule below needs the same
+       treatment for the same reason. */
+    gap: 0.25rem;
 }
 
 /* FullCalendar pads the event main box vertical by `padding: 1px 1px 0` and
@@ -444,17 +448,20 @@
    the row compute taller than the 22px chip, overflow: hidden clips inside
    this box instead of the text painting below the pill's bottom edge. The
    horizontal padding insets the row from the pill's rounded edges so the
-   content does not sit flush against them. */
+   content does not sit flush against them. The row is also the inline-size
+   query container for the progressive time notation below: its content-box
+   width tells how much of the time text fits next to the dot and trigger. */
 #task-calendar .fc-timeGridWeek-view .fc-custom-event {
     height: 100%;
     padding: 0 0.25rem;
+    container-type: inline-size;
 }
 
 #task-calendar .fc-timeGridWeek-view .fc-event-time {
-    /* Ditto: allow the time text itself to ellipsize instead of keeping its
-       nowrap intrinsic width and poking out of the chip's right edge */
-    flex-shrink: 1;
-    min-width: 0;
+    /* Unlike the shared month layout nothing may partially shrink here:
+       flex-shrinking the time produces "10:0…" fragments at every lane
+       width. The container-query tiers below decide between the notations
+       (or hiding the time) as a whole; the title absorbs the difference. */
     /* Tailwind's preflight line-height (1.5) makes this 12px text an 18px
        line box that inflates the single-row chip; the glyphs are 1em tall */
     line-height: 1;
@@ -476,6 +483,26 @@
        inside the 22px chip instead of poking out of it. The chip itself
        remains the row-wide tap surface for opening the modal. */
     max-height: 16px;
+}
+
+/* Progressive time notation as the lane narrows (the row above is the query
+   container). The meridiem goes first — the chip's position on the time axis
+   already disambiguates am/pm — then the whole time. The priority dot and
+   the title stay visible at every width. Measured at the 12px chip font:
+   "10:00 am" is ~51px and "10:00" ~31px, the fixed row overhead (dot, gaps,
+   trigger, time/title gap) ~41px, so the thresholds keep ~24px (2-3 glyphs)
+   of title: the full notation fits above ~116px of row content, the
+   compact one above ~96px. */
+@container (max-width: 116px) {
+    #task-calendar .fc-timeGridWeek-view .fc-event-time-meridiem {
+        display: none;
+    }
+}
+
+@container (max-width: 96px) {
+    #task-calendar .fc-timeGridWeek-view .fc-event-time {
+        display: none;
+    }
 }
 
 #task-calendar .fc-timegrid-more-link.fc-more-link {
